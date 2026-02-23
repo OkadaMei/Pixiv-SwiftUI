@@ -224,7 +224,9 @@ class SQLiteStorage:
         """统计标签数量"""
         self.init()
         with self._get_connection() as conn:
-            cursor = conn.execute("SELECT COUNT(*) FROM pixiv_tags")
+            cursor = conn.execute(
+                f"SELECT COUNT(*) FROM pixiv_tags WHERE {self._SKIP_CONDITION}"
+            )
             result = cursor.fetchone()
             return result[0] if result else 0
 
@@ -247,10 +249,10 @@ class SQLiteStorage:
         self.init()
         with self._get_connection() as conn:
             cursor = conn.execute(
-                """
+                f"""
                 SELECT t.* FROM pixiv_tags t
                 JOIN pixiv_tags_fts fts ON t.rowid = fts.rowid
-                WHERE pixiv_tags_fts MATCH ?
+                WHERE pixiv_tags_fts MATCH ? AND t.{self._SKIP_CONDITION}
                 ORDER BY t.frequency DESC, rank
                 LIMIT ?
                 """,
@@ -282,11 +284,13 @@ class SQLiteStorage:
         self.init()
         with self._get_connection() as conn:
             cursor = conn.execute(
-                """
+                f"""
                 SELECT COUNT(*) FROM pixiv_tags
-                WHERE (frequency > (SELECT frequency FROM pixiv_tags WHERE name = ?))
+                WHERE (
+                    (frequency > (SELECT frequency FROM pixiv_tags WHERE name = ?))
                    OR (frequency = (SELECT frequency FROM pixiv_tags WHERE name = ?)
                        AND name < ?)
+                ) AND {self._SKIP_CONDITION}
                 """,
                 (name, name, name),
             )
@@ -298,7 +302,8 @@ class SQLiteStorage:
         self.init()
         with self._get_connection() as conn:
             cursor = conn.execute(
-                "SELECT * FROM pixiv_tags ORDER BY frequency DESC LIMIT ?", (limit,)
+                f"SELECT * FROM pixiv_tags WHERE {self._SKIP_CONDITION} ORDER BY frequency DESC LIMIT ?",
+                (limit,),
             )
             return [
                 PixivTag(
@@ -613,7 +618,7 @@ class SQLiteStorage:
             all_unreviewed = conn.execute(
                 f"""
                 SELECT * FROM pixiv_tags
-                WHERE {reviewed_column} = 0
+                WHERE {reviewed_column} = 0 AND {self._SKIP_CONDITION}
                 ORDER BY frequency DESC, name ASC
                 """
             ).fetchall()
