@@ -65,6 +65,53 @@ class SQLiteStorage:
                 CREATE INDEX IF NOT EXISTS idx_english_reviewed_freq_name 
                 ON pixiv_tags(english_reviewed, frequency DESC, name ASC)
             """)
+
+            # 初始化 FTS 全文搜索（使用外部内容表和触发器以节省空间并保持同步）
+            conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS pixiv_tags_fts USING fts5(
+                    name, 
+                    official_translation, 
+                    chinese_translation, 
+                    english_translation, 
+                    content='pixiv_tags', 
+                    content_rowid='rowid',
+                    tokenize='unicode61'
+                )
+            """)
+
+            # 触发器：同步插入
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS pixiv_tags_ai AFTER INSERT ON pixiv_tags BEGIN
+                  INSERT INTO pixiv_tags_fts(rowid, name, official_translation, chinese_translation, english_translation)
+                  VALUES (new.rowid, new.name, new.official_translation, new.chinese_translation, new.english_translation);
+                END;
+            """)
+
+            # 触发器：同步删除
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS pixiv_tags_ad AFTER DELETE ON pixiv_tags BEGIN
+                  INSERT INTO pixiv_tags_fts(pixiv_tags_fts, rowid, name, official_translation, chinese_translation, english_translation)
+                  VALUES('delete', old.rowid, old.name, old.official_translation, old.chinese_translation, old.english_translation);
+                END;
+            """)
+
+            # 触发器：同步更新
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS pixiv_tags_au AFTER UPDATE ON pixiv_tags BEGIN
+                  INSERT INTO pixiv_tags_fts(pixiv_tags_fts, rowid, name, official_translation, chinese_translation, english_translation)
+                  VALUES('delete', old.rowid, old.name, old.official_translation, old.chinese_translation, old.english_translation);
+                  INSERT INTO pixiv_tags_fts(rowid, name, official_translation, chinese_translation, english_translation)
+                  VALUES (new.rowid, new.name, new.official_translation, new.chinese_translation, new.english_translation);
+                END;
+            """)
+
+            # 如果 FTS 表是空的但主表有数据，进行一次重建（适用于已有数据库迁移）
+            cursor = conn.execute("SELECT COUNT(*) FROM pixiv_tags_fts")
+            if cursor.fetchone()[0] == 0:
+                conn.execute(
+                    "INSERT INTO pixiv_tags_fts(pixiv_tags_fts) VALUES('rebuild')"
+                )
+
             conn.commit()
 
         self._init_done = True

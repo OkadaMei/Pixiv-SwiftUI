@@ -1,10 +1,10 @@
 import json
-import os
 import logging
+import os
 from typing import List, Tuple
+
 from .models import PixivTag
 from .sqlite_storage import SQLiteStorage
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,8 @@ class _JsonTagStorage:
                         chinese_translation=tag_data.get("chinese_translation", ""),
                         english_translation=tag_data.get("english_translation", ""),
                         frequency=tag_data.get("frequency", 0),
+                        chinese_reviewed=bool(tag_data.get("chinese_reviewed", False)),
+                        english_reviewed=bool(tag_data.get("english_reviewed", False)),
                     )
                     self.tags.append(tag)
                     self.tag_names.add(tag.name)

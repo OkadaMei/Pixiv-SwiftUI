@@ -49,6 +49,9 @@ class RecommendationBasedCollector:
         # 统计信息
         self.stats = CollectionStats()
 
+        # 处理过的插画 ID 集合（防止在同一会话中重复计算标签频率）
+        self.processed_illust_ids = set()
+
         # 停止标志
         self.should_stop_func = None
 
@@ -133,6 +136,12 @@ class RecommendationBasedCollector:
             illust_id = illust.get("id")
             if not illust_id:
                 continue
+
+            # 如果该插画已处理过，则跳过，避免重复增加标签频率
+            if illust_id in self.processed_illust_ids:
+                continue
+
+            self.processed_illust_ids.add(illust_id)
             self.stats.illusts_processed += 1
 
             # 获取插画的所有标签
@@ -268,7 +277,6 @@ class RecommendationBasedCollector:
                     )
 
             # 每 N 次搜索同步一次（基于搜索次数，而非插画计数）
-            self.stats.tags_searched += 1
             if self.stats.tags_searched % self.save_interval == 0:
                 if self.storage.mode == "sqlite":
                     self.storage.sync_to_database()

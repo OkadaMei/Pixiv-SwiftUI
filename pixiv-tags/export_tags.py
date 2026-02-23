@@ -44,9 +44,10 @@ class TagExporter:
 
     def get_translated_tags(self) -> Dict[str, str]:
         """从数据库获取所有已审核的翻译标签"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        conn = None
         try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
             cursor = conn.execute(
                 """
                 SELECT name, chinese_translation
@@ -61,8 +62,12 @@ class TagExporter:
             return {
                 row["name"]: row["chinese_translation"] for row in cursor.fetchall()
             }
+        except Exception as e:
+            logger.error(f"从数据库导出标签失败: {e}")
+            return {}
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
     def export(self) -> bool:
         """导出标签到 JSON 文件"""

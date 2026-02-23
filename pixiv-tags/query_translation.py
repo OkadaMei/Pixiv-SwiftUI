@@ -55,7 +55,11 @@ def main():
     while True:
         try:
             # 获取用户输入
-            word = input("请输入查询词: ").strip()
+            try:
+                word = input("请输入查询词: ").strip()
+            except EOFError:
+                print("\n👋 再见！")
+                break
 
             if not word:
                 print("❌ 输入不能为空，请重新输入")
