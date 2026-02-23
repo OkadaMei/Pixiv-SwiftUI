@@ -21,6 +21,7 @@ struct IllustDetailView: View {
     @State private var showCopyToast = false
     @State private var showBlockTagToast = false
     @State private var showBlockIllustToast = false
+    @State private var showBlockUserToast = false
     @State private var isFollowLoading = false
     @State private var relatedIllusts: [Illusts] = []
     @State private var isLoadingRelated = false
@@ -364,6 +365,21 @@ struct IllustDetailView: View {
                             }
                             .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
 
+                            Button(role: .destructive, action: {
+                                isBlockTriggered = true
+                                try? userSettingStore.addBlockedUserWithInfo(
+                                    illust.user.id.stringValue,
+                                    name: illust.user.name,
+                                    account: illust.user.account,
+                                    avatarUrl: illust.user.profileImageUrls?.medium
+                                )
+                                showBlockUserToast = true
+                                dismiss()
+                            }) {
+                                Label(String(localized: "屏蔽此作者"), systemImage: "person.slash")
+                            }
+                            .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
+
                             if isOwnIllust {
                                 Divider()
 
@@ -457,6 +473,7 @@ struct IllustDetailView: View {
         .toast(isPresented: $showCopyToast, message: String(localized: "已复制"))
         .toast(isPresented: $showBlockTagToast, message: String(localized: "已屏蔽 Tag"))
         .toast(isPresented: $showBlockIllustToast, message: String(localized: "已屏蔽作品"))
+        .toast(isPresented: $showBlockUserToast, message: String(localized: "已屏蔽作者"))
         .toast(isPresented: $showSaveToast, message: String(localized: "已添加到下载队列"))
         .toast(isPresented: $showDeleteSuccessToast, message: String(localized: "作品已删除"))
         .toast(isPresented: $showDeleteErrorToast, message: String(localized: "删除失败"))

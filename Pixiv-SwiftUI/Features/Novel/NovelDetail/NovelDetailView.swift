@@ -23,6 +23,7 @@ struct NovelDetailView: View {
     @State private var totalComments: Int?
     @State private var showCopyToast = false
     @State private var showBlockTagToast = false
+    @State private var showBlockUserToast = false
     @State private var showNotLoggedInToast = false
     @State private var navigateToUserId: String?
     @State private var navigateToIllustId: Int?
@@ -35,6 +36,7 @@ struct NovelDetailView: View {
     @State private var showDeleteErrorToast = false
     @State private var showExportToast = false
     @State private var isExporting = false
+    @State private var isBlockTriggered: Bool = false
 
     #if os(iOS)
     @State private var showComments = false
@@ -249,6 +251,23 @@ struct NovelDetailView: View {
                             )
                         }
 
+                        Divider()
+
+                        Button(role: .destructive, action: {
+                            isBlockTriggered = true
+                            try? userSettingStore.addBlockedUserWithInfo(
+                                novel.user.id.stringValue,
+                                name: novel.user.name,
+                                account: novel.user.account,
+                                avatarUrl: novel.user.profileImageUrls?.medium
+                            )
+                            showBlockUserToast = true
+                            dismiss()
+                        }) {
+                            Label(String(localized: "屏蔽此作者"), systemImage: "person.slash")
+                        }
+                        .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
+
                         if isOwnNovel {
                             Divider()
 
@@ -266,6 +285,7 @@ struct NovelDetailView: View {
         }
         .toast(isPresented: $showCopyToast, message: String(localized: "已复制"))
         .toast(isPresented: $showBlockTagToast, message: String(localized: "已屏蔽 Tag"))
+        .toast(isPresented: $showBlockUserToast, message: String(localized: "已屏蔽作者"))
         .toast(isPresented: $showNotLoggedInToast, message: String(localized: "请先登录"), duration: 2.0)
         .toast(isPresented: $showDeleteSuccessToast, message: String(localized: "作品已删除"))
         .toast(isPresented: $showDeleteErrorToast, message: String(localized: "删除失败"))
