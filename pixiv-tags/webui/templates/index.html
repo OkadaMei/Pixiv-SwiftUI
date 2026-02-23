@@ -10,7 +10,6 @@
 
 <body>
     <header>
-        <h1>Pixiv Tag 翻译审核工具</h1>
         <div class="stats">
             <span>总标签数: {{ stats.total }}</span>
             <span class="reviewed">已审核: {{ stats.reviewed }}</span>
@@ -19,12 +18,13 @@
                 "0%" }}</span>
             <span class="position">当前位置: <span id="current-position">{{ index + 1 if tag is not none else '-' }}</span>
                 / {{ stats.total }}</span>
-        </div>
-        <div class="language-toggle">
-            <button class="lang-btn {{ 'active' if language == 'chinese' else '' }}"
-                onclick="switchLanguage('chinese')">中文审核</button>
-            <button class="lang-btn {{ 'active' if language == 'english' else '' }}"
-                onclick="switchLanguage('english')">英文审核</button>
+
+            <div class="language-toggle">
+                <button class="lang-btn {{ 'active' if language == 'chinese' else '' }}"
+                    onclick="switchLanguage('chinese')">中文审核</button>
+                <button class="lang-btn {{ 'active' if language == 'english' else '' }}"
+                    onclick="switchLanguage('english')">英文审核</button>
+            </div>
         </div>
     </header>
 
