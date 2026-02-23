@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-import os
 import logging
-from typing import Optional
+import os
 from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
-from dotenv import load_dotenv
-
 from src.sqlite_storage import SQLiteStorage
 
 load_dotenv()
@@ -191,6 +189,28 @@ async def update_tag(request: Request):
 
     if not success:
         raise HTTPException(status_code=404, detail="Tag not found or update failed")
+
+    return JSONResponse(content={"success": True})
+
+
+@app.post("/api/tag/create")
+async def create_tag(request: Request):
+    """手动创建新标签"""
+    data = await request.json()
+
+    name = data.get("name")
+    translation = data.get("translation")
+    language = data.get("language", "chinese")
+
+    if not name or not translation:
+        raise HTTPException(status_code=400, detail="name and translation are required")
+
+    success = storage.create_tag(name, translation, language)
+
+    if not success:
+        raise HTTPException(
+            status_code=400, detail="Tag already exists or creation failed"
+        )
 
     return JSONResponse(content={"success": True})
 

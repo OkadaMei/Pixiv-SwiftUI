@@ -613,6 +613,39 @@ class SQLiteStorage:
 
             return False
 
+    def create_tag(
+        self,
+        name: str,
+        translation: str,
+        language: str = "chinese",
+    ) -> bool:
+        """手动创建一个新的标签条目"""
+        self.init()
+        self._init_stats_cache()
+
+        with self._get_connection() as conn:
+            # 检查是否已存在
+            cursor = conn.execute("SELECT 1 FROM pixiv_tags WHERE name = ?", (name,))
+            if cursor.fetchone():
+                return False  # 已存在，不重复创建
+
+            reviewed_col = f"{language}_reviewed"
+            trans_col = f"{language}_translation"
+
+            query = f"""
+                INSERT INTO pixiv_tags (name, {trans_col}, {reviewed_col}, frequency)
+                VALUES (?, ?, 1, 1)
+            """
+            conn.execute(query, (name, translation))
+            conn.commit()
+
+            # 更新统计缓存
+            if language in self._stats_cache:
+                self._stats_cache[language]["total"] += 1
+                self._stats_cache[language]["reviewed"] += 1
+
+        return True
+
     def _is_western_tag(self, name: str) -> bool:
         """判断是否为欧美 tag（完全由英文字母和数字组成）"""
         return bool(re.match(r"^[a-zA-Z0-9]+$", name))

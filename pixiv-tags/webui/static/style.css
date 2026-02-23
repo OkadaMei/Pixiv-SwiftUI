@@ -127,6 +127,50 @@ header h1 {
     border-color: #667eea;
 }
 
+.add-tag-box {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    background: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+}
+
+.add-tag-box h3 {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.add-tag-box input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    transition: border-color 0.3s;
+}
+
+.add-tag-box input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.add-tag-box button {
+    width: 100%;
+    padding: 8px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.3s;
+}
+
+.add-tag-box button:hover {
+    background: #764ba2;
+}
+
 .search-results {
     flex: 1 1 0;
     overflow-y: auto;

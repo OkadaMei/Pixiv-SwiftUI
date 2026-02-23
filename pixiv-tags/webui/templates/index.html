@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixiv Tag 翻译审核工具</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
     <header>
         <h1>Pixiv Tag 翻译审核工具</h1>
@@ -13,12 +15,16 @@
             <span>总标签数: {{ stats.total }}</span>
             <span class="reviewed">已审核: {{ stats.reviewed }}</span>
             <span class="pending">待审核: {{ stats.pending }}</span>
-            <span class="progress">进度: {{ "{:.1f}%".format(stats.reviewed / stats.total * 100) if stats.total > 0 else "0%" }}</span>
-            <span class="position">当前位置: <span id="current-position">{{ index + 1 if tag is not none else '-' }}</span> / {{ stats.total }}</span>
+            <span class="progress">进度: {{ "{:.1f}%".format(stats.reviewed / stats.total * 100) if stats.total > 0 else
+                "0%" }}</span>
+            <span class="position">当前位置: <span id="current-position">{{ index + 1 if tag is not none else '-' }}</span>
+                / {{ stats.total }}</span>
         </div>
         <div class="language-toggle">
-            <button class="lang-btn {{ 'active' if language == 'chinese' else '' }}" onclick="switchLanguage('chinese')">中文审核</button>
-            <button class="lang-btn {{ 'active' if language == 'english' else '' }}" onclick="switchLanguage('english')">英文审核</button>
+            <button class="lang-btn {{ 'active' if language == 'chinese' else '' }}"
+                onclick="switchLanguage('chinese')">中文审核</button>
+            <button class="lang-btn {{ 'active' if language == 'english' else '' }}"
+                onclick="switchLanguage('english')">英文审核</button>
         </div>
     </header>
 
@@ -28,6 +34,12 @@
                 <input type="text" id="search-input" placeholder="搜索标签或译文..." autocomplete="off" />
             </div>
             <div id="search-results" class="search-results"></div>
+            <div class="add-tag-box">
+                <h3>手动添加标签</h3>
+                <input type="text" id="new-tag-name" placeholder="原文..." />
+                <input type="text" id="new-tag-translation" placeholder="译文..." />
+                <button onclick="addManualTag()">添加</button>
+            </div>
         </aside>
 
         {% if tag %}
@@ -51,7 +63,8 @@
 
             <div class="translation-editor">
                 <label for="translation-input">编辑{{ '中文' if language == 'chinese' else '英文' }}译文:</label>
-                <textarea id="translation-input" rows="3">{{ tag.chinese_translation if language == 'chinese' else tag.english_translation }}</textarea>
+                <textarea id="translation-input"
+                    rows="3">{{ tag.chinese_translation if language == 'chinese' else tag.english_translation }}</textarea>
 
                 <div class="quick-actions">
                     <button onclick="copyOriginal()">复制原文</button>
@@ -127,6 +140,46 @@
             window.open(`https://www.pixiv.net/tags/${tag}/artworks`, '_blank');
         }
 
+        async function addManualTag() {
+            const name = document.getElementById('new-tag-name').value.trim();
+            const translation = document.getElementById('new-tag-translation').value.trim();
+
+            if (!name || !translation) {
+                alert('请填写原文和译文');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/tag/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        translation: translation,
+                        language: currentLanguage
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert('添加成功');
+                    document.getElementById('new-tag-name').value = '';
+                    document.getElementById('new-tag-translation').value = '';
+                    await updateStats();
+                    if (searchKeyword.trim()) {
+                        await performSearch(searchKeyword);
+                    }
+                    jumpToTag(name);
+                } else {
+                    alert('添加失败: ' + (data.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('添加失败:', error);
+                alert('添加失败，请重试');
+            }
+        }
+
         async function updateStats() {
             try {
                 const response = await fetch(`/api/stats?language=${currentLanguage}`);
@@ -180,7 +233,7 @@
         async function nextTag() {
             try {
                 const response = await fetch(`/api/tag/next?current_freq=${currentFrequency}&current_name=${encodeURIComponent(currentTagName)}&language=${currentLanguage}`);
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     currentIndex = data.index;
@@ -346,16 +399,16 @@
 
         function updateUI(data) {
             const translation = currentLanguage === 'chinese' ? data.chinese_translation : data.english_translation;
-            
+
             document.querySelector('.field:nth-child(1) .value').textContent = data.name;
             document.querySelector('.field:nth-child(2) .value').textContent = data.official_translation || '(无)';
             document.getElementById('translation-input').value = translation || '';
             document.getElementById('current-position').textContent = currentIndex + 1;
             document.getElementById('copy-official-btn').disabled = !data.official_translation;
-            
+
             currentTagName = data.name;
             currentFrequency = data.frequency;
-            
+
             const url = new URL(window.location);
             url.searchParams.set('index', currentIndex);
             window.history.replaceState({}, '', url);
@@ -400,5 +453,7 @@
         });
     </script>
 </body>
+
 </html>
+
 </html>
