@@ -40,7 +40,7 @@ class SearchStore: ObservableObject {
         loadSearchHistory()
 
         $searchText
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] text in
                 guard let self = self else { return }
                 let trimmedText = text.trimmingCharacters(in: .whitespaces)
