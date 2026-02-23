@@ -76,7 +76,13 @@ final class UserSetting: Codable {
     var maxRunningTask: Int = 3
 
     /// 主题色种子（颜色 ID）
-    var seedColor: Int = 0xFF0000
+    var seedColor: Int = 0x0096FA
+
+    /// 是否使用自定义主题色
+    var isCustomTheme: Bool = false
+
+    /// 自定义主题色 hex
+    var customThemeColor: Int = 0x0096FA
 
     /// AI 显示模式：0=正常显示 1=屏蔽 2=仅显示AI
     var aiDisplayMode: Int = 0
@@ -256,6 +262,8 @@ final class UserSetting: Codable {
         case novelFontSize
         case maxRunningTask
         case seedColor
+        case isCustomTheme
+        case customThemeColor
         case aiDisplayMode
         case illustDetailSaveSkipLongPress
         case dragStartX
@@ -332,7 +340,9 @@ final class UserSetting: Codable {
         self.saveMode = try container.decodeIfPresent(Int.self, forKey: .saveMode) ?? 0
         self.novelFontSize = try container.decodeIfPresent(Int.self, forKey: .novelFontSize) ?? 16
         self.maxRunningTask = try container.decodeIfPresent(Int.self, forKey: .maxRunningTask) ?? 3
-        self.seedColor = try container.decodeIfPresent(Int.self, forKey: .seedColor) ?? 0xFF0000
+        self.seedColor = try container.decodeIfPresent(Int.self, forKey: .seedColor) ?? 0x0096FA
+        self.isCustomTheme = try container.decodeIfPresent(Bool.self, forKey: .isCustomTheme) ?? false
+        self.customThemeColor = try container.decodeIfPresent(Int.self, forKey: .customThemeColor) ?? 0x0096FA
         self.aiDisplayMode = try container.decodeIfPresent(Int.self, forKey: .aiDisplayMode) ?? 0
         self.illustDetailSaveSkipLongPress = try container.decodeIfPresent(Bool.self, forKey: .illustDetailSaveSkipLongPress) ?? false
         self.dragStartX = try container.decodeIfPresent(Double.self, forKey: .dragStartX) ?? 0.0
@@ -419,6 +429,8 @@ final class UserSetting: Codable {
         try container.encode(novelFontSize, forKey: .novelFontSize)
         try container.encode(maxRunningTask, forKey: .maxRunningTask)
         try container.encode(seedColor, forKey: .seedColor)
+        try container.encode(isCustomTheme, forKey: .isCustomTheme)
+        try container.encode(customThemeColor, forKey: .customThemeColor)
         try container.encode(aiDisplayMode, forKey: .aiDisplayMode)
         try container.encode(illustDetailSaveSkipLongPress, forKey: .illustDetailSaveSkipLongPress)
         try container.encode(dragStartX, forKey: .dragStartX)

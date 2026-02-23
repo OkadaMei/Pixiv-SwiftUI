@@ -21,11 +21,21 @@ final class ThemeManager {
     }
 
     func updateThemeColor() {
-        currentColor = Color(hex: userSettingStore.userSetting.seedColor)
+        if userSettingStore.userSetting.isCustomTheme {
+            currentColor = Color(hex: userSettingStore.userSetting.customThemeColor)
+        } else {
+            currentColor = Color(hex: userSettingStore.userSetting.seedColor)
+        }
     }
 
-    func setThemeColor(_ hex: Int) {
-        userSettingStore.userSetting.seedColor = hex
+    func setThemeColor(_ hex: Int, isCustom: Bool = false) {
+        if isCustom {
+            userSettingStore.userSetting.isCustomTheme = true
+            userSettingStore.userSetting.customThemeColor = hex
+        } else {
+            userSettingStore.userSetting.isCustomTheme = false
+            userSettingStore.userSetting.seedColor = hex
+        }
         try? userSettingStore.saveSetting()
         updateThemeColor()
     }
