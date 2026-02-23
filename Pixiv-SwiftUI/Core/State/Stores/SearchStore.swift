@@ -5,7 +5,7 @@ import Combine
 class SearchStore: ObservableObject {
     @Published var searchText: String = ""
     @Published var searchHistory: [SearchTag] = []
-    @Published var suggestions: [SearchTag] = []
+    @Published var suggestions: [UnifiedSearchSuggestion] = []
     @Published var trendTags: [TrendTag] = []
     @Published var isLoadingTrendTags: Bool = false
     @Published var illustResults: [Illusts] = []
@@ -32,6 +32,7 @@ class SearchStore: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let api = PixivAPI.shared
     private let cache = CacheManager.shared
+    private let suggestionManager = SearchSuggestionManager.shared
 
     private let trendTagsExpiration: CacheExpiration = .hours(1)
 
@@ -127,11 +128,7 @@ class SearchStore: ObservableObject {
     }
 
     func fetchSuggestions(word: String) async {
-        do {
-            self.suggestions = try await api.getSearchAutoCompleteKeywords(word: word)
-        } catch {
-            print("Failed to fetch suggestions: \(error)")
-        }
+        self.suggestions = await suggestionManager.fetchSuggestions(query: word)
     }
 
     func search(word: String, sort: String = "date_desc") async {

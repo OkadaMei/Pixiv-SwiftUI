@@ -62,11 +62,11 @@ struct SearchSuggestionView: View {
                     Button {
                         let words = store.searchText.split(separator: " ")
                         var newText = ""
-                        // 处理多选标签补全
+                        // 处理��选标签补全
                         if words.count > 1 {
                             newText = String(words.dropLast().joined(separator: " ") + " ")
                         }
-                        newText += tag.name + " "
+                        newText += tag.tagName + " "
                         let completedText = newText.trimmingCharacters(in: .whitespaces)
                         store.searchText = completedText
 
@@ -76,14 +76,14 @@ struct SearchSuggestionView: View {
                         }
                     } label: {
                         HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
+                            Image(systemName: tag.isLocalMatch ? "checkmark.circle" : "magnifyingglass")
+                                .foregroundColor(tag.isLocalMatch ? .accentColor : .secondary)
                                 .font(.system(size: 14))
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(tag.name)
+                                Text(tag.tagName)
                                     .foregroundColor(.primary)
-                                if let translated = tag.translatedName {
+                                if let translated = tag.displayTranslation {
                                     Text(translated)
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
@@ -102,7 +102,7 @@ struct SearchSuggestionView: View {
                     }
                     .contextMenu {
                         Button {
-                            copyToClipboard(tag.name)
+                            copyToClipboard(tag.tagName)
                         } label: {
                             Label("复制 tag", systemImage: "doc.on.doc")
                         }
@@ -110,7 +110,7 @@ struct SearchSuggestionView: View {
                         if accountStore.isLoggedIn {
                             Button {
                                 triggerHaptic()
-                                addBlockedTag(tag.name, tag.translatedName)
+                                addBlockedTag(tag.tagName, tag.displayTranslation)
                             } label: {
                                 Label("屏蔽 tag", systemImage: "eye.slash")
                             }

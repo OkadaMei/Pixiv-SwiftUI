@@ -401,14 +401,20 @@ struct SearchView: View {
         }
     }
 
-    private func suggestionRow(_ tag: SearchTag) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(tag.name)
-                .foregroundColor(.primary)
-            if let translated = tag.translatedName {
-                Text(translated)
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+    private func suggestionRow(_ tag: UnifiedSearchSuggestion) -> some View {
+        HStack {
+            Image(systemName: tag.isLocalMatch ? "checkmark.circle" : "magnifyingglass")
+                .foregroundColor(tag.isLocalMatch ? .accentColor : .secondary)
+                .font(.system(size: 14))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tag.tagName)
+                    .foregroundColor(.primary)
+                if let translated = tag.displayTranslation {
+                    Text(translated)
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
             }
         }
         .padding(.vertical, 4)
@@ -458,7 +464,7 @@ struct SearchView: View {
                                 if words.count > 1 {
                                     newText = String(words.dropLast().joined(separator: " ") + " ")
                                 }
-                                newText += tag.name + " "
+                                newText += tag.tagName + " "
                                 let completedText = newText.trimmingCharacters(in: .whitespaces)
                                 store.searchText = completedText
 
@@ -476,7 +482,7 @@ struct SearchView: View {
                     }
                     .contextMenu {
                         Button(action: {
-                            copyToClipboard(tag.name)
+                            copyToClipboard(tag.tagName)
                         }) {
                             Label(String(localized: "复制 tag"), systemImage: "doc.on.doc")
                         }
@@ -484,7 +490,7 @@ struct SearchView: View {
                         if accountStore.isLoggedIn {
                             Button(action: {
                                 triggerHaptic()
-                                try? userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
+                                try? userSettingStore.addBlockedTagWithInfo(tag.tagName, translatedName: tag.displayTranslation)
                                 showBlockToast = true
                             }) {
                                 Label(String(localized: "屏蔽 tag"), systemImage: "eye.slash")

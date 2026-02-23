@@ -99,4 +99,66 @@ final class TagTranslationService {
     func hasTranslation(for tagName: String) -> Bool {
         return translations[tagName] != nil
     }
+
+    /// 搜索标签（支持 tag 名和翻译双向搜索）
+    /// - Parameters:
+    ///   - query: 搜索关键词
+    ///   - limit: 最大返回数量
+    /// - Returns: 统一搜索建议数组
+    func searchTags(query: String, limit: Int = 20) -> [UnifiedSearchSuggestion] {
+        guard !query.isEmpty else { return [] }
+
+        let lowercasedQuery = query.lowercased()
+        var results: [UnifiedSearchSuggestion] = []
+        var seenTags = Set<String>()
+
+        for (tagName, translation) in translations {
+            let lowercasedTagName = tagName.lowercased()
+            let lowercasedTranslation = translation.lowercased()
+
+            var matchType: TagMatchType?
+
+            if lowercasedTagName == lowercasedQuery {
+                matchType = .exactName
+            } else if lowercasedTagName.hasPrefix(lowercasedQuery) {
+                matchType = .prefixName
+            } else if lowercasedTranslation == lowercasedQuery {
+                matchType = .exactTranslation
+            } else if lowercasedTranslation.hasPrefix(lowercasedQuery) {
+                matchType = .prefixTranslation
+            } else if lowercasedTagName.contains(lowercasedQuery) {
+                matchType = .containsName
+            } else if lowercasedTranslation.contains(lowercasedQuery) {
+                matchType = .containsTranslation
+            }
+
+            if let type = matchType, !seenTags.contains(tagName) {
+                seenTags.insert(tagName)
+                let suggestion = UnifiedSearchSuggestion(
+                    tagName: tagName,
+                    displayTranslation: translation,
+                    source: .localTranslation(matchType: type)
+                )
+                results.append(suggestion)
+            }
+        }
+
+        results.sort { suggestion1, suggestion2 in
+            guard let type1 = suggestion1.matchType, let type2 = suggestion2.matchType else {
+                return false
+            }
+            return type1.rawValue < type2.rawValue
+        }
+
+        if results.count > limit {
+            results = Array(results.prefix(limit))
+        }
+
+        return results
+    }
+
+    /// 获取所有翻译数据（用于外部搜索）
+    func getAllTranslations() -> [String: String] {
+        return translations
+    }
 }
