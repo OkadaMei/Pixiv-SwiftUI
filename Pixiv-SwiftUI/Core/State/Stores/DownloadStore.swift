@@ -309,7 +309,21 @@ final class DownloadStore: ObservableObject {
                     saveURL = authorFolder.appendingPathComponent(filename)
                 }
 
-                try await ImageSaver.saveToFile(data: imageData, url: saveURL)
+                // 如果扩展名不匹配（例如用户在另存为对话框中手动修改了扩展名），则尝试转换格式
+                var finalData = imageData
+                let targetExt = saveURL.pathExtension.lowercased()
+                if !targetExt.isEmpty && targetExt != actualExt {
+                    // 如果实际扩展名是 jpg 而目标是 png，或者反之，进行转换
+                    let isTargetJpg = targetExt == "jpg" || targetExt == "jpeg"
+                    let isSourceJpg = actualExt == "jpg" || actualExt == "jpeg"
+
+                    if (targetExt == "png" && isSourceJpg) || (isTargetJpg && actualExt == "png") {
+                        Logger.download.debug("检测到扩展名不匹配 (\(actualExt) -> \(targetExt))，正在转换格式...")
+                        finalData = ImageSaver.convert(data: imageData, toExtension: targetExt)
+                    }
+                }
+
+                try await ImageSaver.saveToFile(data: finalData, url: saveURL)
                 savedPaths.append(saveURL)
                 #endif
 

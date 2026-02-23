@@ -644,15 +644,27 @@ struct IllustDetailView: View {
         } else {
             // 单图或动图：使用 NSSavePanel 选择具体文件名
             let panel = NSSavePanel()
+            let safeTitle = ImageSaver.sanitizeFilename(illust.title)
+            let safeAuthor = ImageSaver.sanitizeFilename(illust.user.name)
+
             if isUgoira {
                 panel.allowedContentTypes = [.gif]
+                panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).gif"
+                panel.title = "保存动图"
             } else {
-                panel.allowedContentTypes = [.png, .jpeg]
+                let quality = userSettingStore.userSetting.downloadQuality
+                let firstUrl = ImageURLHelper.getImageURL(from: illust, quality: quality)
+                let ext = (firstUrl as NSString).pathExtension.lowercased()
+
+                if ext == "png" {
+                    panel.allowedContentTypes = [.png, .jpeg]
+                    panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).png"
+                } else {
+                    panel.allowedContentTypes = [.jpeg, .png]
+                    panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).jpg"
+                }
+                panel.title = "保存插画"
             }
-            let safeTitle = illust.title.replacingOccurrences(of: "/", with: "_")
-                .replacingOccurrences(of: ":", with: "_")
-            panel.nameFieldStringValue = "\(illust.user.name)_\(safeTitle)\(isUgoira ? ".gif" : "")"
-            panel.title = isUgoira ? "保存动图" : "保存插画"
 
             let result = await withCheckedContinuation { continuation in
                 panel.begin { response in

@@ -139,4 +139,32 @@ struct ImageSaver {
             .prefix(200)
             .description
     }
+
+    static func convert(data: Data, toExtension: String) -> Data {
+        let ext = toExtension.lowercased()
+        #if os(macOS)
+        guard let nsImage = NSImage(data: data) else { return data }
+        if ext == "png" {
+            if let tiffData = nsImage.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                return pngData
+            }
+        } else if ext == "jpg" || ext == "jpeg" {
+            if let tiffData = nsImage.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.9]) {
+                return jpegData
+            }
+        }
+        #else
+        guard let uiImage = UIImage(data: data) else { return data }
+        if ext == "png" {
+            return uiImage.pngData() ?? data
+        } else if ext == "jpg" || ext == "jpeg" {
+            return uiImage.jpegData(compressionQuality: 0.9) ?? data
+        }
+        #endif
+        return data
+    }
 }
