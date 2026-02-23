@@ -318,6 +318,8 @@ struct SearchView: View {
                     .padding(.horizontal)
                 }
 
+                SpotlightPreview()
+
                 IllustRankingPreview()
 
                 Text("热门标签")

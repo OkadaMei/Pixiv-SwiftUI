@@ -74,5 +74,8 @@ extension View {
                         )
                     }
             }
+            .navigationDestination(for: SpotlightListTarget.self) { _ in
+                SpotlightListView()
+            }
     }
 }

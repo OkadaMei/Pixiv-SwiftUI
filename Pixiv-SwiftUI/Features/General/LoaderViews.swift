@@ -117,3 +117,10 @@ struct NovelLoaderView: View {
         }
     }
 }
+
+struct SpotlightArticleTarget: Hashable {
+    let id: Int
+    let title: String
+    let thumbnail: String
+    let articleUrl: String
+}
