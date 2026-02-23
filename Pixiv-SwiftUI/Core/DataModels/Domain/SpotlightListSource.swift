@@ -9,7 +9,7 @@ enum SpotlightListSource: Equatable {
         case .category(let category):
             return category.displayName
         case .search(let query):
-            return String(localized: "搜索: \(query)")
+            return query
         }
     }
 
