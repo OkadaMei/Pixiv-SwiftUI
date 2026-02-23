@@ -79,30 +79,44 @@ async def get_current_tag(index: int = 0, language: str = "chinese"):
 
 
 @app.get("/api/tag/next")
-async def get_next_tag(current_index: int = 0, language: str = "chinese"):
-    """获取下一个标签"""
+async def get_next_tag(
+    current_freq: int = 0, current_name: str = "", language: str = "chinese"
+):
+    """获取下一个标签（使用键集分页，避免 OFFSET）"""
     if language not in ["chinese", "english"]:
         language = "chinese"
 
-    next_index = current_index + 1
-    tag = storage.get_tag_by_index(next_index, language)
+    if current_name:
+        tag = storage.get_tag_by_keyset(current_freq, current_name, "next")
+    else:
+        tag = storage.get_tag_by_index(1, language)
 
     if not tag:
         raise HTTPException(status_code=404, detail="No more tags")
 
-    return JSONResponse(content={"index": next_index, **tag.to_dict()})
+    index = storage.get_tag_index(tag.name, language)
+    return JSONResponse(content={"index": index, **tag.to_dict()})
 
 
 @app.get("/api/tag/prev")
-async def get_prev_tag(current_index: int = 0, language: str = "chinese"):
-    """获取上一个标签"""
+async def get_prev_tag(
+    current_freq: int = 0, current_name: str = "", language: str = "chinese"
+):
+    """获取上一个标签（使用键集分页，避免 OFFSET）"""
     if language not in ["chinese", "english"]:
         language = "chinese"
 
-    prev_index = max(0, current_index - 1)
-    tag = storage.get_tag_by_index(prev_index, language)
+    if current_name:
+        tag = storage.get_tag_by_keyset(current_freq, current_name, "prev")
+        if tag:
+            index = storage.get_tag_index(tag.name, language)
+            return JSONResponse(content={"index": index, **tag.to_dict()})
 
-    return JSONResponse(content={"index": prev_index, **tag.to_dict()})
+    tag = storage.get_tag_by_index(0, language)
+    index = storage.get_tag_index(tag.name, language) if tag else 0
+    return JSONResponse(
+        content={"index": index, **tag.to_dict()} if tag else {"index": 0}
+    )
 
 
 @app.get("/api/tag/next-unreviewed")
@@ -215,6 +229,20 @@ async def get_tag_index(name: str, language: str = "chinese"):
         raise HTTPException(status_code=404, detail="Tag not found")
 
     return JSONResponse(content={"index": index})
+
+
+@app.get("/api/tag/by-name")
+async def get_tag_by_name(name: str, language: str = "chinese"):
+    """根据名称直接获取标签（避免 OFFSET）"""
+    if language not in ["chinese", "english"]:
+        language = "chinese"
+
+    tag = storage.get_tag(name)
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    index = storage.get_tag_index(name, language)
+    return JSONResponse(content={"index": index, **tag.to_dict()})
 
 
 if __name__ == "__main__":

@@ -98,6 +98,7 @@
         let currentIndex = {{ index }};
         let currentLanguage = '{{ language }}';
         let currentTagName = '{{ tag.name if tag else "" }}';
+        let currentFrequency = {{ tag.frequency if tag else 0 }};
         let searchTimeout = null;
         let searchKeyword = '';
 
@@ -178,12 +179,13 @@
 
         async function nextTag() {
             try {
-                const response = await fetch(`/api/tag/next?current_index=${currentIndex}&language=${currentLanguage}`);
+                const response = await fetch(`/api/tag/next?current_freq=${currentFrequency}&current_name=${encodeURIComponent(currentTagName)}&language=${currentLanguage}`);
                 
                 if (response.ok) {
                     const data = await response.json();
                     currentIndex = data.index;
                     currentTagName = data.name;
+                    currentFrequency = data.frequency;
                     updateUI(data);
                 } else {
                     alert('没有更多标签了');
@@ -195,12 +197,13 @@
 
         async function prevTag() {
             try {
-                const response = await fetch(`/api/tag/prev?current_index=${currentIndex}&language=${currentLanguage}`);
+                const response = await fetch(`/api/tag/prev?current_freq=${currentFrequency}&current_name=${encodeURIComponent(currentTagName)}&language=${currentLanguage}`);
 
                 if (response.ok) {
                     const data = await response.json();
                     currentIndex = data.index;
                     currentTagName = data.name;
+                    currentFrequency = data.frequency;
                     updateUI(data);
                 }
             } catch (error) {
@@ -222,6 +225,7 @@
                     const data = await response.json();
                     currentIndex = data.index;
                     currentTagName = data.name;
+                    currentFrequency = data.frequency;
                     updateUI(data);
                 } else {
                     alert('没有更多未审核的标签了');
@@ -239,6 +243,7 @@
                     const data = await response.json();
                     currentIndex = data.index;
                     currentTagName = data.name;
+                    currentFrequency = data.frequency;
                     updateUI(data);
                 } else {
                     alert('没有更多未审核的标签了');
@@ -257,6 +262,7 @@
                     if (data) {
                         currentIndex = data.index;
                         currentTagName = data.name;
+                        currentFrequency = data.frequency;
                         updateUI(data);
                     } else {
                         alert('没有更多未审核的标签了');
@@ -323,19 +329,15 @@
         async function jumpToTag(name) {
             try {
                 const response = await fetch(
-                    `/api/tag/index?name=${encodeURIComponent(name)}&language=${currentLanguage}`
+                    `/api/tag/by-name?name=${encodeURIComponent(name)}&language=${currentLanguage}`
                 );
 
                 if (response.ok) {
                     const data = await response.json();
                     currentIndex = data.index;
-
-                    const tagResponse = await fetch(
-                        `/api/tag/current?index=${currentIndex}&language=${currentLanguage}`
-                    );
-                    const tagData = await tagResponse.json();
-                    currentTagName = tagData.name;
-                    updateUI(tagData);
+                    currentTagName = data.name;
+                    currentFrequency = data.frequency;
+                    updateUI(data);
                 }
             } catch (error) {
                 console.error('跳转到标签失败:', error);
@@ -352,6 +354,7 @@
             document.getElementById('copy-official-btn').disabled = !data.official_translation;
             
             currentTagName = data.name;
+            currentFrequency = data.frequency;
             
             const url = new URL(window.location);
             url.searchParams.set('index', currentIndex);
