@@ -114,6 +114,9 @@ final class UserSetting: Codable {
     /// 是否自动播放动图
     var autoPlayUgoira: Bool = false
 
+    /// 是否显示动图头像
+    var showGifAvatar: Bool = true
+
     /// 复制信息文本格式
     var copyInfoText: String = "title:{title}\npainter:{user_name}\nillust id:{illust_id}"
 
@@ -265,6 +268,7 @@ final class UserSetting: Codable {
         case r18gDisplayMode
         case spoilerDisplayMode
         case autoPlayUgoira
+        case showGifAvatar
         case copyInfoText
         case animContainer
         case nameEval
@@ -341,6 +345,7 @@ final class UserSetting: Codable {
         self.r18gDisplayMode = try container.decodeIfPresent(Int.self, forKey: .r18gDisplayMode) ?? 0
         self.spoilerDisplayMode = try container.decodeIfPresent(Int.self, forKey: .spoilerDisplayMode) ?? 0
         self.autoPlayUgoira = try container.decodeIfPresent(Bool.self, forKey: .autoPlayUgoira) ?? false
+        self.showGifAvatar = try container.decodeIfPresent(Bool.self, forKey: .showGifAvatar) ?? true
         self.copyInfoText = try container.decodeIfPresent(String.self, forKey: .copyInfoText) ?? "title:{title}\npainter:{user_name}\nillust id:{illust_id}"
         self.animContainer = try container.decodeIfPresent(Bool.self, forKey: .animContainer) ?? true
         self.nameEval = try container.decodeIfPresent(String.self, forKey: .nameEval)
@@ -426,6 +431,7 @@ final class UserSetting: Codable {
         try container.encode(r18gDisplayMode, forKey: .r18gDisplayMode)
         try container.encode(spoilerDisplayMode, forKey: .spoilerDisplayMode)
         try container.encode(autoPlayUgoira, forKey: .autoPlayUgoira)
+        try container.encode(showGifAvatar, forKey: .showGifAvatar)
         try container.encode(copyInfoText, forKey: .copyInfoText)
         try container.encode(animContainer, forKey: .animContainer)
         try container.encodeIfPresent(nameEval, forKey: .nameEval)

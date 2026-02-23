@@ -4,6 +4,8 @@ import Kingfisher
 /// A specialized image component for user avatars that supports GIF animations on both iOS and macOS.
 /// It automatically switches between KFImage and KFAnimatedImage based on the file extension.
 public struct AnimatedAvatarImage: View {
+    @Environment(UserSettingStore.self) var userSettingStore
+
     public let urlString: String?
     public let size: CGFloat
     public let placeholder: AnyView?
@@ -36,7 +38,7 @@ public struct AnimatedAvatarImage: View {
     @ViewBuilder
     private var imageContent: some View {
         if let urlString = urlString, let url = URL(string: urlString), !urlString.isEmpty {
-            if isGIF {
+            if isGIF && userSettingStore.userSetting.showGifAvatar {
                 // Use KFAnimatedImage for GIF support (especially on macOS)
                 KFAnimatedImage(url)
                     .requestModifier(PixivImageLoader.shared)
@@ -90,4 +92,5 @@ public struct AnimatedAvatarImage: View {
         )
     }
     .padding()
+    .environment(UserSettingStore.shared)
 }

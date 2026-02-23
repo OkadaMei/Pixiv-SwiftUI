@@ -268,6 +268,11 @@ final class UserSettingStore {
         try saveSetting()
     }
 
+    func setShowGifAvatar(_ show: Bool) throws {
+        userSetting.showGifAvatar = show
+        try saveSetting()
+    }
+
     func setDisableBypassSni(_ disabled: Bool) throws {
         userSetting.disableBypassSni = disabled
         try saveSetting()

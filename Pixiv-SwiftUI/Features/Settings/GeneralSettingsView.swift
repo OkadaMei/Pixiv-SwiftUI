@@ -12,9 +12,9 @@ struct GeneralSettingsView: View {
             imageQualitySection
             layoutSection
             startupSection
+            ugoiraSection
             #if os(macOS)
             macOSSection
-            ugoiraSection
             #endif
             privateLikeSection
             cacheSection
@@ -159,6 +159,7 @@ struct GeneralSettingsView: View {
             Text("macOS 行为")
         }
     }
+    #endif
 
     private var ugoiraSection: some View {
         Section {
@@ -166,13 +167,17 @@ struct GeneralSettingsView: View {
                 get: { userSettingStore.userSetting.autoPlayUgoira },
                 set: { try? userSettingStore.setAutoPlayUgoira($0) }
             ))
+
+            Toggle(String(localized: "显示动图头像"), isOn: Binding(
+                get: { userSettingStore.userSetting.showGifAvatar },
+                set: { try? userSettingStore.setShowGifAvatar($0) }
+            ))
         } header: {
             Text(String(localized: "动图"))
         } footer: {
             Text(String(localized: "开启后自动播放动图（无缓存时会自动下载）"))
         }
     }
-    #endif
 
     private var startupSection: some View {
         Section {
