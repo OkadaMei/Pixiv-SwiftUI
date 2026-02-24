@@ -1,7 +1,7 @@
 import logging
-from typing import List, Dict, Optional
-from .client import NetworkClient
+from typing import Dict, List, Optional
 
+from .client import NetworkClient
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,13 @@ class SearchAPI:
             return []
 
     def search_illust_by_tag(
-        self, word: str, offset: int = 0, limit: int = 30
-    ) -> List[Dict]:
+        self,
+        word: str,
+        offset: int = 0,
+        limit: int = 30,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> Dict:
         """
         按标签搜索插画
 
@@ -50,28 +55,28 @@ class SearchAPI:
             word: 搜索关键词（标签名）
             offset: 偏移量
             limit: 返回数量限制
+            start_date: 开始日期 (YYYY-MM-DD)
+            end_date: 结束日期 (YYYY-MM-DD)
 
         Returns:
-            插画列表，每个插画包含 tags 信息
+            API 响应字典，包含 illusts 和 next_url
         """
         params = {
-            "filter": "for_ios",
-            "merge_plain_keyword_results": "true",
             "word": word,
-            "sort": "date_desc",
             "search_target": "partial_match_for_tags",
+            "sort": "date_desc",
             "offset": str(offset),
-            "limit": str(limit),
         }
+
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
 
         try:
             result = self.client.get("/v1/search/illust", params=params)
-            illusts = result.get("illusts", [])
-            logger.debug(
-                f"Found {len(illusts)} illusts for tag '{word}' (offset={offset})"
-            )
-            return illusts
+            return result
 
         except Exception as e:
             logger.error(f"Failed to search illusts for tag '{word}': {e}")
-            return []
+            return {}

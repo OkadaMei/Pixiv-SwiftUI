@@ -30,7 +30,22 @@ class NetworkClient:
 
     def _generate_fresh_headers(self) -> Dict[str, str]:
         """生成新的请求头（每次请求都重新生成时间戳和哈希）"""
-        current_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        # 使用与 Pixiv-SwiftUI 一致的 ISO8601 格式
+        current_time = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        # 如果时区格式是 +0800，需要转换为 +08:00
+        if (
+            len(current_time) > 10
+            and current_time[-5] in "+-"
+            and current_time[-3] != ":"
+        ):
+            current_time = current_time[:-2] + ":" + current_time[-2:]
+        elif current_time.endswith("0000"):  # 处理 UTC 情况
+            current_time = current_time[:-5] + "Z"
+
+        # 调试：手动尝试生成与 Swift 一致的基础格式
+        from datetime import timezone
+
+        current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # 生成客户端哈希
         hash_string = (
@@ -40,7 +55,7 @@ class NetworkClient:
         client_hash = hashlib.md5(hash_string.encode()).hexdigest()
 
         return {
-            "User-Agent": "PixivIOSApp/6.7.1 (iOS 14.6; iPhone10,3) AppleWebKit/605.1.15",
+            "User-Agent": "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)",
             "X-Client-Time": current_time,
             "X-Client-Hash": client_hash,
             "App-OS": "ios",
