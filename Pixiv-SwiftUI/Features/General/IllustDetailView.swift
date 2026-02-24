@@ -160,8 +160,10 @@ struct IllustDetailView: View {
                             )
                             .padding(.trailing, 16)
                         }
+                        .frame(width: currentLeftWidth)
                     }
                     .frame(width: currentLeftWidth)
+                    .clipped()
 
                     // Draggable Divider
                     Color.clear

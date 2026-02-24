@@ -86,14 +86,15 @@ struct IllustDetailImageSection: View {
                     }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: containerWidth ?? .infinity)
+        .clipped()
     }
 
     private var standardImageSection: some View {
         CachedAsyncImage(
             urlString: ImageURLHelper.getImageURL(from: illust, quality: 2),
             aspectRatio: illust.safeAspectRatio,
-            contentMode: .fill,
+            contentMode: .fit,
             expiration: DefaultCacheExpiration.illustDetail
         )
     }
@@ -135,9 +136,10 @@ struct IllustDetailImageSection: View {
             isHoveringImage = hovering
         }
         #endif
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: containerWidth ?? .infinity)
         .frame(width: containerWidth, height: fixedContainerHeight)
         .aspectRatio(containerWidth == nil ? effectiveAspectRatio : nil, contentMode: .fit)
+        .clipped()
         .onAppear {
             currentAspectRatioValue = illust.safeAspectRatio
             currentAspectRatio?.wrappedValue = illust.safeAspectRatio
@@ -155,7 +157,7 @@ struct IllustDetailImageSection: View {
             urlString: url,
             placeholder: nil,
             aspectRatio: aspectRatioForPage(index),
-            contentMode: .fill,
+            contentMode: .fit,
             onSizeChange: { size in
                 handleSizeChange(size: size, for: index)
             },
