@@ -32,16 +32,16 @@ actor BookmarkCacheService {
     // MARK: - 预取图片
 
     /// 预取作品图片
-    func preloadImages(for illust: Illusts, quality: BookmarkCacheQuality, allPages: Bool) async {
+    func preloadImages(for illust: Illusts, quality: BookmarkCacheQuality, allPages: Bool) async throws {
         let urls = getImageURLs(for: illust, quality: quality, allPages: allPages)
 
         for urlString in urls {
-            await preloadSingleImage(urlString: urlString)
+            try await preloadSingleImage(urlString: urlString)
         }
     }
 
     /// 预取单张图片
-    private func preloadSingleImage(urlString: String) async {
+    private func preloadSingleImage(urlString: String) async throws {
         guard let url = URL(string: urlString) else { return }
 
         let resource = KF.ImageResource(downloadURL: url)
@@ -63,9 +63,16 @@ actor BookmarkCacheService {
             .requestModifier(PixivImageRequestModifier())
         ]
 
+        let source: Source
+        if await shouldUseDirectConnection(url: url) {
+            source = await MainActor.run { .directNetwork(url) }
+        } else {
+            source = .network(resource)
+        }
+
         do {
             _ = try await KingfisherManager.shared.retrieveImage(
-                with: .network(resource),
+                with: source,
                 options: options
             )
             #if DEBUG
@@ -75,7 +82,15 @@ actor BookmarkCacheService {
             #if DEBUG
             print("[BookmarkCacheService] 预取失败: \(error.localizedDescription)")
             #endif
+            throw error
         }
+    }
+
+    private func shouldUseDirectConnection(url: URL) async -> Bool {
+        guard let host = url.host else { return false }
+        let useDirect = await MainActor.run { NetworkModeStore.shared.useDirectConnection }
+        return useDirect &&
+               (host.contains("i.pximg.net") || host.contains("img-master.pixiv.net"))
     }
 
     /// 获取作品的图片URL列表

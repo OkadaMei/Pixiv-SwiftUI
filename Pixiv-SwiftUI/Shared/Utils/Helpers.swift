@@ -19,6 +19,7 @@ public struct CachedAsyncImage: View {
     public var contentMode: SwiftUI.ContentMode
     public var idealWidth: CGFloat?
     public var expiration: CacheExpiration
+    public var targetCache: ImageCache?
 
     public init(
         urlString: String?,
@@ -26,7 +27,8 @@ public struct CachedAsyncImage: View {
         aspectRatio: CGFloat? = nil,
         contentMode: SwiftUI.ContentMode = .fill,
         idealWidth: CGFloat? = nil,
-        expiration: CacheExpiration? = nil
+        expiration: CacheExpiration? = nil,
+        targetCache: ImageCache? = nil
     ) {
         self.urlString = urlString
         self.placeholder = placeholder
@@ -34,6 +36,7 @@ public struct CachedAsyncImage: View {
         self.contentMode = contentMode
         self.idealWidth = idealWidth
         self.expiration = expiration ?? .days(7)
+        self.targetCache = targetCache
     }
 
     @State private var isLoaded = false
@@ -63,11 +66,16 @@ public struct CachedAsyncImage: View {
     }
 
     private func buildKFImage(url: URL) -> KFImage {
+        var image: KFImage
         if shouldUseDirectConnection(url: url) {
-            return KFImage.source(.directNetwork(url))
+            image = KFImage.source(.directNetwork(url))
         } else {
-            return KFImage.source(.network(url))
+            image = KFImage.source(.network(url))
         }
+        if let targetCache = targetCache {
+            image = image.targetCache(targetCache)
+        }
+        return image
     }
 
     private func shouldUseDirectConnection(url: URL) -> Bool {

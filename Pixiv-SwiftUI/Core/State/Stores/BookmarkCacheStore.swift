@@ -354,19 +354,30 @@ final class BookmarkCacheStore {
                 let allPages = settings.bookmarkCacheAllPages
 
                 for (index, illust) in allIllusts.enumerated() {
-                    await BookmarkCacheService.shared.preloadImages(
-                        for: illust,
-                        quality: quality,
-                        allPages: allPages
-                    )
+                    do {
+                        try await BookmarkCacheService.shared.preloadImages(
+                            for: illust,
+                            quality: quality,
+                            allPages: allPages
+                        )
 
-                    updatePreloadStatus(
-                        illustId: illust.id,
-                        ownerId: ownerId,
-                        preloaded: true,
-                        quality: quality,
-                        allPages: allPages
-                    )
+                        updatePreloadStatus(
+                            illustId: illust.id,
+                            ownerId: ownerId,
+                            preloaded: true,
+                            quality: quality,
+                            allPages: allPages
+                        )
+                    } catch {
+                        Logger.bookmark.error("预取图片失败: \(illust.id) - \(error)")
+                        updatePreloadStatus(
+                            illustId: illust.id,
+                            ownerId: ownerId,
+                            preloaded: false,
+                            quality: quality,
+                            allPages: allPages
+                        )
+                    }
 
                     await MainActor.run {
                         syncState = .preloading(current: index + 1, total: allIllusts.count)

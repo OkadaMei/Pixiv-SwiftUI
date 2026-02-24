@@ -71,14 +71,34 @@ struct BookmarkCard: View {
         return illust.type == "manga"
     }
 
+    private var displayImageURL: String? {
+        if case .cached(let quality) = cacheStatus {
+            switch quality {
+            case .original:
+                return illust.metaSinglePage?.originalImageUrl ?? illust.imageUrls.large
+            case .large:
+                return illust.imageUrls.large
+            case .medium:
+                return illust.imageUrls.medium
+            }
+        }
+        return ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .topTrailing) {
                 CachedAsyncImage(
-                    urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+                    urlString: displayImageURL,
                     aspectRatio: illust.safeAspectRatio,
                     idealWidth: columnWidth,
-                    expiration: expiration
+                    expiration: expiration,
+                    targetCache: {
+                        if case .cached = cacheStatus {
+                            return BookmarkCacheService.shared.getCache()
+                        }
+                        return nil
+                    }()
                 )
                 .clipped()
                 .blur(radius: shouldBlur ? 20 : 0)
@@ -298,19 +318,23 @@ struct BookmarkCard: View {
                             let settings = UserSettingStore.shared.userSetting
                             let quality = BookmarkCacheQuality(rawValue: settings.bookmarkCacheQuality) ?? .large
                             let allPages = settings.bookmarkCacheAllPages
-                            await BookmarkCacheService.shared.preloadImages(
-                                for: illust,
-                                quality: quality,
-                                allPages: allPages
-                            )
-                            await MainActor.run {
-                                BookmarkCacheStore.shared.updatePreloadStatus(
-                                    illustId: illustId,
-                                    ownerId: AccountStore.shared.currentUserId,
-                                    preloaded: true,
+                            do {
+                                try await BookmarkCacheService.shared.preloadImages(
+                                    for: illust,
                                     quality: quality,
                                     allPages: allPages
                                 )
+                                await MainActor.run {
+                                    BookmarkCacheStore.shared.updatePreloadStatus(
+                                        illustId: illustId,
+                                        ownerId: AccountStore.shared.currentUserId,
+                                        preloaded: true,
+                                        quality: quality,
+                                        allPages: allPages
+                                    )
+                                }
+                            } catch {
+                                print("预取图片失败: \(error)")
                             }
                         }
                     }
@@ -327,19 +351,23 @@ struct BookmarkCard: View {
                             let settings = UserSettingStore.shared.userSetting
                             let quality = BookmarkCacheQuality(rawValue: settings.bookmarkCacheQuality) ?? .large
                             let allPages = settings.bookmarkCacheAllPages
-                            await BookmarkCacheService.shared.preloadImages(
-                                for: illust,
-                                quality: quality,
-                                allPages: allPages
-                            )
-                            await MainActor.run {
-                                BookmarkCacheStore.shared.updatePreloadStatus(
-                                    illustId: illustId,
-                                    ownerId: AccountStore.shared.currentUserId,
-                                    preloaded: true,
+                            do {
+                                try await BookmarkCacheService.shared.preloadImages(
+                                    for: illust,
                                     quality: quality,
                                     allPages: allPages
                                 )
+                                await MainActor.run {
+                                    BookmarkCacheStore.shared.updatePreloadStatus(
+                                        illustId: illustId,
+                                        ownerId: AccountStore.shared.currentUserId,
+                                        preloaded: true,
+                                        quality: quality,
+                                        allPages: allPages
+                                    )
+                                }
+                            } catch {
+                                print("预取图片失败: \(error)")
                             }
                         }
                     }

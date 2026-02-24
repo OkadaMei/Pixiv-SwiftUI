@@ -262,7 +262,7 @@ struct RelatedIllustCard: View {
                             let settings = UserSettingStore.shared.userSetting
                             let quality = BookmarkCacheQuality(rawValue: settings.bookmarkCacheQuality) ?? .large
                             let allPages = settings.bookmarkCacheAllPages
-                            await BookmarkCacheService.shared.preloadImages(
+                            try? await BookmarkCacheService.shared.preloadImages(
                                 for: illust,
                                 quality: quality,
                                 allPages: allPages
