@@ -18,6 +18,7 @@ struct ImageViewerWindowContent: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
     @State private var isHoveringTop = false
+    @State private var eventMonitor: Any?
 
     init(illust: Illusts? = nil, imageURLs: [String], aspectRatios: [CGFloat], initialPage: Int, title: String, onClose: @escaping () -> Void) {
         self.illust = illust
@@ -85,6 +86,12 @@ struct ImageViewerWindowContent: View {
         .onAppear {
             setupEvents()
         }
+        .onDisappear {
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+                eventMonitor = nil
+            }
+        }
         .gesture(
             MagnificationGesture()
                 .onChanged { value in
@@ -109,20 +116,22 @@ struct ImageViewerWindowContent: View {
     }
 
     private func setupEvents() {
-        NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel]) { event in
-            // Only handle if this window is key for better safety
-            // guard event.window == NSApp.keyWindow else { return event }
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel]) { [weak NSApp] event in
+            // IMPORTANT: Only handle events for the window containing this view.
+            guard let window = event.window,
+                  let currentWindow = NSApp?.keyWindow,
+                  window == currentWindow else { return event }
 
             if event.type == .scrollWheel {
-                let isTrackpad = event.hasPreciseScrollingDeltas
                 let hasModifier = event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option)
 
-                // Zoom if modifier is held OR if it's a traditional mouse wheel (not trackpad)
-                if hasModifier || !isTrackpad {
+                // Only zoom if modifier is held.
+                // This avoids conflict with ScrollView panning and prevents accidental zoom leaks.
+                if hasModifier {
                     let delta = event.scrollingDeltaY
                     if abs(delta) > 0 {
-                        // Mouse wheels usually need higher sensitivity than trackpad scrolls for zooming
-                        let multiplier: CGFloat = isTrackpad ? 0.02 : 0.08
+                        let isTrackpad = event.hasPreciseScrollingDeltas
+                        let multiplier: CGFloat = isTrackpad ? 0.02 : 0.05
                         let zoomFactor = 1.0 + (delta * multiplier)
                         let newScale = scale * zoomFactor
                         scale = min(max(newScale, 1.0), 5.0)
