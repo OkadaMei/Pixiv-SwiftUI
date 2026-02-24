@@ -11,8 +11,12 @@ final class TagTranslationService {
     private(set) var timestamp: String = ""
     private(set) var isLoaded: Bool = false
 
-    /// 元标签正则表达式，匹配 "前缀+数字+users入り" 格式
-    private let metaTagRegex = try? NSRegularExpression(pattern: "^(.*?)(\\d+)users入り$", options: [])
+    /// 元标签正则表达式：匹配 "前缀+数字+users入り" 格式
+    private let usersInRegex = try? NSRegularExpression(pattern: "^(.*?)(\\d+)users入り$", options: [])
+    /// 元标签正则表达式：匹配 "前缀+生誕祭" 或 "前缀+誕生祭"
+    private let birthdayRegex = try? NSRegularExpression(pattern: "^(.*?)(?:生誕|誕生)祭$", options: [])
+    /// 元标签正则表达式：匹配 "前缀+生誕祭/誕生祭+数字"
+    private let birthdayNumberRegex = try? NSRegularExpression(pattern: "^(.*?)(?:生誕|誕生)祭(\\d+)$", options: [])
 
     private init() {
         loadTranslations()
@@ -44,30 +48,48 @@ final class TagTranslationService {
         return translations[tagName]
     }
 
-    /// 处理元标签（如 xxx100users入り）
+    /// 处理元标签（如 xxx100users入り、xxx生誕祭）
     /// - Parameter tagName: 标签名称
     /// - Returns: 优化后的翻译，如果不是元标签格式则返回 nil
     private func getMetaTagTranslation(for tagName: String) -> String? {
-        guard let regex = metaTagRegex else { return nil }
-
         let range = NSRange(tagName.startIndex..., in: tagName)
-        guard let match = regex.firstMatch(in: tagName, options: [], range: range) else {
-            return nil
+
+        // 1. 匹配 xxx生誕祭[数字] / xxx誕生祭[数字]
+        if let regex = birthdayNumberRegex,
+           let match = regex.firstMatch(in: tagName, options: [], range: range),
+           let prefixRange = Range(match.range(at: 1), in: tagName),
+           let numberRange = Range(match.range(at: 2), in: tagName) {
+            let prefix = String(tagName[prefixRange])
+            let number = String(tagName[numberRange])
+            if !prefix.isEmpty {
+                let prefixTranslation = getTranslation(for: prefix) ?? prefix
+                return "\(prefixTranslation)\(number)生日"
+            }
         }
 
-        guard let prefixRange = Range(match.range(at: 1), in: tagName),
-              let numberRange = Range(match.range(at: 2), in: tagName) else {
-            return nil
+        // 2. 匹配 xxx生誕祭 / xxx誕生祭
+        if let regex = birthdayRegex,
+           let match = regex.firstMatch(in: tagName, options: [], range: range),
+           let prefixRange = Range(match.range(at: 1), in: tagName) {
+            let prefix = String(tagName[prefixRange])
+            if !prefix.isEmpty {
+                let prefixTranslation = getTranslation(for: prefix) ?? prefix
+                return "\(prefixTranslation)生日"
+            }
         }
 
-        let prefix = String(tagName[prefixRange])
-        let number = String(tagName[numberRange])
+        // 3. 匹配 xxx[数字]users入り
+        if let regex = usersInRegex,
+           let match = regex.firstMatch(in: tagName, options: [], range: range),
+           let prefixRange = Range(match.range(at: 1), in: tagName),
+           let numberRange = Range(match.range(at: 2), in: tagName) {
+            let prefix = String(tagName[prefixRange])
+            let number = String(tagName[numberRange])
+            let prefixTranslation = prefix.isEmpty ? "" : (getTranslation(for: prefix) ?? prefix)
+            return "\(prefixTranslation)\(number)用户收藏"
+        }
 
-        guard !prefix.isEmpty else { return nil }
-
-        let prefixTranslation = getTranslation(for: prefix) ?? prefix
-
-        return "\(prefixTranslation)\(number)用户收藏"
+        return nil
     }
 
     /// 获取显示的翻译（优先本地，其次官方）
