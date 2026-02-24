@@ -177,7 +177,7 @@ struct BrowseHistoryView: View {
     }
 
     private var illustGrid: some View {
-        LazyVStack(spacing: 12) {
+        VStack(spacing: 12) {
             WaterfallGrid(data: illusts, columnCount: dynamicColumnCount, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                 NavigationLink(value: illust) {
                     BrowseHistoryCard(illust: illust, columnWidth: columnWidth)
@@ -188,14 +188,16 @@ struct BrowseHistoryView: View {
             .padding(.vertical, 8)
 
             if loadedCount < allHistoryIds.count {
-                ProgressView()
-                    #if os(macOS)
-                    .controlSize(.small)
-                    #endif
-                    .padding()
-                    .onAppear {
-                        Task { await loadMore() }
-                    }
+                LazyVStack {
+                    ProgressView()
+                        #if os(macOS)
+                        .controlSize(.small)
+                        #endif
+                        .padding()
+                        .onAppear {
+                            Task { await loadMore() }
+                        }
+                }
             } else if !illusts.isEmpty {
                 Text(String(localized: "已经到底了"))
                     .font(.caption)

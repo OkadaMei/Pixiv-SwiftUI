@@ -49,7 +49,7 @@ struct UpdatesPage: View {
                     })
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        VStack(spacing: 0) {
                             FollowingHorizontalList(store: store, path: $path)
                                 .padding(.vertical, 8)
 
@@ -85,17 +85,19 @@ struct UpdatesPage: View {
                                 .padding(.horizontal, 12)
 
                                 if store.nextUrlUpdates != nil {
-                                    ProgressView()
-                                        #if os(macOS)
-                                        .controlSize(.small)
-                                        #endif
-                                        .padding()
-                                        .id(store.nextUrlUpdates)
-                                        .onAppear {
-                                            Task {
-                                                await store.loadMoreUpdates()
+                                    LazyVStack {
+                                        ProgressView()
+                                            #if os(macOS)
+                                            .controlSize(.small)
+                                            #endif
+                                            .padding()
+                                            .id(store.nextUrlUpdates)
+                                            .onAppear {
+                                                Task {
+                                                    await store.loadMoreUpdates()
+                                                }
                                             }
-                                        }
+                                    }
                                 } else if !filteredUpdates.isEmpty {
                                     Text(String(localized: "已经到底了"))
                                         .font(.caption)

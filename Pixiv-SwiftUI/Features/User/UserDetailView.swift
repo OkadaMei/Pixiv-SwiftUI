@@ -561,7 +561,7 @@ struct IllustWaterfallView: View {
             .frame(maxWidth: .infinity, minHeight: 200)
             .padding()
         } else {
-            LazyVStack(spacing: 12) {
+            VStack(spacing: 12) {
                 WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: width.map { $0 - 24 }, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                     NavigationLink(value: illust) {
                         IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth)
@@ -570,14 +570,16 @@ struct IllustWaterfallView: View {
                 }
 
                 if !hasReachedEnd {
-                    ProgressView()
-                        #if os(macOS)
-                        .controlSize(.small)
-                        #endif
-                        .padding()
-                        .onAppear {
-                            onLoadMore()
-                        }
+                    LazyVStack {
+                        ProgressView()
+                            #if os(macOS)
+                            .controlSize(.small)
+                            #endif
+                            .padding()
+                            .onAppear {
+                                onLoadMore()
+                            }
+                    }
                 } else {
                     Text(String(localized: "已经到底了"))
                         .font(.caption)

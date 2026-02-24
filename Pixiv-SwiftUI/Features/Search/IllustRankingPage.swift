@@ -54,7 +54,7 @@ struct IllustRankingPage: View {
     var body: some View {
         GeometryReader { _ in
             ScrollView {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     Picker(String(localized: "排行类别"), selection: $selectedMode) {
                         ForEach(rankingTypes) { type in
                             Text(type.title)
@@ -90,17 +90,19 @@ struct IllustRankingPage: View {
                         .padding(.horizontal, 12)
 
                         if hasMoreData {
-                            ProgressView()
-                                #if os(macOS)
-                                .controlSize(.small)
-                                #endif
-                                .padding()
-                                .id(nextUrl)
-                                .onAppear {
-                                    Task {
-                                        await store.loadMoreRanking(mode: selectedMode)
+                            LazyVStack {
+                                ProgressView()
+                                    #if os(macOS)
+                                    .controlSize(.small)
+                                    #endif
+                                    .padding()
+                                    .id(nextUrl)
+                                    .onAppear {
+                                        Task {
+                                            await store.loadMoreRanking(mode: selectedMode)
+                                        }
                                     }
-                                }
+                            }
                         } else if !filteredIllusts.isEmpty {
                             Text(String(localized: "已经到底了"))
                                 .font(.caption)

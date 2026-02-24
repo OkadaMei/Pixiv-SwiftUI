@@ -125,15 +125,17 @@ struct RecommendView: View {
                     .padding(.horizontal, 12)
 
                     if hasMoreData && !isLoading {
-                        ProgressView()
-                            #if os(macOS)
-                            .controlSize(.small)
-                            #endif
-                            .padding()
-                            .id(nextUrl)
-                            .onAppear {
-                                loadMoreData()
-                            }
+                        LazyVStack {
+                            ProgressView()
+                                #if os(macOS)
+                                .controlSize(.small)
+                                #endif
+                                .padding()
+                                .id(nextUrl)
+                                .onAppear {
+                                    loadMoreData()
+                                }
+                        }
                     } else if !filteredIllusts.isEmpty {
                         Text(String(localized: "已经到底了"))
                             .font(.caption)

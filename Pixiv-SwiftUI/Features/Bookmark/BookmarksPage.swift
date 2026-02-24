@@ -104,7 +104,7 @@ struct BookmarksPage: View {
         GeometryReader { proxy in
             ZStack(alignment: .top) {
 ScrollView {
-                        LazyVStack(spacing: 12) {
+                        VStack(spacing: 12) {
                             if store.isLoadingBookmarks && store.bookmarks.isEmpty {
                             SkeletonIllustWaterfallGrid(
                                 columnCount: dynamicColumnCount,
@@ -139,14 +139,16 @@ ScrollView {
                             }
 
                             if store.nextUrlBookmarks != nil {
-                                ProgressView()
-                                    .padding()
-                                    .id(store.nextUrlBookmarks)
-                                    .onAppear {
-                                        Task {
-                                            await store.loadMoreBookmarks()
+                                LazyVStack {
+                                    ProgressView()
+                                        .padding()
+                                        .id(store.nextUrlBookmarks)
+                                        .onAppear {
+                                            Task {
+                                                await store.loadMoreBookmarks()
+                                            }
                                         }
-                                    }
+                                }
                             } else if !displayItems.isEmpty {
                                 Text(String(localized: "已经到底了"))
                                     .font(.caption)
