@@ -23,7 +23,7 @@ struct WaterfallGrid<Data, Content>: View where Data: RandomAccessCollection, Da
         if let width = width {
             _containerWidth = State(initialValue: width)
         }
-        
+
         // 尝试初始化时同步计算一次，避免 onAppear 时的闪烁
         let initialColumns = Self.calculateColumnsSynchronously(
             data: data,

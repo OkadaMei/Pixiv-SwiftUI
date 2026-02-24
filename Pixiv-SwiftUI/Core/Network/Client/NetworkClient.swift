@@ -170,7 +170,7 @@ final class NetworkClient {
         }
 
         let endpoint = endpointForHost(host)
-        
+
         let path = url.path(percentEncoded: true).isEmpty ? "/" : url.path(percentEncoded: true)
         let query = url.query(percentEncoded: true).map { "?\($0)" } ?? ""
         let fullPath = path + query

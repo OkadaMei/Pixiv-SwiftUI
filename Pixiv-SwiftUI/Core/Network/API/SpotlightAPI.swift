@@ -209,14 +209,14 @@ final class SpotlightAPI {
             return SpotlightArticleDetail(description: "", works: [], rankingArticles: [], recommendedArticles: [])
         }
 
-        var nodes = try amBody.children()
+        var nodes = amBody.children()
         var description = ""
 
         if let firstClass = try nodes.first()?.attr("class"), firstClass.contains("_feature") {
             if let featureContainer = nodes.first() {
                 description = try extractFeatureDescription(from: featureContainer)
             }
-            nodes = try nodes.first()?.children() ?? nodes
+            nodes = nodes.first()?.children() ?? nodes
         } else {
             if let header = try article.getElementsByClass("am__header").first() {
                 description = try extractDescription(from: header)

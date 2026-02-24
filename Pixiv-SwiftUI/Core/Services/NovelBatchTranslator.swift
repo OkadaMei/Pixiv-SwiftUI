@@ -56,7 +56,7 @@ actor NovelBatchTranslator {
         baseSystemPrompt: String? = nil
     ) async throws -> [Int: String] {
         let stylePrompt = baseSystemPrompt ?? "You are a professional literary translator for Pixiv Japanese novels. Ensure the translation is fluent and natural, maintaining the original meaning and style."
-        
+
         let systemPrompt = """
         \(stylePrompt)
         Translate all `items[*].text` into {targetLang}.

@@ -83,15 +83,15 @@ struct EPUBGenerator {
         // 必须先添加 mimetype (未压缩)
         let mimetypeURL = directory.appendingPathComponent("mimetype")
         if let mimetypeData = try? Data(contentsOf: mimetypeURL) {
-            let count = UInt32(mimetypeData.count)
+            let count = Int64(mimetypeData.count)
             try archive.addEntry(
                 with: "mimetype",
                 type: .file,
                 uncompressedSize: count,
                 compressionMethod: .none
-            ) { position, size -> Data in
+            ) { (position: Int64, size: Int) -> Data in
                 let start = Int(position)
-                let end = Int(position) + Int(size)
+                let end = Int(position) + size
                 return mimetypeData.subdata(in: start..<end)
             }
         }
@@ -110,16 +110,16 @@ struct EPUBGenerator {
             guard !isDirectory else { continue }
 
             let data = try Data(contentsOf: fileURL)
-            let count = UInt32(data.count)
+            let count = Int64(data.count)
 
             try archive.addEntry(
                 with: relativePath,
                 type: .file,
                 uncompressedSize: count,
                 compressionMethod: .deflate
-            ) { position, size -> Data in
+            ) { (position: Int64, size: Int) -> Data in
                 let start = Int(position)
-                let end = Int(position) + Int(size)
+                let end = Int(position) + size
                 return data.subdata(in: start..<end)
             }
         }
