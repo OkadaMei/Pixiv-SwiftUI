@@ -5,7 +5,7 @@ import Gzip
 
 /// 直连网络连接健康度评分管理
 @available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
-enum DirectConnectionError: Error, LocalizedError {
+enum DirectConnectionError: Error, LocalizedError, Equatable {
     case timeout
     case cancelled
     case emptyResponse
@@ -81,6 +81,8 @@ final class DirectConnection: @unchecked Sendable {
             }
         }
 
+        try Task.checkCancellation()
+
         let host = endpoint.host
         let rawIPs = await endpoint.getIPList()
         // 根据健康度对 IP 进行排序
@@ -90,6 +92,7 @@ final class DirectConnection: @unchecked Sendable {
 
         var lastError: Error?
         for ip in ips {
+            try Task.checkCancellation()
             do {
                 print("[DirectConnection] 正在尝试 IP: \(ip)")
                 let result = try await performRequest(
@@ -108,6 +111,10 @@ final class DirectConnection: @unchecked Sendable {
                 print("[DirectConnection] IP \(ip) 请求成功")
                 return result
             } catch {
+                if error is CancellationError || (error as? DirectConnectionError) == .cancelled {
+                    throw error
+                }
+
                 print("[DirectConnection] IP \(ip) 失败，错误: \(error.localizedDescription)")
                 // 失败则降级
                 await health.reportFailure(ip: ip)
@@ -180,135 +187,139 @@ final class DirectConnection: @unchecked Sendable {
 
         let responseBuffer = ResponseBuffer()
 
-        return try await withCheckedThrowingContinuation { continuation in
-            let timeoutTimer = DispatchSource.makeTimerSource(queue: .global())
-            timeoutTimer.schedule(deadline: .now() + timeout)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let timeoutTimer = DispatchSource.makeTimerSource(queue: .global())
+                timeoutTimer.schedule(deadline: .now() + timeout)
 
-            let isFinished = AtomicBool(false)
-            let finishLock = NSLock()
+                let isFinished = AtomicBool(false)
+                let finishLock = NSLock()
 
-            @Sendable func finish(with result: Result<(Data, HTTPURLResponse), Error>) {
-                if isFinished.compareAndSwap(expected: false, desired: true) {
-                    finishLock.lock()
-                    timeoutTimer.cancel()
+                @Sendable func finish(with result: Result<(Data, HTTPURLResponse), Error>) {
+                    if isFinished.compareAndSwap(expected: false, desired: true) {
+                        finishLock.lock()
+                        timeoutTimer.cancel()
 
-                    // 彻底断开连接，避免复用带来的 POSIX 96 错误
-                    connection.stateUpdateHandler = nil
-                    connection.cancel()
+                        // 彻底断开连接，避免复用带来的 POSIX 96 错误
+                        connection.stateUpdateHandler = nil
+                        connection.cancel()
 
-                    continuation.resume(with: result)
-                    finishLock.unlock()
-                }
-            }
-
-            timeoutTimer.setEventHandler {
-                print("[DirectConnection] \(ip) 请求超时")
-                finish(with: .failure(DirectConnectionError.timeout))
-            }
-            timeoutTimer.resume()
-
-            @Sendable func sendRequest() {
-                var request = "\(method) \(path) HTTP/1.1\r\n"
-                request += "Host: \(host)\r\n"
-
-                var allHeaders = headers
-                if allHeaders["User-Agent"] == nil {
-                    allHeaders["User-Agent"] = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone12,1)"
-                }
-
-                if allHeaders["Accept-Encoding"] == nil {
-                    allHeaders["Accept-Encoding"] = "gzip"
-                }
-
-                // 暂时禁用 Keep-Alive 以保证稳定性
-                allHeaders["Connection"] = "close"
-
-                if allHeaders["Referer"] == nil && (host.contains("pixiv") || host.contains("pximg")) {
-                    allHeaders["Referer"] = "https://www.pixiv.net/"
-                }
-
-                let bodyLength = body?.count ?? 0
-                request += "Content-Length: \(bodyLength)\r\n"
-
-                let excludedHeaders = ["Host", "Content-Length", "Connection"]
-                for (key, value) in allHeaders where !excludedHeaders.contains(key) {
-                    request += "\(key): \(value)\r\n"
-                }
-                request += "Connection: close\r\n\r\n"
-
-                var requestData = Data(request.utf8)
-                if let body = body {
-                    requestData.append(body)
-                }
-
-                connection.send(content: requestData, completion: .contentProcessed { sendError in
-                    if let error = sendError {
-                        print("[DirectConnection] \(ip) 发送失败: \(error)")
-                        finish(with: .failure(error))
+                        continuation.resume(with: result)
+                        finishLock.unlock()
                     }
-                })
-            }
-
-            connection.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    sendRequest()
-                case .failed(let error):
-                    finish(with: .failure(error))
-                case .cancelled:
-                    if !isFinished.isTrue {
-                        finish(with: .failure(DirectConnectionError.cancelled))
-                    }
-                default:
-                    break
                 }
-            }
 
-            @Sendable func receiveNext() {
-                connection.receive(minimumIncompleteLength: 1, maximumLength: 1024 * 512) { data, _, isComplete, error in
-                    if let data = data, !data.isEmpty {
-                        Task {
-                            await responseBuffer.append(data)
-                            let progress = await responseBuffer.progress
-                            await MainActor.run {
-                                onProgress?(progress.received, progress.total)
-                            }
+                timeoutTimer.setEventHandler {
+                    print("[DirectConnection] \(ip) 请求超时")
+                    finish(with: .failure(DirectConnectionError.timeout))
+                }
+                timeoutTimer.resume()
+
+                @Sendable func sendRequest() {
+                    var request = "\(method) \(path) HTTP/1.1\r\n"
+                    request += "Host: \(host)\r\n"
+
+                    var allHeaders = headers
+                    if allHeaders["User-Agent"] == nil {
+                        allHeaders["User-Agent"] = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone12,1)"
+                    }
+
+                    if allHeaders["Accept-Encoding"] == nil {
+                        allHeaders["Accept-Encoding"] = "gzip"
+                    }
+
+                    // 暂时禁用 Keep-Alive 以保证稳定性
+                    allHeaders["Connection"] = "close"
+
+                    if allHeaders["Referer"] == nil && (host.contains("pixiv") || host.contains("pximg")) {
+                        allHeaders["Referer"] = "https://www.pixiv.net/"
+                    }
+
+                    let bodyLength = body?.count ?? 0
+                    request += "Content-Length: \(bodyLength)\r\n"
+
+                    let excludedHeaders = ["Host", "Content-Length", "Connection"]
+                    for (key, value) in allHeaders where !excludedHeaders.contains(key) {
+                        request += "\(key): \(value)\r\n"
+                    }
+                    request += "Connection: close\r\n\r\n"
+
+                    var requestData = Data(request.utf8)
+                    if let body = body {
+                        requestData.append(body)
+                    }
+
+                    connection.send(content: requestData, completion: .contentProcessed { sendError in
+                        if let error = sendError {
+                            print("[DirectConnection] \(ip) 发送失败: \(error)")
+                            finish(with: .failure(error))
                         }
-                    }
+                    })
+                }
 
-                    if let error = error {
-                        print("[DirectConnection] \(ip) 接收错误: \(error)")
+                connection.stateUpdateHandler = { state in
+                    switch state {
+                    case .ready:
+                        sendRequest()
+                    case .failed(let error):
                         finish(with: .failure(error))
-                        return
+                    case .cancelled:
+                        if !isFinished.isTrue {
+                            finish(with: .failure(DirectConnectionError.cancelled))
+                        }
+                    default:
+                        break
                     }
+                }
 
-                    if isComplete {
-                        Task {
-                            if isFinished.isTrue { return }
-                            // 在 isComplete 时，我们要确保之前的 append Task 已经完成。
-                            let fullData = await responseBuffer.data
-                            if !fullData.isEmpty {
-                                do {
-                                    let (body, response) = try self.parseHTTPResponse(data: fullData, host: host)
-                                    finish(with: .success((body, response)))
-                                } catch {
-                                    finish(with: .failure(error))
+                @Sendable func receiveNext() {
+                    connection.receive(minimumIncompleteLength: 1, maximumLength: 1024 * 512) { data, _, isComplete, error in
+                        if let data = data, !data.isEmpty {
+                            Task {
+                                await responseBuffer.append(data)
+                                let progress = await responseBuffer.progress
+                                await MainActor.run {
+                                    onProgress?(progress.received, progress.total)
                                 }
-                            } else {
-                                finish(with: .failure(DirectConnectionError.emptyResponse))
                             }
                         }
-                        return
-                    }
 
-                    if !isFinished.isTrue {
-                        receiveNext()
+                        if let error = error {
+                            print("[DirectConnection] \(ip) 接收错误: \(error)")
+                            finish(with: .failure(error))
+                            return
+                        }
+
+                        if isComplete {
+                            Task {
+                                if isFinished.isTrue { return }
+                                // 在 isComplete 时，我们要确保之前的 append Task 已经完成。
+                                let fullData = await responseBuffer.data
+                                if !fullData.isEmpty {
+                                    do {
+                                        let (body, response) = try self.parseHTTPResponse(data: fullData, host: host)
+                                        finish(with: .success((body, response)))
+                                    } catch {
+                                        finish(with: .failure(error))
+                                    }
+                                } else {
+                                    finish(with: .failure(DirectConnectionError.emptyResponse))
+                                }
+                            }
+                            return
+                        }
+
+                        if !isFinished.isTrue {
+                            receiveNext()
+                        }
                     }
                 }
-            }
 
-            receiveNext()
-            connection.start(queue: .global())
+                receiveNext()
+                connection.start(queue: .global())
+            }
+        } onCancel: {
+            connection.cancel()
         }
     }
 

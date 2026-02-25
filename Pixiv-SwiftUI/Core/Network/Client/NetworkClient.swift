@@ -282,13 +282,14 @@ final class NetworkClient {
             request.setValue(value, forHTTPHeaderField: key)
         }
 
-        // 使用 Task.detached 避免阻塞主线程
-        let (data, response) = try await Task.detached {
-            try await self.session.data(for: request)
-        }.value
+        let (data, response) = try await self.session.data(for: request)
+
+        try Task.checkCancellation()
 
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".tmp")
         try data.write(to: tempURL)
+
+        try Task.checkCancellation()
 
         // 简单模拟进度，因为 data(for:) 不支持进度回调
         onProgress?(1.0)
@@ -328,8 +329,12 @@ final class NetworkClient {
             }
         )
 
+        try Task.checkCancellation()
+
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".tmp")
         try data.write(to: tempURL)
+
+        try Task.checkCancellation()
 
         onProgress?(1.0)
 

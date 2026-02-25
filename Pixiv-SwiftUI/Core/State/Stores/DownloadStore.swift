@@ -397,7 +397,7 @@ final class DownloadStore: ObservableObject {
             // 如果还没准备好（没有缓存），则开始下载
             if !ugoiraStore.isReady {
                 Logger.download.debug("动图未准备好，开始下载: \(task.illustId, privacy: .public)")
-                await ugoiraStore.startDownload()
+                ugoiraStore.startDownload()
             }
 
             // 等待动图准备完成

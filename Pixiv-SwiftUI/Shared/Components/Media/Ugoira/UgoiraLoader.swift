@@ -48,6 +48,9 @@ struct UgoiraLoader: View {
         .task {
             await store.loadIfNeeded()
         }
+        .onDisappear {
+            store.cancelDownload()
+        }
     }
 
     @ViewBuilder
@@ -134,7 +137,7 @@ struct UgoiraLoader: View {
             }
 
         case .error:
-            Button(action: { Task { await store.startDownload() } }) {
+            Button(action: { store.startDownload() }) {
                 Image(systemName: "arrow.clockwise")
                     .font(.caption)
                     .foregroundColor(.white)
@@ -148,7 +151,7 @@ struct UgoiraLoader: View {
     }
 
     private var playButton: some View {
-        Button(action: { Task { await handlePlayAction() } }) {
+        Button(action: { handlePlayAction() }) {
             Image(systemName: "play.fill")
                 .font(.title2)
                 .foregroundColor(.white)
@@ -160,10 +163,10 @@ struct UgoiraLoader: View {
         .padding(12)
     }
 
-    private func handlePlayAction() async {
+    private func handlePlayAction() {
         showPlayer = true
         if !store.isReady {
-            await store.startDownload()
+            store.startDownload()
         }
     }
 }

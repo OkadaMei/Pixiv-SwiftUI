@@ -42,6 +42,7 @@ struct GIFExporter {
         var failedFrames = 0
 
         for (index, url) in frameURLs.enumerated() {
+            try Task.checkCancellation()
             do {
                 let imageData = try getImageData(from: url)
                 guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else {
@@ -84,6 +85,7 @@ struct GIFExporter {
         CGImageDestinationSetProperties(destination, gifProperties as CFDictionary)
 
         for (cgImage, delay) in processedFrames {
+            try Task.checkCancellation()
             let frameProperties: [CFString: Any] = [
                 kCGImagePropertyGIFDictionary: [
                     kCGImagePropertyGIFDelayTime: delay

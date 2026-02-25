@@ -47,9 +47,7 @@ struct UgoiraWindowContent: View {
                         Text(message)
                             .multilineTextAlignment(.center)
                         Button("重试") {
-                            Task {
-                                await store.startDownload()
-                            }
+                            store.startDownload()
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
@@ -106,10 +104,8 @@ struct UgoiraWindowContent: View {
         .ignoresSafeArea()
         .onAppear {
             setupKeyboardShortcuts()
-            Task {
-                if !store.isReady {
-                    await store.startDownload()
-                }
+            if !store.isReady {
+                store.startDownload()
             }
         }
         .sheet(isPresented: $showExportPanel) {

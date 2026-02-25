@@ -69,7 +69,8 @@ final class UgoiraStore: ObservableObject {
         guard status == .idle else { return }
         await loadMetadata()
         if userSettingStore.userSetting.autoPlayUgoira && !isReady {
-            await startDownload()
+            startDownload()
+            await downloadTask?.value
         }
     }
 
@@ -92,51 +93,70 @@ final class UgoiraStore: ObservableObject {
             } else {
                 Logger.ugoira.debug("帧不存在，需要下载")
             }
+        } catch let error where error is CancellationError ||
+                               (error as? DirectConnectionError) == .cancelled ||
+                               (error as? URLError)?.code == .cancelled {
+            Logger.ugoira.info("加载元数据被取消")
+            status = .idle
         } catch {
             Logger.ugoira.error("API 请求失败: \(error.localizedDescription)")
             status = .error(error.localizedDescription)
         }
     }
 
-    func startDownload() async {
-        Logger.ugoira.debug("startDownload() illustId=\(self.illustId, privacy: .public)")
+    func startDownload() {
+        downloadTask?.cancel()
+        downloadTask = Task {
+            Logger.ugoira.debug("startDownload() illustId=\(self.illustId, privacy: .public)")
 
-        let metadata: UgoiraMetadata
-        if let existingMetadata = self.metadata {
-            Logger.ugoira.debug("使用已有的 metadata")
-            metadata = existingMetadata
-        } else {
-            Logger.ugoira.debug("没有 metadata，先调用 loadMetadata()")
-            await loadMetadata()
-            guard let fetchedMetadata = self.metadata else {
-                Logger.ugoira.debug("loadMetadata 后 metadata 仍为 nil，返回")
-                return
+            do {
+                let metadata: UgoiraMetadata
+                if let existingMetadata = self.metadata {
+                    Logger.ugoira.debug("使用已有的 metadata")
+                    metadata = existingMetadata
+                } else {
+                    Logger.ugoira.debug("没有 metadata，先调用 loadMetadata()")
+                    await loadMetadata()
+                    try Task.checkCancellation()
+                    guard let fetchedMetadata = self.metadata else {
+                        Logger.ugoira.debug("loadMetadata 后 metadata 仍为 nil，返回")
+                        return
+                    }
+                    metadata = fetchedMetadata
+                }
+
+                status = .downloading(progress: 0)
+                let quality = userSettingStore.userSetting.downloadQuality
+                let zipURL = metadata.zipUrls.url(for: quality)
+                Logger.ugoira.debug("开始下载，quality=\(quality)，zipURL=\(zipURL, privacy: .public)")
+                // 修改：将 zip 文件下载到系统临时目录，而不是解压目录，防止被 unzip 清理掉
+                let zipFileURL = FileManager.default.temporaryDirectory.appendingPathComponent("ugoira_\(self.illustId)_\(UUID().uuidString).zip")
+
+                defer {
+                    // 清理 zip 文件
+                    try? FileManager.default.removeItem(at: zipFileURL)
+                }
+
+                Logger.ugoira.debug("调用 downloadZip...")
+                try await downloadZip(from: zipURL, to: zipFileURL)
+                try Task.checkCancellation()
+
+                status = .unzipping
+                Logger.ugoira.info("下载完成，开始解压...")
+                try await unzip(at: zipFileURL)
+                try Task.checkCancellation()
+
+                status = .ready
+                Logger.ugoira.info("解压并缓存完成，状态设置为 .ready，frameURLs.count=\(self.frameURLs.count)")
+            } catch let error where error is CancellationError ||
+                                   (error as? DirectConnectionError) == .cancelled ||
+                                   (error as? URLError)?.code == .cancelled {
+                Logger.ugoira.info("下载被取消")
+                status = .idle
+            } catch {
+                Logger.ugoira.error("错误: \(error.localizedDescription)")
+                status = .error(error.localizedDescription)
             }
-            metadata = fetchedMetadata
-        }
-
-        status = .downloading(progress: 0)
-        let quality = userSettingStore.userSetting.downloadQuality
-        let zipURL = metadata.zipUrls.url(for: quality)
-        Logger.ugoira.debug("开始下载，quality=\(quality)，zipURL=\(zipURL, privacy: .public)")
-        // 修改：将 zip 文件下载到系统临时目录，而不是解压目录，防止被 unzip 清理掉
-        let zipFileURL = FileManager.default.temporaryDirectory.appendingPathComponent("ugoira_\(self.illustId)_\(UUID().uuidString).zip")
-
-        do {
-            Logger.ugoira.debug("调用 downloadZip...")
-            try await downloadZip(from: zipURL, to: zipFileURL)
-            status = .unzipping
-            Logger.ugoira.info("下载完成，开始解压...")
-            try await unzip(at: zipFileURL)
-
-            // 清理 zip 文件
-            try? FileManager.default.removeItem(at: zipFileURL)
-
-            status = .ready
-            Logger.ugoira.info("解压并缓存完成，状态设置为 .ready，frameURLs.count=\(self.frameURLs.count)")
-        } catch {
-            Logger.ugoira.error("错误: \(error.localizedDescription)")
-            status = .error(error.localizedDescription)
         }
     }
 
@@ -164,11 +184,14 @@ final class UgoiraStore: ObservableObject {
 
         let (tempURL, response) = try await NetworkClient.shared.download(from: url, headers: headers) { progress in
             Task { @MainActor in
+                guard self.downloadTask != nil else { return }
                 self.status = .downloading(progress: progress)
             }
         }
 
         Logger.ugoira.debug("下载响应: \(response)")
+
+        try Task.checkCancellation()
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
@@ -214,6 +237,7 @@ final class UgoiraStore: ObservableObject {
         Logger.ugoira.debug("找到帧文件: \(sortedContents.count) 个，开始存入 Kingfisher")
 
         for (index, fileURL) in sortedContents.enumerated() {
+            try Task.checkCancellation()
             let key = frameKey(for: illustId, frameIndex: index)
             let cacheKey = "kingfisher://\(key)"
             if let data = try? Data(contentsOf: fileURL), let image = KFCrossPlatformImage(data: data) {
@@ -276,6 +300,7 @@ final class UgoiraStore: ObservableObject {
         var errorCount = 0
 
         while offset < data.count {
+            try Task.checkCancellation()
             let header = data.subdata(in: offset..<(offset + 30))
             let headerBytes = [UInt8](header)
 
