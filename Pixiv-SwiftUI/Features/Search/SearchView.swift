@@ -222,16 +222,23 @@ struct SearchView: View {
             .navigationTitle(String(localized: "搜索"))
             .toolbar {
                 if accountStore.isLoggedIn {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem {
                         Button(action: {
                             startSauceNaoSearch()
                         }) {
                             Image(systemName: "photo.badge.magnifyingglass")
                         }
                     }
+                    #if os(iOS)
+                    if #available(iOS 26.0, *) {
+                        if !store.searchHistory.isEmpty && store.searchText.isEmpty {
+                            ToolbarSpacer(.fixed)
+                        }
+                    }
+                    #endif
                 }
                 if !store.searchHistory.isEmpty && store.searchText.isEmpty && accountStore.isLoggedIn {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem {
                         Button(action: {
                             showClearHistoryConfirmation = true
                         }) {
@@ -250,7 +257,7 @@ struct SearchView: View {
                 if #available(iOS 26.0, *) {
                     ToolbarSpacer(.fixed)
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem {
                     ProfileButton(accountStore: accountStore, isPresented: $showProfilePanel)
                 }
                 #endif

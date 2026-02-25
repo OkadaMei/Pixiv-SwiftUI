@@ -241,7 +241,7 @@ struct SearchResultView: View {
             .navigationTitle(word)
             .toolbar {
                 if selectedTab == 0 {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem {
                         SearchSortButton(
                             sortOption: $sortOption,
                             isPremium: accountStore.currentAccount?.isPremium == 1,
@@ -249,7 +249,7 @@ struct SearchResultView: View {
                         )
                     }
                 } else if selectedTab == 1 {
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem {
                         SearchSortButton(
                             sortOption: $novelSortOption,
                             isPremium: accountStore.currentAccount?.isPremium == 1,
