@@ -22,6 +22,7 @@ struct SearchView: View {
     @State private var sauceToastMessage = ""
     @State private var showImageFileImporter = false
     @State private var isSearchPresented = false
+    @State private var isHistoryExpanded = false
     #if os(iOS)
     @State private var showPhotosPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -248,6 +249,7 @@ struct SearchView: View {
                             Button(String(localized: "清除所有"), role: .destructive) {
                                 triggerHaptic()
                                 store.clearHistory()
+                                isHistoryExpanded = false
                             }
                             Button(String(localized: "取消"), role: .cancel) {}
                         }
@@ -409,7 +411,8 @@ struct SearchView: View {
                         .padding(.top)
 
                     FlowLayout(spacing: 6) {
-                        ForEach(store.searchHistory) { tag in
+                        let historyToDisplay = isHistoryExpanded ? store.searchHistory : Array(store.searchHistory.prefix(10))
+                        ForEach(historyToDisplay) { tag in
                             Group {
                                 if accountStore.isLoggedIn {
                                     Button(action: {
@@ -449,6 +452,27 @@ struct SearchView: View {
                                     }
                                 }
                             }
+                        }
+
+                        if store.searchHistory.count > 10 {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    isHistoryExpanded.toggle()
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text(isHistoryExpanded ? String(localized: "收起") : String(localized: "更多"))
+                                    Image(systemName: isHistoryExpanded ? "chevron.up" : "chevron.down")
+                                }
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.secondary.opacity(0.12))
+                                .cornerRadius(12)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal)

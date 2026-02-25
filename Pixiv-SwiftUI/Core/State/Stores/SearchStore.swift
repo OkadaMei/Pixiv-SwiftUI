@@ -82,7 +82,7 @@ class SearchStore: ObservableObject {
         }
 
         searchHistory.insert(tagToInsert, at: 0)
-        if searchHistory.count > 20 {
+        if searchHistory.count > 100 {
             searchHistory.removeLast()
         }
         saveSearchHistory()
