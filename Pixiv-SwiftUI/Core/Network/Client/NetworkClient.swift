@@ -343,6 +343,8 @@ final class NetworkClient {
             return .api
         } else if host.contains("accounts.pixiv.net") {
             return .accounts
+        } else if host.contains("pixivision.net") {
+            return .pixivision
         } else {
             return .image
         }

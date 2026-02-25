@@ -5,6 +5,7 @@ enum PixivEndpoint {
     case api
     case accounts
     case image
+    case pixivision
 
     nonisolated var host: String {
         switch self {
@@ -16,6 +17,8 @@ enum PixivEndpoint {
             return "accounts.pixiv.net"
         case .image:
             return "i.pximg.net"
+        case .pixivision:
+            return "www.pixivision.net"
         }
     }
 
@@ -46,6 +49,18 @@ enum PixivEndpoint {
                 "210.140.139.162"
             ]
         case .accounts:
+            return [
+                "210.140.139.154",
+                "210.140.139.155",
+                "210.140.139.156",
+                "210.140.139.157",
+                "210.140.139.158",
+                "210.140.139.159",
+                "210.140.139.160",
+                "210.140.139.161",
+                "210.140.139.162"
+            ]
+        case .pixivision:
             return [
                 "210.140.139.154",
                 "210.140.139.155",
