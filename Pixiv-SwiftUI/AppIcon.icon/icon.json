@@ -53,7 +53,23 @@
               "value" : "normal"
             }
           ],
-          "glass" : true,
+          "fill-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass-specializations" : [
+            {
+              "value" : true
+            },
+            {
+              "appearance" : "tinted",
+              "value" : true
+            }
+          ],
           "hidden" : false,
           "image-name" : "AppIcon_1024 2.png",
           "name" : "AppIcon_1024 2"
