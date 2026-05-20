@@ -45,11 +45,16 @@ struct NovelRankingPage: View {
 }
 
 struct NovelRankingList: View {
+    @Environment(UserSettingStore.self) private var userSettingStore
     var store: NovelStore
     let mode: NovelRankingMode
 
-    private var novels: [Novel] {
+    private var allNovels: [Novel] {
         store.novels(for: mode)
+    }
+
+    private var novels: [Novel] {
+        userSettingStore.filterNovels(allNovels)
     }
 
     private var nextUrl: String? {
@@ -71,20 +76,33 @@ struct NovelRankingList: View {
 
     var body: some View {
         LazyVStack(spacing: 0) {
-            if store.isLoadingRanking && novels.isEmpty {
+            if store.isLoadingRanking && allNovels.isEmpty {
                 LazyVStack(spacing: 0) {
                     ForEach(0..<5, id: \.self) { _ in
                         SkeletonNovelListCard()
                     }
                 }
             } else if novels.isEmpty {
-                HStack {
-                    Spacer()
-                    Text(String(localized: "暂无排行数据"))
-                        .foregroundColor(.secondary)
-                    Spacer()
+                if hasMoreData {
+                    ProgressView()
+                        #if os(macOS)
+                        .controlSize(.small)
+                        #endif
+                        .padding()
+                        .onAppear {
+                            Task {
+                                await store.loadMoreRanking(mode: mode)
+                            }
+                        }
+                } else {
+                    HStack {
+                        Spacer()
+                        Text(String(localized: "暂无排行数据"))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .frame(height: 200)
                 }
-                .frame(height: 200)
             } else {
                 ForEach(novels) { novel in
                     NavigationLink(value: novel) {

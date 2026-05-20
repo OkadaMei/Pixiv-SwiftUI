@@ -5,12 +5,18 @@ struct BlockSettingView: View {
     @State private var newTag = ""
     @State private var newUserId = ""
     @State private var newIllustId = ""
+    @State private var newNovelTitleKeyword = ""
+    @State private var newNovelSeriesKeyword = ""
+    @State private var newNovelCaptionKeyword = ""
 
     var body: some View {
         Form {
             tagsSection
             usersSection
             illustsSection
+            novelTitleKeywordsSection
+            novelSeriesKeywordsSection
+            novelCaptionKeywordsSection
         }
         .formStyle(.grouped)
     }
@@ -196,6 +202,103 @@ struct BlockSettingView: View {
             return userSettingStore.blockedIllustInfos
         }
         return userSettingStore.blockedIllusts.map { BlockedIllustInfo(illustId: $0, title: nil, authorId: nil, authorName: nil, thumbnailUrl: nil) }
+    }
+
+    private var novelTitleKeywordsSection: some View {
+        keywordSection(
+            title: "小说标题拉黑关键词",
+            emptyText: "暂无小说标题拉黑关键词",
+            placeholder: "添加小说标题关键词",
+            keywords: userSettingStore.blockedNovelTitleKeywords,
+            text: $newNovelTitleKeyword,
+            addAction: { keyword in
+                try? userSettingStore.addBlockedNovelTitleKeyword(keyword)
+            },
+            removeAction: { keyword in
+                try? userSettingStore.removeBlockedNovelTitleKeyword(keyword)
+            }
+        )
+    }
+
+    private var novelSeriesKeywordsSection: some View {
+        keywordSection(
+            title: "小说系列拉黑关键词",
+            emptyText: "暂无小说系列拉黑关键词",
+            placeholder: "添加小说系列关键词",
+            keywords: userSettingStore.blockedNovelSeriesKeywords,
+            text: $newNovelSeriesKeyword,
+            addAction: { keyword in
+                try? userSettingStore.addBlockedNovelSeriesKeyword(keyword)
+            },
+            removeAction: { keyword in
+                try? userSettingStore.removeBlockedNovelSeriesKeyword(keyword)
+            }
+        )
+    }
+
+    private var novelCaptionKeywordsSection: some View {
+        keywordSection(
+            title: "小说简介拉黑关键词",
+            emptyText: "暂无小说简介拉黑关键词",
+            placeholder: "添加小说简介关键词",
+            keywords: userSettingStore.blockedNovelCaptionKeywords,
+            text: $newNovelCaptionKeyword,
+            addAction: { keyword in
+                try? userSettingStore.addBlockedNovelCaptionKeyword(keyword)
+            },
+            removeAction: { keyword in
+                try? userSettingStore.removeBlockedNovelCaptionKeyword(keyword)
+            }
+        )
+    }
+
+    private func keywordSection(
+        title: String,
+        emptyText: String,
+        placeholder: String,
+        keywords: [String],
+        text: Binding<String>,
+        addAction: @escaping (String) -> Void,
+        removeAction: @escaping (String) -> Void
+    ) -> some View {
+        Section(title) {
+            if keywords.isEmpty {
+                Text(emptyText)
+                    .foregroundColor(.secondary)
+                    .font(.subheadline)
+            } else {
+                ForEach(keywords, id: \.self) { keyword in
+                    HStack(spacing: 12) {
+                        Text(keyword)
+                            .font(.body)
+                            .lineLimit(2)
+
+                        Spacer()
+
+                        Button(action: {
+                            triggerHaptic()
+                            removeAction(keyword)
+                        }) {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            HStack {
+                TextField(placeholder, text: text)
+                Button("添加") {
+                    let keyword = text.wrappedValue
+                    if !keyword.isEmpty {
+                        addAction(keyword)
+                        text.wrappedValue = ""
+                    }
+                }
+                .disabled(text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
     }
 
     private func triggerHaptic() {

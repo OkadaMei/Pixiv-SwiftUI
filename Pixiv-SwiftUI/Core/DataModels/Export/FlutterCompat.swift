@@ -132,6 +132,26 @@ struct FlutterCompat {
             )
         }
 
-        return MuteDataExport(banTags: banTags, banUserIds: banUserIds, banIllustIds: banIllustIds)
+        let banNovelIds: [BanNovelIdItem] = (json["ban_novel_ids"] as? [[String: Any]] ?? []).compactMap { item in
+            guard let novelId = item["novel_id"] as? Int ?? item["novelId"] as? Int else { return nil }
+            return BanNovelIdItem(
+                novelId: novelId,
+                name: item["name"] as? String
+            )
+        }
+
+        let banNovelTitleKeywords = json["ban_novel_title_keywords"] as? [String] ?? []
+        let banNovelSeriesKeywords = json["ban_novel_series_keywords"] as? [String] ?? []
+        let banNovelCaptionKeywords = json["ban_novel_caption_keywords"] as? [String] ?? []
+
+        return MuteDataExport(
+            banTags: banTags,
+            banUserIds: banUserIds,
+            banIllustIds: banIllustIds,
+            banNovelIds: banNovelIds,
+            banNovelTitleKeywords: banNovelTitleKeywords,
+            banNovelSeriesKeywords: banNovelSeriesKeywords,
+            banNovelCaptionKeywords: banNovelCaptionKeywords
+        )
     }
 }

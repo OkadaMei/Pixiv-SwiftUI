@@ -168,6 +168,15 @@ final class UserSetting: Codable {
     /// 屏蔽的小说ID列表（仅存储ID，用于过滤）
     var blockedNovels: [Int] = []
 
+    /// 按小说标题屏蔽的关键字
+    var blockedNovelTitleKeywords: [String] = []
+
+    /// 按小说系列屏蔽的关键字
+    var blockedNovelSeriesKeywords: [String] = []
+
+    /// 按小说简介屏蔽的关键字
+    var blockedNovelCaptionKeywords: [String] = []
+
     /// 屏蔽标签的详细信息
     var blockedTagInfos: [BlockedTagInfo] = []
 
@@ -344,9 +353,14 @@ final class UserSetting: Codable {
         case blockedTags
         case blockedUsers
         case blockedIllusts
+        case blockedNovels
+        case blockedNovelTitleKeywords
+        case blockedNovelSeriesKeywords
+        case blockedNovelCaptionKeywords
         case blockedTagInfos
         case blockedUserInfos
         case blockedIllustInfos
+        case blockedNovelInfos
         case translateServiceId
         case translateTargetLanguage
         case translateOpenAIApiKey
@@ -449,6 +463,10 @@ final class UserSetting: Codable {
         self.blockedTags = try container.decodeIfPresent([String].self, forKey: .blockedTags) ?? []
         self.blockedUsers = try container.decodeIfPresent([String].self, forKey: .blockedUsers) ?? []
         self.blockedIllusts = try container.decodeIfPresent([Int].self, forKey: .blockedIllusts) ?? []
+        self.blockedNovels = try container.decodeIfPresent([Int].self, forKey: .blockedNovels) ?? []
+        self.blockedNovelTitleKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelTitleKeywords) ?? []
+        self.blockedNovelSeriesKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelSeriesKeywords) ?? []
+        self.blockedNovelCaptionKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelCaptionKeywords) ?? []
         self.blockedTagInfos = (try container.decodeIfPresent([BlockedTagInfoData].self, forKey: .blockedTagInfos) ?? []).map { data in
             let info = BlockedTagInfo(name: data.name, translatedName: data.translatedName)
             return info
@@ -459,6 +477,10 @@ final class UserSetting: Codable {
         }
         self.blockedIllustInfos = (try container.decodeIfPresent([BlockedIllustInfoData].self, forKey: .blockedIllustInfos) ?? []).map { data in
             let info = BlockedIllustInfo(illustId: data.illustId, title: data.title, authorId: data.authorId, authorName: data.authorName, thumbnailUrl: data.thumbnailUrl)
+            return info
+        }
+        self.blockedNovelInfos = (try container.decodeIfPresent([BlockedNovelInfoData].self, forKey: .blockedNovelInfos) ?? []).map { data in
+            let info = BlockedNovelInfo(novelId: data.novelId, title: data.title, authorId: data.authorId, authorName: data.authorName, thumbnailUrl: data.thumbnailUrl)
             return info
         }
         self.translateServiceId = try container.decodeIfPresent(String.self, forKey: .translateServiceId) ?? "google"
@@ -552,9 +574,14 @@ final class UserSetting: Codable {
         try container.encode(blockedTags, forKey: .blockedTags)
         try container.encode(blockedUsers, forKey: .blockedUsers)
         try container.encode(blockedIllusts, forKey: .blockedIllusts)
+        try container.encode(blockedNovels, forKey: .blockedNovels)
+        try container.encode(blockedNovelTitleKeywords, forKey: .blockedNovelTitleKeywords)
+        try container.encode(blockedNovelSeriesKeywords, forKey: .blockedNovelSeriesKeywords)
+        try container.encode(blockedNovelCaptionKeywords, forKey: .blockedNovelCaptionKeywords)
         try container.encode(blockedTagInfos.map { BlockedTagInfoData(name: $0.name, translatedName: $0.translatedName) }, forKey: .blockedTagInfos)
         try container.encode(blockedUserInfos.map { BlockedUserInfoData(userId: $0.userId, name: $0.name, account: $0.account, avatarUrl: $0.avatarUrl) }, forKey: .blockedUserInfos)
         try container.encode(blockedIllustInfos.map { BlockedIllustInfoData(illustId: $0.illustId, title: $0.title, authorId: $0.authorId, authorName: $0.authorName, thumbnailUrl: $0.thumbnailUrl) }, forKey: .blockedIllustInfos)
+        try container.encode(blockedNovelInfos.map { BlockedNovelInfoData(novelId: $0.novelId, title: $0.title, authorId: $0.authorId, authorName: $0.authorName, thumbnailUrl: $0.thumbnailUrl) }, forKey: .blockedNovelInfos)
         try container.encode(translateServiceId, forKey: .translateServiceId)
         try container.encode(translateTargetLanguage, forKey: .translateTargetLanguage)
         try container.encodeIfPresent(translateOpenAIApiKey, forKey: .translateOpenAIApiKey)
@@ -606,6 +633,14 @@ struct BlockedUserInfoData: Codable {
 
 struct BlockedIllustInfoData: Codable {
     var illustId: Int
+    var title: String?
+    var authorId: String?
+    var authorName: String?
+    var thumbnailUrl: String?
+}
+
+struct BlockedNovelInfoData: Codable {
+    var novelId: Int
     var title: String?
     var authorId: String?
     var authorName: String?

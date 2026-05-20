@@ -92,6 +92,9 @@ final class WebDAVSyncService {
             blockedUsers: userSettingStore.blockedUsers,
             blockedIllusts: userSettingStore.blockedIllusts,
             blockedNovels: userSettingStore.blockedNovels,
+            blockedNovelTitleKeywords: userSettingStore.blockedNovelTitleKeywords,
+            blockedNovelSeriesKeywords: userSettingStore.blockedNovelSeriesKeywords,
+            blockedNovelCaptionKeywords: userSettingStore.blockedNovelCaptionKeywords,
             blockedTagInfos: userSettingStore.blockedTagInfos.map(WebDAVBlockedTagInfoPayload.init),
             blockedUserInfos: userSettingStore.blockedUserInfos.map(WebDAVBlockedUserInfoPayload.init),
             blockedIllustInfos: userSettingStore.blockedIllustInfos.map(WebDAVBlockedIllustInfoPayload.init),
@@ -258,6 +261,9 @@ final class WebDAVSyncService {
         userSettingStore.blockedUsers = payload.blockedUsers
         userSettingStore.blockedIllusts = payload.blockedIllusts
         userSettingStore.blockedNovels = payload.blockedNovels
+        userSettingStore.blockedNovelTitleKeywords = payload.blockedNovelTitleKeywords
+        userSettingStore.blockedNovelSeriesKeywords = payload.blockedNovelSeriesKeywords
+        userSettingStore.blockedNovelCaptionKeywords = payload.blockedNovelCaptionKeywords
         userSettingStore.blockedTagInfos = blockedTagInfos
         userSettingStore.blockedUserInfos = blockedUserInfos
         userSettingStore.blockedIllustInfos = blockedIllustInfos
@@ -267,6 +273,9 @@ final class WebDAVSyncService {
         setting.blockedUsers = payload.blockedUsers
         setting.blockedIllusts = payload.blockedIllusts
         setting.blockedNovels = payload.blockedNovels
+        setting.blockedNovelTitleKeywords = payload.blockedNovelTitleKeywords
+        setting.blockedNovelSeriesKeywords = payload.blockedNovelSeriesKeywords
+        setting.blockedNovelCaptionKeywords = payload.blockedNovelCaptionKeywords
         setting.blockedTagInfos = blockedTagInfos
         setting.blockedUserInfos = blockedUserInfos
         setting.blockedIllustInfos = blockedIllustInfos

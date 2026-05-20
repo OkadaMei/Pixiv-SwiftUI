@@ -241,10 +241,68 @@ struct WebDAVSyncMutePayload: Codable, Sendable {
     let blockedUsers: [String]
     let blockedIllusts: [Int]
     let blockedNovels: [Int]
+    let blockedNovelTitleKeywords: [String]
+    let blockedNovelSeriesKeywords: [String]
+    let blockedNovelCaptionKeywords: [String]
     let blockedTagInfos: [WebDAVBlockedTagInfoPayload]
     let blockedUserInfos: [WebDAVBlockedUserInfoPayload]
     let blockedIllustInfos: [WebDAVBlockedIllustInfoPayload]
     let blockedNovelInfos: [WebDAVBlockedNovelInfoPayload]
+
+    init(
+        blockedTags: [String],
+        blockedUsers: [String],
+        blockedIllusts: [Int],
+        blockedNovels: [Int],
+        blockedNovelTitleKeywords: [String] = [],
+        blockedNovelSeriesKeywords: [String] = [],
+        blockedNovelCaptionKeywords: [String] = [],
+        blockedTagInfos: [WebDAVBlockedTagInfoPayload],
+        blockedUserInfos: [WebDAVBlockedUserInfoPayload],
+        blockedIllustInfos: [WebDAVBlockedIllustInfoPayload],
+        blockedNovelInfos: [WebDAVBlockedNovelInfoPayload]
+    ) {
+        self.blockedTags = blockedTags
+        self.blockedUsers = blockedUsers
+        self.blockedIllusts = blockedIllusts
+        self.blockedNovels = blockedNovels
+        self.blockedNovelTitleKeywords = blockedNovelTitleKeywords
+        self.blockedNovelSeriesKeywords = blockedNovelSeriesKeywords
+        self.blockedNovelCaptionKeywords = blockedNovelCaptionKeywords
+        self.blockedTagInfos = blockedTagInfos
+        self.blockedUserInfos = blockedUserInfos
+        self.blockedIllustInfos = blockedIllustInfos
+        self.blockedNovelInfos = blockedNovelInfos
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case blockedTags
+        case blockedUsers
+        case blockedIllusts
+        case blockedNovels
+        case blockedNovelTitleKeywords
+        case blockedNovelSeriesKeywords
+        case blockedNovelCaptionKeywords
+        case blockedTagInfos
+        case blockedUserInfos
+        case blockedIllustInfos
+        case blockedNovelInfos
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.blockedTags = try container.decodeIfPresent([String].self, forKey: .blockedTags) ?? []
+        self.blockedUsers = try container.decodeIfPresent([String].self, forKey: .blockedUsers) ?? []
+        self.blockedIllusts = try container.decodeIfPresent([Int].self, forKey: .blockedIllusts) ?? []
+        self.blockedNovels = try container.decodeIfPresent([Int].self, forKey: .blockedNovels) ?? []
+        self.blockedNovelTitleKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelTitleKeywords) ?? []
+        self.blockedNovelSeriesKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelSeriesKeywords) ?? []
+        self.blockedNovelCaptionKeywords = try container.decodeIfPresent([String].self, forKey: .blockedNovelCaptionKeywords) ?? []
+        self.blockedTagInfos = try container.decodeIfPresent([WebDAVBlockedTagInfoPayload].self, forKey: .blockedTagInfos) ?? []
+        self.blockedUserInfos = try container.decodeIfPresent([WebDAVBlockedUserInfoPayload].self, forKey: .blockedUserInfos) ?? []
+        self.blockedIllustInfos = try container.decodeIfPresent([WebDAVBlockedIllustInfoPayload].self, forKey: .blockedIllustInfos) ?? []
+        self.blockedNovelInfos = try container.decodeIfPresent([WebDAVBlockedNovelInfoPayload].self, forKey: .blockedNovelInfos) ?? []
+    }
 }
 
 struct WebDAVSyncSearchHistoryPayload: Codable, Sendable {
