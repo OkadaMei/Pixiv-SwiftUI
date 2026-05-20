@@ -181,7 +181,7 @@ struct SearchView: View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 #if os(iOS)
-                if store.searchText.isEmpty {
+                if store.searchText.isEmpty || !isSearchPresented {
                     searchHistoryAndTrends
                 } else {
                     suggestionList
@@ -278,9 +278,6 @@ struct SearchView: View {
             }
             .onAppear {
                 store.loadSearchHistory()
-                if !store.searchText.isEmpty {
-                    isSearchPresented = true
-                }
             }
             .onSubmit(of: .search) {
                 guard accountStore.isLoggedIn else { return }
