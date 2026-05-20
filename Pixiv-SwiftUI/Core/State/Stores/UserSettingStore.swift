@@ -4,48 +4,50 @@ import Observation
 
 let spoilerTags: Set<String> = ["ネタバレ", "spoiler", "ネタバレ注意"]
 
-private func normalizedBlockedKeyword(_ keyword: String) -> String {
-    keyword.trimmingCharacters(in: .whitespacesAndNewlines)
-}
-
-private func containsBlockedKeyword(_ keyword: String, in keywords: [String]) -> Bool {
-    let normalizedKeyword = normalizedBlockedKeyword(keyword)
-    guard !normalizedKeyword.isEmpty else {
-        return false
+private enum NovelKeywordBlockMatcher {
+    static func normalizedKeyword(_ keyword: String) -> String {
+        keyword.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    return keywords.contains {
-        $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
-    }
-}
-
-private func matchesBlockedKeyword(in text: String, keywords: [String]) -> Bool {
-    let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !normalizedText.isEmpty else {
-        return false
-    }
-
-    return keywords.contains { keyword in
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
+    static func containsKeyword(_ keyword: String, in keywords: [String]) -> Bool {
+        let normalizedKeyword = normalizedKeyword(keyword)
         guard !normalizedKeyword.isEmpty else {
             return false
         }
 
-        return normalizedText.range(of: normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        return keywords.contains {
+            $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
     }
-}
 
-private func isNovelBlockedByKeywords(
-    title: String,
-    seriesTitle: String,
-    caption: String,
-    titleKeywords: [String],
-    seriesKeywords: [String],
-    captionKeywords: [String]
-) -> Bool {
-    matchesBlockedKeyword(in: title, keywords: titleKeywords)
-        || matchesBlockedKeyword(in: seriesTitle, keywords: seriesKeywords)
-        || matchesBlockedKeyword(in: caption, keywords: captionKeywords)
+    static func matchesKeyword(in text: String, keywords: [String]) -> Bool {
+        let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedText.isEmpty else {
+            return false
+        }
+
+        return keywords.contains { keyword in
+            let normalizedKeyword = normalizedKeyword(keyword)
+            guard !normalizedKeyword.isEmpty else {
+                return false
+            }
+
+            return normalizedText.range(of: normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        }
+    }
+
+    static func isNovelBlocked(
+        title: String,
+        seriesTitle: String,
+        caption: String,
+        titleKeywords: [String],
+        seriesKeywords: [String],
+        captionKeywords: [String]
+    ) -> Bool {
+        matchesKeyword(in: title, keywords: titleKeywords)
+            || matchesKeyword(in: seriesTitle, keywords: seriesKeywords)
+            || matchesKeyword(in: caption, keywords: captionKeywords)
+    }
 }
 
 /// 用户设置管理
@@ -617,8 +619,8 @@ final class UserSettingStore {
     }
 
     func addBlockedNovelTitleKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
-        guard !normalizedKeyword.isEmpty, !containsBlockedKeyword(normalizedKeyword, in: blockedNovelTitleKeywords) else {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelTitleKeywords) else {
             return
         }
 
@@ -628,7 +630,7 @@ final class UserSettingStore {
     }
 
     func removeBlockedNovelTitleKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
         blockedNovelTitleKeywords.removeAll {
             $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
@@ -637,8 +639,8 @@ final class UserSettingStore {
     }
 
     func addBlockedNovelSeriesKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
-        guard !normalizedKeyword.isEmpty, !containsBlockedKeyword(normalizedKeyword, in: blockedNovelSeriesKeywords) else {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelSeriesKeywords) else {
             return
         }
 
@@ -648,7 +650,7 @@ final class UserSettingStore {
     }
 
     func removeBlockedNovelSeriesKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
         blockedNovelSeriesKeywords.removeAll {
             $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
@@ -657,8 +659,8 @@ final class UserSettingStore {
     }
 
     func addBlockedNovelCaptionKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
-        guard !normalizedKeyword.isEmpty, !containsBlockedKeyword(normalizedKeyword, in: blockedNovelCaptionKeywords) else {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelCaptionKeywords) else {
             return
         }
 
@@ -668,7 +670,7 @@ final class UserSettingStore {
     }
 
     func removeBlockedNovelCaptionKeyword(_ keyword: String) throws {
-        let normalizedKeyword = normalizedBlockedKeyword(keyword)
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
         blockedNovelCaptionKeywords.removeAll {
             $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
@@ -926,7 +928,7 @@ final class UserSettingStore {
 
         if !blockedNovelTitleKeywords.isEmpty || !blockedNovelSeriesKeywords.isEmpty || !blockedNovelCaptionKeywords.isEmpty {
             result = result.filter { novel in
-                !isNovelBlockedByKeywords(
+                !NovelKeywordBlockMatcher.isNovelBlocked(
                     title: novel.title,
                     seriesTitle: novel.series?.title ?? "",
                     caption: TextCleaner.cleanDescription(novel.caption),
@@ -1037,7 +1039,7 @@ final class UserSettingStore {
                 }
 
                 if !blockedNovelTitleKeywordsList.isEmpty || !blockedNovelSeriesKeywordsList.isEmpty || !blockedNovelCaptionKeywordsList.isEmpty {
-                    if isNovelBlockedByKeywords(
+                    if NovelKeywordBlockMatcher.isNovelBlocked(
                         title: title,
                         seriesTitle: seriesTitle,
                         caption: caption,
