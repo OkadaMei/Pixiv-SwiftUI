@@ -5,11 +5,11 @@ import Observation
 let spoilerTags: Set<String> = ["ネタバレ", "spoiler", "ネタバレ注意"]
 
 private enum NovelKeywordBlockMatcher {
-    static func normalizedKeyword(_ keyword: String) -> String {
+    nonisolated static func normalizedKeyword(_ keyword: String) -> String {
         keyword.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    static func containsKeyword(_ keyword: String, in keywords: [String]) -> Bool {
+    nonisolated static func containsKeyword(_ keyword: String, in keywords: [String]) -> Bool {
         let normalizedKeyword = normalizedKeyword(keyword)
         guard !normalizedKeyword.isEmpty else {
             return false
@@ -20,7 +20,7 @@ private enum NovelKeywordBlockMatcher {
         }
     }
 
-    static func matchesKeyword(in text: String, keywords: [String]) -> Bool {
+    nonisolated static func matchesKeyword(in text: String, keywords: [String]) -> Bool {
         let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedText.isEmpty else {
             return false
@@ -36,7 +36,7 @@ private enum NovelKeywordBlockMatcher {
         }
     }
 
-    static func isNovelBlocked(
+    nonisolated static func isNovelBlocked(
         title: String,
         seriesTitle: String,
         caption: String,
