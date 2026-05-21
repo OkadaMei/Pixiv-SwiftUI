@@ -11,6 +11,12 @@
         }
       }
     },
+    "—" : {
+
+    },
+    "·" : {
+
+    },
     "· %@" : {
       "localizations" : {
         "en" : {
@@ -987,16 +993,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebDAV"
-          }
-        }
-      }
-    },
-    "万字" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "10k words"
           }
         }
       }
@@ -2157,16 +2153,6 @@
         }
       }
     },
-    "千字" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1k words"
-          }
-        }
-      }
-    },
     "单批最大字符" : {
       "localizations" : {
         "en" : {
@@ -2199,6 +2185,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "历史"
+          }
+        }
+      }
+    },
+    "原创" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
           }
         }
       }
@@ -2551,6 +2547,16 @@
         }
       }
     },
+    "启用时间筛选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable filter with time range"
+          }
+        }
+      }
+    },
     "回复" : {
       "localizations" : {
         "en" : {
@@ -2785,12 +2791,12 @@
         }
       }
     },
-    "字" : {
+    "女性向" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "characters"
+            "value" : "Female"
           }
         }
       }
@@ -3321,6 +3327,16 @@
         }
       }
     },
+    "左侧三横图标用于提示可调整顺序，拖动排序，开关控制是否显示。至少保留一个分组。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The handle on the left shows that items can be reordered. Drag to sort, and use the switch to show or hide items. Keep at least one group enabled."
+          }
+        }
+      }
+    },
     "已关注" : {
       "localizations" : {
         "en" : {
@@ -3601,6 +3617,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App Name"
+          }
+        }
+      }
+    },
+    "开关控制是否在排行榜中显示。iPhone 和 iPad 可以直接拖动调整顺序。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the switch to control whether a group appears in rankings. On iPhone and iPad, you can drag directly to change the order."
           }
         }
       }
@@ -3891,6 +3917,26 @@
         }
       }
     },
+    "按标题拉黑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block titles"
+          }
+        }
+      }
+    },
+    "按系列拉黑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block series"
+          }
+        }
+      }
+    },
     "排版" : {
       "localizations" : {
         "en" : {
@@ -3911,22 +3957,22 @@
         }
       }
     },
-    "排行类别" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ranking Category"
-          }
-        }
-      }
-    },
     "排行榜分组" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ranking Groups"
+          }
+        }
+      }
+    },
+    "排行类别" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranking Category"
           }
         }
       }
@@ -4031,6 +4077,16 @@
         }
       }
     },
+    "搜索范围" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search range"
+          }
+        }
+      }
+    },
     "搜索该标签" : {
       "localizations" : {
         "en" : {
@@ -4129,6 +4185,16 @@
         }
       }
     },
+    "收藏阈值" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Like threshold"
+          }
+        }
+      }
+    },
     "收起" : {
       "localizations" : {
         "en" : {
@@ -4161,6 +4227,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "数据导入/导出"
+          }
+        }
+      }
+    },
+    "新人" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rookie"
           }
         }
       }
@@ -4243,6 +4319,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Date范围"
+          }
+        }
+      }
+    },
+    "时间范围" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time range"
           }
         }
       }
@@ -4871,6 +4957,16 @@
         }
       }
     },
+    "正在加载更多结果" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading more results"
+          }
+        }
+      }
+    },
     "正在导出..." : {
       "localizations" : {
         "en" : {
@@ -5015,6 +5111,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此作品已被作者删除"
+          }
+        }
+      }
+    },
+    "每周" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly"
+          }
+        }
+      }
+    },
+    "每日" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily"
+          }
+        }
+      }
+    },
+    "每月" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly"
           }
         }
       }
@@ -5671,6 +5797,16 @@
         }
       }
     },
+    "男性向" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Male"
+          }
+        }
+      }
+    },
     "画师" : {
       "localizations" : {
         "en" : {
@@ -6109,6 +6245,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Waiting"
+          }
+        }
+      }
+    },
+    "筛选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
           }
         }
       }
@@ -6617,107 +6763,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Configure download options"
-          }
-        }
-      }
-    },
-    "设置如何显示 R18、R18G、剧透内容和 AI 生成的作品" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configure how R18, R18G, spoiler content, and AI-generated works are displayed"
-          }
-        }
-      }
-    },
-    "左侧三横图标用于提示可调整顺序，拖动排序，开关控制是否显示。至少保留一个分组。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The handle on the left shows that items can be reordered. Drag to sort, and use the switch to show or hide items. Keep at least one group enabled."
-          }
-        }
-      }
-    },
-    "开关控制是否在排行榜中显示。iPhone 和 iPad 可以直接拖动调整顺序。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use the switch to control whether a group appears in rankings. On iPhone and iPad, you can drag directly to change the order."
-          }
-        }
-      }
-    },
-    "新人" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rookie"
-          }
-        }
-      }
-    },
-    "原创" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Original"
-          }
-        }
-      }
-    },
-    "女性向" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Female"
-          }
-        }
-      }
-    },
-    "每周" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weekly"
-          }
-        }
-      }
-    },
-    "每月" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monthly"
-          }
-        }
-      }
-    },
-    "每日" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily"
-          }
-        }
-      }
-    },
-    "男性向" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Male"
           }
         }
       }
