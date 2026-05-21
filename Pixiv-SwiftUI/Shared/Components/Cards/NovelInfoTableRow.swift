@@ -76,12 +76,19 @@ struct NovelInfoTableRow: View {
     private var detailColumn: some View {
         switch detailStyle {
         case .author:
-            Text(novel.user.name)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .lineLimit(1, reservesSpace: true)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 4) {
+                Text(novel.user.name)
+                    .lineLimit(1)
+
+                Text("·")
+                    .foregroundColor(.secondary.opacity(0.5))
+
+                Text(formatTextLength(novel.textLength))
+                    .lineLimit(1)
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         case .metrics:
             Text(metricsSummary)
                 .font(.caption)
