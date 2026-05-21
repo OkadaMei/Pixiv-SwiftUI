@@ -4,6 +4,52 @@ import Observation
 
 let spoilerTags: Set<String> = ["ネタバレ", "spoiler", "ネタバレ注意"]
 
+private enum NovelKeywordBlockMatcher {
+    nonisolated static func normalizedKeyword(_ keyword: String) -> String {
+        keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    nonisolated static func containsKeyword(_ keyword: String, in keywords: [String]) -> Bool {
+        let normalizedKeyword = normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty else {
+            return false
+        }
+
+        return keywords.contains {
+            $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+    }
+
+    nonisolated static func matchesKeyword(in text: String, keywords: [String]) -> Bool {
+        let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedText.isEmpty else {
+            return false
+        }
+
+        return keywords.contains { keyword in
+            let normalizedKeyword = normalizedKeyword(keyword)
+            guard !normalizedKeyword.isEmpty else {
+                return false
+            }
+
+            return normalizedText.range(of: normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        }
+    }
+
+    nonisolated static func isNovelBlocked(
+        title: String,
+        seriesTitle: String,
+        caption: String,
+        titleKeywords: [String],
+        seriesKeywords: [String],
+        captionKeywords: [String]
+    ) -> Bool {
+        matchesKeyword(in: title, keywords: titleKeywords)
+            || matchesKeyword(in: seriesTitle, keywords: seriesKeywords)
+            || matchesKeyword(in: caption, keywords: captionKeywords)
+    }
+}
+
 /// 用户设置管理
 @MainActor
 @Observable
@@ -19,6 +65,9 @@ final class UserSettingStore {
     var blockedUsers: [String] = []
     var blockedIllusts: [Int] = []
     var blockedNovels: [Int] = []
+    var blockedNovelTitleKeywords: [String] = []
+    var blockedNovelSeriesKeywords: [String] = []
+    var blockedNovelCaptionKeywords: [String] = []
 
     var blockedTagInfos: [BlockedTagInfo] = []
     var blockedUserInfos: [BlockedUserInfo] = []
@@ -100,6 +149,9 @@ final class UserSettingStore {
         self.blockedUsers = setting.blockedUsers
         self.blockedIllusts = setting.blockedIllusts
         self.blockedNovels = setting.blockedNovels
+        self.blockedNovelTitleKeywords = setting.blockedNovelTitleKeywords
+        self.blockedNovelSeriesKeywords = setting.blockedNovelSeriesKeywords
+        self.blockedNovelCaptionKeywords = setting.blockedNovelCaptionKeywords
         self.blockedTagInfos = setting.blockedTagInfos
         self.blockedUserInfos = setting.blockedUserInfos
         self.blockedIllustInfos = setting.blockedIllustInfos
@@ -566,6 +618,66 @@ final class UserSettingStore {
         try saveSetting()
     }
 
+    func addBlockedNovelTitleKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelTitleKeywords) else {
+            return
+        }
+
+        blockedNovelTitleKeywords.append(normalizedKeyword)
+        userSetting.blockedNovelTitleKeywords = blockedNovelTitleKeywords
+        try saveSetting()
+    }
+
+    func removeBlockedNovelTitleKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        blockedNovelTitleKeywords.removeAll {
+            $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+        userSetting.blockedNovelTitleKeywords = blockedNovelTitleKeywords
+        try saveSetting()
+    }
+
+    func addBlockedNovelSeriesKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelSeriesKeywords) else {
+            return
+        }
+
+        blockedNovelSeriesKeywords.append(normalizedKeyword)
+        userSetting.blockedNovelSeriesKeywords = blockedNovelSeriesKeywords
+        try saveSetting()
+    }
+
+    func removeBlockedNovelSeriesKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        blockedNovelSeriesKeywords.removeAll {
+            $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+        userSetting.blockedNovelSeriesKeywords = blockedNovelSeriesKeywords
+        try saveSetting()
+    }
+
+    func addBlockedNovelCaptionKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        guard !normalizedKeyword.isEmpty, !NovelKeywordBlockMatcher.containsKeyword(normalizedKeyword, in: blockedNovelCaptionKeywords) else {
+            return
+        }
+
+        blockedNovelCaptionKeywords.append(normalizedKeyword)
+        userSetting.blockedNovelCaptionKeywords = blockedNovelCaptionKeywords
+        try saveSetting()
+    }
+
+    func removeBlockedNovelCaptionKeyword(_ keyword: String) throws {
+        let normalizedKeyword = NovelKeywordBlockMatcher.normalizedKeyword(keyword)
+        blockedNovelCaptionKeywords.removeAll {
+            $0.compare(normalizedKeyword, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
+        userSetting.blockedNovelCaptionKeywords = blockedNovelCaptionKeywords
+        try saveSetting()
+    }
+
     /// 过滤插画列表，根据屏蔽设置（同步版本，用于计算属性）
     func filterIllusts(_ illusts: [Illusts]) -> [Illusts] {
         var result = illusts
@@ -814,6 +926,19 @@ final class UserSettingStore {
             }
         }
 
+        if !blockedNovelTitleKeywords.isEmpty || !blockedNovelSeriesKeywords.isEmpty || !blockedNovelCaptionKeywords.isEmpty {
+            result = result.filter { novel in
+                !NovelKeywordBlockMatcher.isNovelBlocked(
+                    title: novel.title,
+                    seriesTitle: novel.series?.title ?? "",
+                    caption: TextCleaner.cleanDescription(novel.caption),
+                    titleKeywords: blockedNovelTitleKeywords,
+                    seriesKeywords: blockedNovelSeriesKeywords,
+                    captionKeywords: blockedNovelCaptionKeywords
+                )
+            }
+        }
+
         return result
     }
 
@@ -827,16 +952,30 @@ final class UserSettingStore {
         let tagsSet = blockedTagsSet
         let blockedUsersList = blockedUsers
         let blockedNovelsList = blockedNovels
+        let blockedNovelTitleKeywordsList = blockedNovelTitleKeywords
+        let blockedNovelSeriesKeywordsList = blockedNovelSeriesKeywords
+        let blockedNovelCaptionKeywordsList = blockedNovelCaptionKeywords
         let spoilerTagsSet = spoilerTags
 
-        let novelData = novels.map { ($0.id, $0.xRestrict, $0.novelAIType, $0.user.id.stringValue, $0.tags.map { $0.name }) }
+        let novelData = novels.map {
+            (
+                $0.id,
+                $0.xRestrict,
+                $0.novelAIType,
+                $0.user.id.stringValue,
+                $0.tags.map { $0.name },
+                $0.title,
+                $0.series?.title ?? "",
+                TextCleaner.cleanDescription($0.caption)
+            )
+        }
 
         let indicesToKeep = await Task.detached(priority: .userInitiated) {
             var indicesToKeep: [Int] = []
             indicesToKeep.reserveCapacity(novelData.count)
 
             for (index, data) in novelData.enumerated() {
-                let (id, xRestrict, aiType, userId, tags) = data
+                let (id, xRestrict, aiType, userId, tags, title, seriesTitle, caption) = data
 
                 // R18 过滤 (xRestrict == 1)
                 switch r18Mode {
@@ -895,6 +1034,19 @@ final class UserSettingStore {
                 // 屏蔽小说
                 if !blockedNovelsList.isEmpty {
                     if blockedNovelsList.contains(id) {
+                        continue
+                    }
+                }
+
+                if !blockedNovelTitleKeywordsList.isEmpty || !blockedNovelSeriesKeywordsList.isEmpty || !blockedNovelCaptionKeywordsList.isEmpty {
+                    if NovelKeywordBlockMatcher.isNovelBlocked(
+                        title: title,
+                        seriesTitle: seriesTitle,
+                        caption: caption,
+                        titleKeywords: blockedNovelTitleKeywordsList,
+                        seriesKeywords: blockedNovelSeriesKeywordsList,
+                        captionKeywords: blockedNovelCaptionKeywordsList
+                    ) {
                         continue
                     }
                 }

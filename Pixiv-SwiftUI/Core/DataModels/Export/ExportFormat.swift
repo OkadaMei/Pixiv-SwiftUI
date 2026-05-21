@@ -83,11 +83,48 @@ struct MuteDataExport: Codable {
     let banTags: [BanTagItem]
     let banUserIds: [BanUserIdItem]
     let banIllustIds: [BanIllustIdItem]
+    let banNovelIds: [BanNovelIdItem]
+    let banNovelTitleKeywords: [String]
+    let banNovelSeriesKeywords: [String]
+    let banNovelCaptionKeywords: [String]
+
+    init(
+        banTags: [BanTagItem],
+        banUserIds: [BanUserIdItem],
+        banIllustIds: [BanIllustIdItem],
+        banNovelIds: [BanNovelIdItem] = [],
+        banNovelTitleKeywords: [String] = [],
+        banNovelSeriesKeywords: [String] = [],
+        banNovelCaptionKeywords: [String] = []
+    ) {
+        self.banTags = banTags
+        self.banUserIds = banUserIds
+        self.banIllustIds = banIllustIds
+        self.banNovelIds = banNovelIds
+        self.banNovelTitleKeywords = banNovelTitleKeywords
+        self.banNovelSeriesKeywords = banNovelSeriesKeywords
+        self.banNovelCaptionKeywords = banNovelCaptionKeywords
+    }
 
     enum CodingKeys: String, CodingKey {
         case banTags = "ban_tags"
         case banUserIds = "ban_user_ids"
         case banIllustIds = "ban_illust_ids"
+        case banNovelIds = "ban_novel_ids"
+        case banNovelTitleKeywords = "ban_novel_title_keywords"
+        case banNovelSeriesKeywords = "ban_novel_series_keywords"
+        case banNovelCaptionKeywords = "ban_novel_caption_keywords"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.banTags = try container.decodeIfPresent([BanTagItem].self, forKey: .banTags) ?? []
+        self.banUserIds = try container.decodeIfPresent([BanUserIdItem].self, forKey: .banUserIds) ?? []
+        self.banIllustIds = try container.decodeIfPresent([BanIllustIdItem].self, forKey: .banIllustIds) ?? []
+        self.banNovelIds = try container.decodeIfPresent([BanNovelIdItem].self, forKey: .banNovelIds) ?? []
+        self.banNovelTitleKeywords = try container.decodeIfPresent([String].self, forKey: .banNovelTitleKeywords) ?? []
+        self.banNovelSeriesKeywords = try container.decodeIfPresent([String].self, forKey: .banNovelSeriesKeywords) ?? []
+        self.banNovelCaptionKeywords = try container.decodeIfPresent([String].self, forKey: .banNovelCaptionKeywords) ?? []
     }
 }
 
@@ -117,6 +154,16 @@ struct BanIllustIdItem: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case illustId = "illust_id"
+        case name
+    }
+}
+
+struct BanNovelIdItem: Codable, Sendable {
+    let novelId: Int
+    let name: String?
+
+    enum CodingKeys: String, CodingKey {
+        case novelId = "novel_id"
         case name
     }
 }

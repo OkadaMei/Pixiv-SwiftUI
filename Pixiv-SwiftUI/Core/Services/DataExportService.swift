@@ -108,31 +108,38 @@ final class DataExportService {
     }
 
     func exportMuteData() async throws -> URL {
-        let context = dataContainer.mainContext
+        let banTagItems = if userSettingStore.blockedTagInfos.isEmpty {
+            userSettingStore.blockedTags.map { BanTagItem(name: $0, translatedName: nil) }
+        } else {
+            userSettingStore.blockedTagInfos.map { BanTagItem(name: $0.name, translatedName: $0.translatedName) }
+        }
 
-        let banTagDescriptor = FetchDescriptor<BanTag>(
-            predicate: #Predicate { $0.ownerId == currentUserId }
-        )
-        let banTags = try context.fetch(banTagDescriptor)
+        let banUserItems = if userSettingStore.blockedUserInfos.isEmpty {
+            userSettingStore.blockedUsers.map { BanUserIdItem(userId: $0, name: nil) }
+        } else {
+            userSettingStore.blockedUserInfos.map { BanUserIdItem(userId: $0.userId, name: $0.name) }
+        }
 
-        let banUserDescriptor = FetchDescriptor<BanUserId>(
-            predicate: #Predicate { $0.ownerId == currentUserId }
-        )
-        let banUsers = try context.fetch(banUserDescriptor)
+        let banIllustItems = if userSettingStore.blockedIllustInfos.isEmpty {
+            userSettingStore.blockedIllusts.map { BanIllustIdItem(illustId: $0, name: nil) }
+        } else {
+            userSettingStore.blockedIllustInfos.map { BanIllustIdItem(illustId: $0.illustId, name: $0.title) }
+        }
 
-        let banIllustDescriptor = FetchDescriptor<BanIllustId>(
-            predicate: #Predicate { $0.ownerId == currentUserId }
-        )
-        let banIllusts = try context.fetch(banIllustDescriptor)
-
-        let banTagItems = banTags.map { BanTagItem(name: $0.name, translatedName: nil) }
-        let banUserItems = banUsers.map { BanUserIdItem(userId: $0.userId, name: nil) }
-        let banIllustItems = banIllusts.map { BanIllustIdItem(illustId: $0.illustId, name: nil) }
+        let banNovelItems = if userSettingStore.blockedNovelInfos.isEmpty {
+            userSettingStore.blockedNovels.map { BanNovelIdItem(novelId: $0, name: nil) }
+        } else {
+            userSettingStore.blockedNovelInfos.map { BanNovelIdItem(novelId: $0.novelId, name: $0.title) }
+        }
 
         let export = MuteDataExport(
             banTags: banTagItems,
             banUserIds: banUserItems,
-            banIllustIds: banIllustItems
+            banIllustIds: banIllustItems,
+            banNovelIds: banNovelItems,
+            banNovelTitleKeywords: userSettingStore.blockedNovelTitleKeywords,
+            banNovelSeriesKeywords: userSettingStore.blockedNovelSeriesKeywords,
+            banNovelCaptionKeywords: userSettingStore.blockedNovelCaptionKeywords
         )
         let header = ExportHeader(version: 1, type: .muteData, exportedAt: Date())
 
@@ -246,9 +253,25 @@ final class DataExportService {
 
         switch strategy {
         case .merge:
-            try mergeMuteData(banTags: exportData.banTags, banUsers: exportData.banUserIds, banIllusts: exportData.banIllustIds)
+            try mergeMuteData(
+                banTags: exportData.banTags,
+                banUsers: exportData.banUserIds,
+                banIllusts: exportData.banIllustIds,
+                banNovels: exportData.banNovelIds,
+                banNovelTitleKeywords: exportData.banNovelTitleKeywords,
+                banNovelSeriesKeywords: exportData.banNovelSeriesKeywords,
+                banNovelCaptionKeywords: exportData.banNovelCaptionKeywords
+            )
         case .replace:
-            try replaceMuteData(banTags: exportData.banTags, banUsers: exportData.banUserIds, banIllusts: exportData.banIllustIds)
+            try replaceMuteData(
+                banTags: exportData.banTags,
+                banUsers: exportData.banUserIds,
+                banIllusts: exportData.banIllustIds,
+                banNovels: exportData.banNovelIds,
+                banNovelTitleKeywords: exportData.banNovelTitleKeywords,
+                banNovelSeriesKeywords: exportData.banNovelSeriesKeywords,
+                banNovelCaptionKeywords: exportData.banNovelCaptionKeywords
+            )
         case .cancel:
             throw DataExportError.cancelled
         }
@@ -370,7 +393,15 @@ final class DataExportService {
         }
     }
 
-    private func mergeMuteData(banTags: [BanTagItem], banUsers: [BanUserIdItem], banIllusts: [BanIllustIdItem]) throws {
+    private func mergeMuteData(
+        banTags: [BanTagItem],
+        banUsers: [BanUserIdItem],
+        banIllusts: [BanIllustIdItem],
+        banNovels: [BanNovelIdItem],
+        banNovelTitleKeywords: [String],
+        banNovelSeriesKeywords: [String],
+        banNovelCaptionKeywords: [String]
+    ) throws {
         let context = dataContainer.mainContext
         let uid = currentUserId
 
@@ -408,10 +439,47 @@ final class DataExportService {
         }
 
         try context.save()
+
+        for tag in banTags {
+            try userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
+        }
+
+        for user in banUsers {
+            try userSettingStore.addBlockedUserWithInfo(user.userId, name: user.name, account: nil, avatarUrl: nil)
+        }
+
+        for illust in banIllusts {
+            try userSettingStore.addBlockedIllustWithInfo(illust.illustId, title: illust.name, authorId: nil, authorName: nil, thumbnailUrl: nil)
+        }
+
+        for novel in banNovels {
+            try userSettingStore.addBlockedNovelWithInfo(novel.novelId, title: novel.name, authorId: nil, authorName: nil, thumbnailUrl: nil)
+        }
+
+        for keyword in banNovelTitleKeywords {
+            try userSettingStore.addBlockedNovelTitleKeyword(keyword)
+        }
+
+        for keyword in banNovelSeriesKeywords {
+            try userSettingStore.addBlockedNovelSeriesKeyword(keyword)
+        }
+
+        for keyword in banNovelCaptionKeywords {
+            try userSettingStore.addBlockedNovelCaptionKeyword(keyword)
+        }
+
         userSettingStore.loadUserSetting()
     }
 
-    private func replaceMuteData(banTags: [BanTagItem], banUsers: [BanUserIdItem], banIllusts: [BanIllustIdItem]) throws {
+    private func replaceMuteData(
+        banTags: [BanTagItem],
+        banUsers: [BanUserIdItem],
+        banIllusts: [BanIllustIdItem],
+        banNovels: [BanNovelIdItem],
+        banNovelTitleKeywords: [String],
+        banNovelSeriesKeywords: [String],
+        banNovelCaptionKeywords: [String]
+    ) throws {
         let context = dataContainer.mainContext
         let uid = currentUserId
 
@@ -436,6 +504,58 @@ final class DataExportService {
         }
 
         try context.save()
+        userSettingStore.blockedTags = []
+        userSettingStore.userSetting.blockedTags = []
+        userSettingStore.blockedUsers = []
+        userSettingStore.userSetting.blockedUsers = []
+        userSettingStore.blockedIllusts = []
+        userSettingStore.userSetting.blockedIllusts = []
+        userSettingStore.blockedNovels = []
+        userSettingStore.userSetting.blockedNovels = []
+        userSettingStore.blockedTagInfos = []
+        userSettingStore.userSetting.blockedTagInfos = []
+        userSettingStore.blockedUserInfos = []
+        userSettingStore.userSetting.blockedUserInfos = []
+        userSettingStore.blockedIllustInfos = []
+        userSettingStore.userSetting.blockedIllustInfos = []
+        userSettingStore.blockedNovelInfos = []
+        userSettingStore.userSetting.blockedNovelInfos = []
+        userSettingStore.blockedNovelTitleKeywords = []
+        userSettingStore.userSetting.blockedNovelTitleKeywords = []
+        userSettingStore.blockedNovelSeriesKeywords = []
+        userSettingStore.userSetting.blockedNovelSeriesKeywords = []
+        userSettingStore.blockedNovelCaptionKeywords = []
+        userSettingStore.userSetting.blockedNovelCaptionKeywords = []
+        try userSettingStore.saveSetting()
+
+        for tag in banTags {
+            try userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
+        }
+
+        for user in banUsers {
+            try userSettingStore.addBlockedUserWithInfo(user.userId, name: user.name, account: nil, avatarUrl: nil)
+        }
+
+        for illust in banIllusts {
+            try userSettingStore.addBlockedIllustWithInfo(illust.illustId, title: illust.name, authorId: nil, authorName: nil, thumbnailUrl: nil)
+        }
+
+        for novel in banNovels {
+            try userSettingStore.addBlockedNovelWithInfo(novel.novelId, title: novel.name, authorId: nil, authorName: nil, thumbnailUrl: nil)
+        }
+
+        for keyword in banNovelTitleKeywords {
+            try userSettingStore.addBlockedNovelTitleKeyword(keyword)
+        }
+
+        for keyword in banNovelSeriesKeywords {
+            try userSettingStore.addBlockedNovelSeriesKeyword(keyword)
+        }
+
+        for keyword in banNovelCaptionKeywords {
+            try userSettingStore.addBlockedNovelCaptionKeyword(keyword)
+        }
+
         userSettingStore.loadUserSetting()
     }
 }

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct NovelSeriesView: View {
     @Environment(ThemeManager.self) var themeManager
+    @Environment(UserSettingStore.self) private var userSettingStore
     let seriesId: Int
     @State private var store: NovelSeriesStore
     @State private var showExportToast = false
@@ -17,6 +18,10 @@ struct NovelSeriesView: View {
     init(seriesId: Int) {
         self.seriesId = seriesId
         self._store = State(initialValue: NovelSeriesStore(seriesId: seriesId))
+    }
+
+    private var filteredNovels: [Novel] {
+        userSettingStore.filterNovels(store.novels)
     }
 
     var body: some View {
@@ -153,7 +158,7 @@ struct NovelSeriesView: View {
 
             Divider()
 
-            if !store.novels.isEmpty {
+            if !filteredNovels.isEmpty || store.nextUrl != nil || store.isLoadingMore {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("小说列表")
                         .font(.headline)
@@ -196,7 +201,7 @@ struct NovelSeriesView: View {
             }
             .foregroundColor(.secondary)
 
-            if let latestNovel = store.novels.first {
+            if let latestNovel = filteredNovels.first {
                 NavigationLink(value: latestNovel) {
                     Label("查看最新章节", systemImage: "arrow.right.circle.fill")
                         .font(.subheadline)
@@ -216,7 +221,7 @@ struct NovelSeriesView: View {
 
     private var novelList: some View {
         VStack(spacing: 12) {
-            ForEach(Array(store.novels.enumerated()), id: \.element.id) { index, novel in
+            ForEach(Array(filteredNovels.enumerated()), id: \.element.id) { index, novel in
                 NavigationLink(value: novel) {
                     NovelSeriesCard(novel: novel, index: index)
                 }
@@ -224,11 +229,11 @@ struct NovelSeriesView: View {
                 .buttonStyle(.plain)
                 #endif
 
-                if index < store.novels.count - 1 {
+                if index < filteredNovels.count - 1 {
                     Divider()
                 }
 
-                if index == store.novels.count - 1 && store.nextUrl != nil && !store.isLoadingMore {
+                if index == filteredNovels.count - 1 && store.nextUrl != nil && !store.isLoadingMore {
                     Color.clear
                         .frame(height: 1)
                         .onAppear {
@@ -239,7 +244,18 @@ struct NovelSeriesView: View {
                 }
             }
 
-            if store.isLoadingMore {
+            if filteredNovels.isEmpty && store.nextUrl != nil && !store.isLoadingMore {
+                ProgressView()
+                    #if os(macOS)
+                    .controlSize(.small)
+                    #endif
+                    .padding()
+                    .onAppear {
+                        Task {
+                            await store.loadMore()
+                        }
+                    }
+            } else if store.isLoadingMore {
                 HStack {
                     ProgressView()
                         #if os(macOS)
@@ -251,7 +267,7 @@ struct NovelSeriesView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-            } else if store.nextUrl == nil && !store.novels.isEmpty {
+            } else if store.nextUrl == nil && !filteredNovels.isEmpty {
                 Text(String(localized: "已经到底了"))
                     .font(.caption)
                     .foregroundColor(.secondary)

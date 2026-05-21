@@ -122,6 +122,20 @@ struct NovelCard: View {
                     Label("屏蔽此作者", systemImage: "person.slash")
                 }
 
+                Button(role: .destructive) {
+                    try? UserSettingStore.shared.addBlockedNovelTitleKeyword(novel.title)
+                } label: {
+                    Label("按标题拉黑", systemImage: "textformat")
+                }
+
+                if let seriesTitle = novel.series?.title, !seriesTitle.isEmpty {
+                    Button(role: .destructive) {
+                        try? UserSettingStore.shared.addBlockedNovelSeriesKeyword(seriesTitle)
+                    } label: {
+                        Label("按系列拉黑", systemImage: "books.vertical")
+                    }
+                }
+
                 Menu {
                     ForEach(novel.tags, id: \.name) { tag in
                         Button {

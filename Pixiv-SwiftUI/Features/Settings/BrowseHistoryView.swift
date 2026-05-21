@@ -32,6 +32,10 @@ struct BrowseHistoryView: View {
         #endif
     }
 
+    private var filteredNovels: [Novel] {
+        userSettingStore.filterNovels(novels)
+    }
+
     var body: some View {
         contentView
             .navigationTitle("历史")
@@ -139,9 +143,9 @@ struct BrowseHistoryView: View {
 
     @ViewBuilder
     private var novelListContent: some View {
-        if isLoading && novels.isEmpty {
+        if isLoading && filteredNovels.isEmpty {
             novelLoadingContent
-        } else if novels.isEmpty {
+        } else if filteredNovels.isEmpty && loadedCount >= allHistoryIds.count {
             emptyContent(type: "小说")
         } else {
             novelList
@@ -215,13 +219,13 @@ struct BrowseHistoryView: View {
 
     private var novelList: some View {
         Group {
-            ForEach(novels, id: \.id) { novel in
+            ForEach(filteredNovels, id: \.id) { novel in
                 NavigationLink(value: novel) {
                     NovelListCard(novel: novel)
                 }
                 .buttonStyle(.plain)
 
-                if novel.id != novels.last?.id {
+                if novel.id != filteredNovels.last?.id {
                     Divider()
                         .padding(.leading, 12)
                 }
@@ -236,7 +240,7 @@ struct BrowseHistoryView: View {
                     .onAppear {
                         Task { await loadMore() }
                     }
-            } else if !novels.isEmpty {
+            } else if !filteredNovels.isEmpty {
                 Text(String(localized: "已经到底了"))
                     .font(.caption)
                     .foregroundColor(.secondary)

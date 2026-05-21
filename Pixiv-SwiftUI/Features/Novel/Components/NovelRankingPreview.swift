@@ -1,10 +1,11 @@
 import SwiftUI
 
 struct NovelRankingPreview: View {
+    @Environment(UserSettingStore.self) private var userSettingStore
     var store: NovelStore
 
     private var novels: [Novel] {
-        store.dailyRankingNovels
+        userSettingStore.filterNovels(store.dailyRankingNovels)
     }
 
     var body: some View {
