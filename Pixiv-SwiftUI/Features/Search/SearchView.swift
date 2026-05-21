@@ -4,6 +4,27 @@ import UniformTypeIdentifiers
 import PhotosUI
 #endif
 
+private struct SearchHistoryQueryChip: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Text(text)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.12))
+        .clipShape(Capsule())
+    }
+}
+
 struct SearchView: View {
     @State private var store = SearchStore.shared
     @State private var selectedTag: String = ""
@@ -154,9 +175,20 @@ struct SearchView: View {
         accountStore.isLoggedIn ? String(localized: "搜索插画、小说和画师") : String(localized: "请先登录以使用搜索")
     }
 
+    private func normalizedSearchQuery(_ text: String) -> String {
+        text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
+    private func isSingleSearchTerm(_ query: String) -> Bool {
+        !query.contains(where: \.isWhitespace)
+    }
+
     @MainActor
     private func performSearch(word: String, translatedName: String? = nil) {
-        let normalizedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedWord = normalizedSearchQuery(word)
         guard !normalizedWord.isEmpty else { return }
 
         isSearchPresented = false
@@ -208,8 +240,7 @@ struct SearchView: View {
                     addBlockedTag: { name, translatedName in
                         try? userSettingStore.addBlockedTagWithInfo(name, translatedName: translatedName)
                         showBlockToast = true
-                    },
-                    onSearch: { performSearch(word: $0) }
+                    }
                 )
             }
             #else
@@ -227,8 +258,7 @@ struct SearchView: View {
                     addBlockedTag: { name, translatedName in
                         try? userSettingStore.addBlockedTagWithInfo(name, translatedName: translatedName)
                         showBlockToast = true
-                    },
-                    onSearch: { performSearch(word: $0) }
+                    }
                 )
             }
             #endif
@@ -240,30 +270,6 @@ struct SearchView: View {
                             startSauceNaoSearch()
                         }) {
                             Image(systemName: "photo.badge.magnifyingglass")
-                        }
-                    }
-                    #if os(iOS)
-                    if #available(iOS 26.0, *) {
-                        if !store.searchHistory.isEmpty && store.searchText.isEmpty {
-                            ToolbarSpacer(.fixed)
-                        }
-                    }
-                    #endif
-                }
-                if !store.searchHistory.isEmpty && store.searchText.isEmpty && accountStore.isLoggedIn {
-                    ToolbarItem {
-                        Button(action: {
-                            showClearHistoryConfirmation = true
-                        }) {
-                            Image(systemName: "trash")
-                        }
-                        .confirmationDialog(String(localized: "确定要清除所有搜索历史吗？"), isPresented: $showClearHistoryConfirmation, titleVisibility: .visible) {
-                            Button(String(localized: "清除所有"), role: .destructive) {
-                                triggerHaptic()
-                                store.clearHistory()
-                                isHistoryExpanded = false
-                            }
-                            Button(String(localized: "取消"), role: .cancel) {}
                         }
                     }
                 }
@@ -423,10 +429,45 @@ struct SearchView: View {
         ScrollView {
             VStack(alignment: .leading) {
                 if !store.searchHistory.isEmpty {
-                    Text("搜索历史")
-                        .font(.headline)
-                        .padding(.horizontal)
-                        .padding(.top)
+                    HStack(spacing: 12) {
+                        Text("搜索历史")
+                            .font(.headline)
+
+                        Spacer()
+
+                        if accountStore.isLoggedIn {
+                            Button(action: {
+                                showClearHistoryConfirmation = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "trash")
+                                    Text("清空")
+                                }
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.secondary.opacity(0.12))
+                                .cornerRadius(12)
+                            }
+                            .buttonStyle(.plain)
+                            .confirmationDialog(
+                                String(localized: "确定要清除所有搜索历史吗？"),
+                                isPresented: $showClearHistoryConfirmation,
+                                titleVisibility: .visible
+                            ) {
+                                Button(String(localized: "清除所有"), role: .destructive) {
+                                    triggerHaptic()
+                                    store.clearHistory()
+                                    isHistoryExpanded = false
+                                }
+                                Button(String(localized: "取消"), role: .cancel) {}
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
 
                     FlowLayout(spacing: 6) {
                         let historyToDisplay = isHistoryExpanded ? store.searchHistory : Array(store.searchHistory.prefix(10))
@@ -436,21 +477,21 @@ struct SearchView: View {
                                     Button(action: {
                                         performSearch(word: tag.name, translatedName: tag.translatedName)
                                     }) {
-                                        TagChip(searchTag: tag)
+                                        SearchHistoryQueryChip(text: tag.name)
                                     }
                                     .buttonStyle(.plain)
                                 } else {
-                                    TagChip(searchTag: tag)
+                                    SearchHistoryQueryChip(text: tag.name)
                                 }
                             }
                             .contextMenu {
                                 Button(action: {
                                     copyToClipboard(tag.name)
                                 }) {
-                                    Label(String(localized: "复制 tag"), systemImage: "doc.on.doc")
+                                    Label(String(localized: "复制搜索内容"), systemImage: "doc.on.doc")
                                 }
 
-                                if accountStore.isLoggedIn {
+                                if accountStore.isLoggedIn && isSingleSearchTerm(tag.name) {
                                     Button(action: {
                                         triggerHaptic()
                                         try? userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
@@ -612,8 +653,7 @@ struct SearchView: View {
                 addBlockedTag: { name, translatedName in
                     try? userSettingStore.addBlockedTagWithInfo(name, translatedName: translatedName)
                     showBlockToast = true
-                },
-                onSearch: { performSearch(word: $0) }
+                }
             )
         }
         .listStyle(.plain)
