@@ -98,11 +98,6 @@
 
 ## 编译指南
 
-如果你希望自行编译本项目，请确保你的开发环境满足以下要求：
-- Xcode 16.0+
-- Swift 6.0
-- macOS 15.0+ (推荐)
-
 ### 1. 克隆仓库
 ```bash
 git clone https://github.com/Eslzzyl/Pixiv-SwiftUI.git
@@ -110,7 +105,7 @@ cd Pixiv-SwiftUI
 ```
 
 ### 2. 准备资源文件 (关键)
-项目依赖 `Resources/tags.json` 文件进行编译。如果该文件缺失，编译会报错。你可以通过以下任一方式准备该文件：
+项目依赖本地维护的优化 tag 翻译库 `Resources/tags.json` 进行编译。如果该文件缺失，编译会报错。你可以通过以下任一方式准备该文件：
 
 - **自动化生成**（推荐）：
   执行 `pixiv-tags` 目录下的导出脚本：
@@ -128,6 +123,8 @@ cd Pixiv-SwiftUI
   echo '{"timestamp": "2026-01-01T00:00:00", "tags": {}}' > Resources/tags.json
   ```
 
+> Release 中发布的文件包含了完整的优化翻译数据。
+
 ### 3. 使用 Xcode 编译
 1. 双击打开 `Pixiv-SwiftUI.xcodeproj`。
 2. 选择对应的 Scheme（Debug/Release）和平台 (iOS 或 macOS)。
@@ -137,7 +134,7 @@ cd Pixiv-SwiftUI
 
 ### 手动安装
 - iOS/iPadOS：到 Release 中下载最新版本的 ipa 包并使用 AltStore 等方式侧载安装。
-- macOS：到 Release 中下载最新版本的 dmg 包并安装，或者使用下面的 Homebrew 安装。安装包没有签名，可以执行以下命令来绕过：
+- macOS：到 Release 中下载最新版本的 dmg 包并安装，或者使用下面的 Homebrew 命令安装。安装包没有签名，可以执行以下命令来绕过：
 
 ```shell
 sudo xattr -rd com.apple.quarantine /Applications/Pixiv-SwiftUI.app
@@ -157,26 +154,7 @@ brew install --cask pixiv-swiftui
 - [SwiftSoup](https://github.com/scinfu/SwiftSoup)：为亮点和以图搜图功能提供了 HTML 解析能力
 - [沉浸式翻译](https://immersivetranslate.com/zh-Hans/): 为项目的翻译功能提供了启发
 - [pixivpy](https://github.com/upbit/pixivpy): 提供了 API 参考
-- [OpenCode](https://opencode.ai/): OpenCode Zen 计划免费提供的模型实现了本项目的大部分代码
-- [iFlow CLI](https://cli.iflow.cn/)：提供的免费模型参与实现了项目
-
-参与开发的模型包括：
-- MiniMax M2.1
-- Kimi-K2.5
-- GLM-4.6
-- GLM-4.7
-- GLM-5
-- Qwen3.5-Plus
-- Gemini 3 Flash
-- Gemini 3 Pro
-- Gemini 3.1 Pro
-- Grok Code Fast 1
-- GPT-5.2
-- GPT-5.2-Codex
-- GPT-5.3-Codex
-- Claude Haiku 4.5
-- Claude Opus 4.5
-- Claude Sonnet 4.6
+- [OpenCode](https://opencode.ai/)、[iFlow CLI](https://cli.iflow.cn/)：提供了一些免费模型
 
 ## 截图
 
@@ -184,7 +162,7 @@ brew install --cask pixiv-swiftui
 
 点击对应连接跳转到截图页查看。
 
-[iOS](./docs/screenshots/ios.md) | iPadOS | [macOS](./docs/screenshots/macos.md)
+[iOS](./docs/screenshots/ios.md) | [iPadOS](./docs/screenshots/ipados.md) | [macOS](./docs/screenshots/macos.md)
 
 ---
 

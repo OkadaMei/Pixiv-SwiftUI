@@ -86,9 +86,44 @@
 The project supports iOS, iPadOS, and macOS.
 
 Current Support:
-- iOS 17 or newer: Theoretically supported, but not fully tested.
-- macOS 14 or newer: Theoretically supported, but not fully tested.
-- Note: Older versions are not supported due to SwiftData compatibility issues.
+- iOS 26 and iOS 18: Tested and working properly.
+- iOS 17: Theoretically supported but not tested.
+- iPadOS: Refer to iOS. Only iPadOS 26 has been tested.
+- macOS 26: Tested and working properly.
+- macOS 14/15: Theoretically supported but not tested.
+
+> Due to SwiftData compatibility issues, the app does not support older system versions.
+
+## How to Compile
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Eslzzyl/Pixiv-SwiftUI.git
+cd Pixiv-SwiftUI
+```
+
+### 2. Prepare Resource Files (Critical)
+The project relies on a locally maintained optimized tag translation library `Resources/tags.json` for compilation. If this file is missing, compilation will fail. You can prepare this file using either of the following methods:
+
+- **Automated Generation** (Recommended): Run the export script in the `pixiv-tags` directory:
+  ```bash
+  cd pixiv-tags
+  python3 export_tags.py
+  cd ..
+  ```
+  This script will automatically generate an empty `tags.json` template if the database is missing.
+- **Manual Creation**: Manually create a file with the basic structure in the project root directory:
+  ```bash
+  mkdir -p Resources
+  echo '{"timestamp": "2026-01-01T00:00:00", "tags": {}}' > Resources/tags.json
+  ```
+
+> The file released in the Release section contains complete optimized translation data.
+
+### 3. Compile with Xcode
+1. Double-click to open `Pixiv-SwiftUI.xcodeproj`.
+2. Select the appropriate Scheme (Debug/Release) and platform (iOS or macOS).
+3. Click `Build` (Cmd + B) or `Run` (Cmd + R).
 
 ## Installation
 
@@ -114,32 +149,15 @@ brew install --cask pixiv-swiftui
 - [GzipSwift](https://github.com/1024jp/GzipSwift): Direct connection mode manually implemented HTTP protocol; GzipSwift provides gzip decompression.
 - [Immersive Translate](https://immersivetranslate.com/): Inspired the translation function of this project.
 - [pixivpy](https://github.com/upbit/pixivpy): Provided API references.
-- [OpenCode](https://opencode.ai/): Models provided for free by the OpenCode Zen plan implemented most of the code for this project.
-- [iFlow CLI](https://cli.iflow.cn/): Free models provided participated in the implementation of the project.
-
-The current lead programmer is GLM-5. Other models involved in development include: Kimi K2.5, GLM 4.6, GLM 4.7, Gemini 3 Flash, Gemini 3 Pro, Grok Code Fast 1, GPT-5.2, GPT-5.2-Codex.
+- [OpenCode](https://opencode.ai/) and [iFlow CLI](https://cli.iflow.cn/): Provided some free models.
 
 ## Screenshots
 
 Screenshots may not fully reflect the latest UI state.
 
-### iOS
+Click the corresponding link to jump to the screenshot page.
 
-<p align="center">
-  <img src="./docs/ios_screenshot/推荐.webp" alt="Recommendation" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/ios_screenshot/动态.webp" alt="Timeline" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/ios_screenshot/小说.webp" alt="Novel" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/ios_screenshot/搜索.webp" alt="Search" width="200" style="border-radius: 12px; margin: 8px;">
-</p>
-
-### macOS
-
-<p align="center">
-  <img src="./docs/macos_screenshot/推荐.webp" alt="Recommendation" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/macos_screenshot/动态.webp" alt="Timeline" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/macos_screenshot/小说.webp" alt="Novel" width="200" style="border-radius: 12px; margin: 8px;">
-  <img src="./docs/macos_screenshot/搜索.webp" alt="Search" width="200" style="border-radius: 12px; margin: 8px;">
-</p>
+[iOS](./docs/screenshots/ios.md) | [iPadOS](./docs/screenshots/ipados.md) | [macOS](./docs/screenshots/macos.md)
 
 ---
 
