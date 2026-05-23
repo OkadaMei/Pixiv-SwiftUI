@@ -23,6 +23,9 @@ struct RecommendView: View {
 
     @State private var searchStore = SearchStore.shared
 
+    /// 记录已预取到的位置索引，避免重复预取
+    @State private var prefetchedUpToIndex: Int = 0
+
     private let cache = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
     private let usersCacheKey = "recommend_users_0"
@@ -133,6 +136,9 @@ struct RecommendView: View {
                             IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth, expiration: DefaultCacheExpiration.recommend)
                         }
                         .buttonStyle(.plain)
+                        .onAppear {
+                            prefetchIfNeeded(from: illust)
+                        }
                     }
                     .padding(.horizontal, 12)
 
@@ -320,6 +326,16 @@ struct RecommendView: View {
         }
     }
 
+    /// 卡片出现时预取后续图片，保持始终领先视口约 6 张
+    private func prefetchIfNeeded(from currentIllust: Illusts) {
+        prefetchIllustsIfNeeded(
+            from: currentIllust,
+            in: filteredIllusts,
+            quality: settingStore.userSetting.feedPreviewQuality,
+            prefetchedUpToIndex: &prefetchedUpToIndex
+        )
+    }
+
     private func loadCachedUsers() {
         if let cached: [UserPreviews] = cache.get(forKey: usersCacheKey) {
             recommendedUsers = cached
@@ -373,6 +389,9 @@ struct RecommendView: View {
                         self.hasMoreData = result.nextUrl != nil
                         self.isLoading = false
                         cache.set((illusts, result.nextUrl), forKey: cacheKey, expiration: expiration)
+
+                        // 重置预取跟踪（新数据已追加，后续 onAppear 会接上）
+                        prefetchedUpToIndex = 0
                     }
                 }
             } catch {
@@ -473,8 +492,12 @@ struct RecommendView: View {
                 nextUrl = result.nextUrl
                 hasMoreData = result.nextUrl != nil
                 isLoading = false
+                prefetchedUpToIndex = 0
 
                 cache.set((illusts, result.nextUrl), forKey: cacheKey, expiration: expiration)
+
+                // 预取下一页的图片（跳过当前可见区域）
+                ImageURLHelper.prefetchImages(from: illusts, quality: settingStore.userSetting.feedPreviewQuality, offset: 6)
             }
         } catch {
             await MainActor.run {

@@ -538,6 +538,7 @@ struct IllustWaterfallView: View {
     @Environment(UserSettingStore.self) var settingStore
 
     @State private var dynamicColumnCount: Int = ResponsiveGrid.initialColumnCount(userSetting: UserSettingStore.shared.userSetting)
+    @State private var prefetchedUpToIndex: Int = 0
 
     private var filteredIllusts: [Illusts] {
         settingStore.filterIllusts(illusts)
@@ -565,6 +566,9 @@ struct IllustWaterfallView: View {
                         IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth)
                     }
                     .buttonStyle(.plain)
+                    .onAppear {
+                        prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                    }
                 }
 
                 if !hasReachedEnd {

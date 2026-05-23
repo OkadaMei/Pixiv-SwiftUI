@@ -231,6 +231,61 @@ struct ImageURLHelper {
             return urls.medium.isEmpty ? urls.large : urls.medium
         }
     }
+
+    /// 预取一批 illust 的封面图片到 Kingfisher 缓存
+    /// - Parameters:
+    ///   - quality: 图片质量（与卡片实际显示一致）
+    ///   - maxCount: 最大预取数量，默认 6（约一屏）
+    ///   - offset: 从第几个开始预取，默认 0（第一张）
+    static func prefetchImages(from illusts: [Illusts], quality: Int, maxCount: Int = 6, offset: Int = 0) {
+        let startIndex = offset
+        let endIndex = min(startIndex + maxCount, illusts.count)
+        guard startIndex < endIndex else { return }
+
+        let slice = illusts[startIndex..<endIndex]
+        let sources: [Kingfisher.Source] = slice.compactMap { illust in
+            let urlString = getImageURL(from: illust, quality: quality)
+            guard let url = URL(string: urlString) else { return nil }
+            if shouldUseDirectConnection(url: url) {
+                return .directNetwork(url)
+            }
+            return .network(url)
+        }
+
+        guard !sources.isEmpty else { return }
+        let prefetcher = ImagePrefetcher(sources: sources, options: [
+            .requestModifier(PixivImageLoader.shared),
+            .alsoPrefetchToMemory,
+        ])
+        prefetcher.maxConcurrentDownloads = 2
+        prefetcher.start()
+    }
+
+    private static func shouldUseDirectConnection(url: URL) -> Bool {
+        guard let host = url.host else { return false }
+        return NetworkModeStore.shared.useDirectConnection &&
+               (host.contains("i.pximg.net") || host.contains("img-master.pixiv.net"))
+    }
+}
+
+/// 卡片出现时预取后续图片，保持始终领先视口约 ahead 张
+/// - 通过 `prefetchedUpToIndex` inout 跟踪进度，避免重复预取
+/// - 每个页面只需声明 `@State private var prefetchedUpToIndex = 0` 并调用此函数
+/// - Parameters:
+///   - prefetchedUpToIndex: 页面的 @State，记录已预取到的位置
+///   - ahead: 领先当前卡片多少张，默认 6
+func prefetchIllustsIfNeeded(
+    from currentIllust: Illusts,
+    in illusts: [Illusts],
+    quality: Int,
+    prefetchedUpToIndex: inout Int,
+    ahead: Int = 6
+) {
+    guard let index = illusts.firstIndex(where: { $0.id == currentIllust.id }) else { return }
+    let target = index + ahead
+    guard target > prefetchedUpToIndex, target < illusts.count else { return }
+    prefetchedUpToIndex = target
+    ImageURLHelper.prefetchImages(from: illusts, quality: quality, maxCount: ahead, offset: target)
 }
 
 struct ImageQualityHelper {

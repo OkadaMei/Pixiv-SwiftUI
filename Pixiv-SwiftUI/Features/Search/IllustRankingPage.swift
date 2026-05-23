@@ -12,6 +12,7 @@ struct IllustRankingPage: View {
     @State private var showProfilePanel = false
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
+    @State private var prefetchedUpToIndex: Int = 0
 
     private var rankingModes: [IllustRankingMode] {
         settingStore.enabledIllustRankingModes
@@ -220,6 +221,9 @@ struct IllustRankingPage: View {
                                 IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth, expiration: DefaultCacheExpiration.recommend)
                             }
                             .buttonStyle(.plain)
+                            .onAppear {
+                                prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                            }
                         }
                         .padding(.horizontal, 12)
 

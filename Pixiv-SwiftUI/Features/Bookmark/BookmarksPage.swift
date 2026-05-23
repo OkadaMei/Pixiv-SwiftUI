@@ -15,6 +15,7 @@ struct BookmarksPage: View {
     @State private var bookmarkCacheStore = BookmarkCacheStore.shared
 
     var initialRestrict: String?
+    @State private var prefetchedUpToIndex: Int = 0
 
     private let cache = CacheManager.shared
 
@@ -138,6 +139,9 @@ ScrollView {
                                         bookmarkCardView(illust: illust, columnWidth: columnWidth, columnCount: dynamicColumnCount, isDeleted: false)
                                     }
                                     .buttonStyle(.plain)
+                                    .onAppear {
+                                        prefetchIllustsIfNeeded(from: illust, in: filteredBookmarks, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                                    }
                                 }
                                 .padding(.horizontal, 12)
                             }

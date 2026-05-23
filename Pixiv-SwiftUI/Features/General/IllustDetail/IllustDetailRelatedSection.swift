@@ -36,6 +36,7 @@ struct IllustDetailRelatedSection: View {
 
     @State private var dynamicColumnCount: Int = 2
     @State private var loadMoreError: String?
+    @State private var prefetchedUpToIndex: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -158,6 +159,9 @@ struct IllustDetailRelatedSection: View {
                     RelatedIllustCard(illust: relatedIllust, showTitle: false, columnWidth: columnWidth)
                 }
                 .buttonStyle(.plain)
+                .onAppear {
+                    prefetchIllustsIfNeeded(from: relatedIllust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                }
             }
 
             if hasMoreRelated {
