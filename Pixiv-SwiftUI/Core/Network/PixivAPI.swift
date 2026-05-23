@@ -161,21 +161,21 @@ final class PixivAPI {
 
     /// 使用 code 登录
     func loginWithCode(_ code: String, codeVerifier: String) async throws -> (
-        accessToken: String, refreshToken: String, user: User
+        accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
         return try await authAPI.loginWithCode(code, codeVerifier: codeVerifier)
     }
 
     /// 使用 refresh_token 登录
     func loginWithRefreshToken(_ refreshToken: String) async throws -> (
-        accessToken: String, user: User
+        accessToken: String, user: User, expiresIn: Int
     ) {
         return try await authAPI.loginWithRefreshToken(refreshToken)
     }
 
     /// 刷新 accessToken
     func refreshAccessToken(_ refreshToken: String) async throws -> (
-        accessToken: String, refreshToken: String, user: User
+        accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
         return try await authAPI.refreshAccessToken(refreshToken)
     }

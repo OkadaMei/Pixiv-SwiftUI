@@ -27,11 +27,11 @@ class NetworkServiceImpl: NetworkService {
 
 /// 认证服务实现
 class AuthServiceImpl: AuthService {
-    func loginWithCode(_ code: String, codeVerifier: String) async throws -> (accessToken: String, refreshToken: String, user: User) {
+    func loginWithCode(_ code: String, codeVerifier: String) async throws -> (accessToken: String, refreshToken: String, user: User, expiresIn: Int) {
         return try await PixivAPI.shared.loginWithCode(code, codeVerifier: codeVerifier)
     }
 
-    func refreshAccessToken(_ refreshToken: String) async throws -> (accessToken: String, refreshToken: String, user: User) {
+    func refreshAccessToken(_ refreshToken: String) async throws -> (accessToken: String, refreshToken: String, user: User, expiresIn: Int) {
         return try await PixivAPI.shared.refreshAccessToken(refreshToken)
     }
 }

@@ -34,7 +34,12 @@ final class AppInitializer {
             group.addTask { await uStore.loadUserSettingAsync() }
         }
 
-        // 4. 设置加载完成后刷新主题色（此时 UserSetting 已就绪）
+        // 4. 账户加载完成后，主动刷新已过期的 token（启动画面期间进行）
+        if aStore.isLoggedIn {
+            await aStore.refreshTokenIfExpired()
+        }
+
+        // 5. 设置加载完成后刷新主题色（此时 UserSetting 已就绪）
         ThemeManager.shared.updateThemeColor()
 
         // 5. 更新初始化状态

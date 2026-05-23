@@ -14,8 +14,8 @@ protocol Repository {
 
 /// 认证服务协议
 protocol AuthService {
-    func loginWithCode(_ code: String, codeVerifier: String) async throws -> (accessToken: String, refreshToken: String, user: User)
-    func refreshAccessToken(_ refreshToken: String) async throws -> (accessToken: String, refreshToken: String, user: User)
+    func loginWithCode(_ code: String, codeVerifier: String) async throws -> (accessToken: String, refreshToken: String, user: User, expiresIn: Int)
+    func refreshAccessToken(_ refreshToken: String) async throws -> (accessToken: String, refreshToken: String, user: User, expiresIn: Int)
 }
 
 /// 可观察对象协议

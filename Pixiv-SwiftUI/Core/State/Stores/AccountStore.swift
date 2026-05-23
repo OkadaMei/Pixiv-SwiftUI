@@ -163,7 +163,7 @@ final class AccountStore {
         }
     }
 
-    private func saveTokensToKeychain(for account: AccountPersist) {
+    private func saveTokensToKeychain(for account: AccountPersist, expiresIn: Int = 3600) {
         let userId = account.userId
         do {
             try KeychainHelper.save(account.accessToken, service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .accessToken))
@@ -173,6 +173,19 @@ final class AccountStore {
             } else {
                 try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .phpsessid))
             }
+            // 保存 token 过期时间（使用服务端返回的 expires_in）
+            #if DEBUG
+            print("[Token] 服务端返回 expires_in=\(expiresIn)s (\(Double(expiresIn) / 60) 分钟)")
+            #endif
+            let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
+            #if DEBUG
+            print("[Token] token 过期时间: \(ISO8601DateFormatter().string(from: expiryDate))")
+            #endif
+            try KeychainHelper.save(
+                ISO8601DateFormatter().string(from: expiryDate),
+                service: KeychainHelper.Service.authTokens,
+                account: KeychainHelper.accountKey(userId: userId, type: .tokenExpiry)
+            )
         } catch {
             print("Failed to save tokens to keychain for \(userId): \(error)")
         }
@@ -183,14 +196,64 @@ final class AccountStore {
             try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .accessToken))
             try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .refreshToken))
             try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .phpsessid))
+            try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .tokenExpiry))
         } catch {
             print("Failed to delete tokens from keychain for \(userId): \(error)")
         }
     }
 
+    /// 主动刷新缓冲时间，提前刷新避免边缘情况
+    private static let tokenRefreshBuffer: TimeInterval = 300
+
     /// 标记用户已尝试过登录（启动时调用）
     func markLoginAttempted() {
         hasAttemptedLogin = true
+    }
+
+    /// 启动时检查 token 是否已过期，过期则主动刷新
+    func refreshTokenIfExpired() async {
+        guard let account = currentAccount, !account.refreshToken.isEmpty else { return }
+        guard isTokenExpired() else {
+            #if DEBUG
+            print("[Token] token 仍有效，跳过主动刷新")
+            #endif
+            return
+        }
+
+        #if DEBUG
+        print("[Token] token 已过期，主动刷新...")
+        #endif
+
+        do {
+            let (newAccessToken, newRefreshToken, _, expiresIn) = try await PixivAPI.shared.refreshAccessToken(account.refreshToken)
+            account.accessToken = newAccessToken
+            account.refreshToken = newRefreshToken
+            try updateAccount(account, expiresIn: expiresIn)
+            PixivAPI.shared.setAccessToken(newAccessToken)
+            #if DEBUG
+            print("[Token] 主动刷新成功")
+            #endif
+        } catch {
+            // 静默失败 — NetworkClient 的失败重试兜底
+            #if DEBUG
+            print("[Token] 主动刷新失败，后续请求将自动重试: \(error)")
+            #endif
+        }
+    }
+
+    /// 判断存储的 token 是否已过期
+    private func isTokenExpired() -> Bool {
+        guard let account = currentAccount else { return true }
+        let userId = account.userId
+        guard let dateStr = try? KeychainHelper.load(
+            service: KeychainHelper.Service.authTokens,
+            account: KeychainHelper.accountKey(userId: userId, type: .tokenExpiry)
+        ), let expiryDate = ISO8601DateFormatter().date(from: dateStr) else {
+            // 无过期时间 → 按已过期处理
+            return true
+        }
+        // 提前 buffer 时间刷新，避免边缘情况
+        return Date() >= expiryDate.addingTimeInterval(-Self.tokenRefreshBuffer)
     }
 
     /// 请求导航到指定目标
@@ -205,7 +268,7 @@ final class AccountStore {
         error = nil
 
         do {
-            let (accessToken, user) = try await PixivAPI.shared.loginWithRefreshToken(refreshToken)
+            let (accessToken, user, expiresIn) = try await PixivAPI.shared.loginWithRefreshToken(refreshToken)
 
             // 创建新账户
             let account = AccountPersist(
@@ -215,7 +278,7 @@ final class AccountStore {
                 deviceToken: ""
             )
 
-            try await saveAccount(account)
+            try await saveAccount(account, expiresIn: expiresIn)
             isLoading = false
         } catch {
             self.error = AppError.networkError("登录失败: \(error.localizedDescription)")
@@ -229,7 +292,7 @@ final class AccountStore {
         error = nil
 
         do {
-            let (accessToken, refreshToken, user) = try await PixivAPI.shared.loginWithCode(code, codeVerifier: codeVerifier)
+            let (accessToken, refreshToken, user, expiresIn) = try await PixivAPI.shared.loginWithCode(code, codeVerifier: codeVerifier)
 
             // 创建新账户
             let account = AccountPersist(
@@ -239,7 +302,7 @@ final class AccountStore {
                 deviceToken: ""
             )
 
-            try await saveAccount(account)
+            try await saveAccount(account, expiresIn: expiresIn)
             isLoading = false
         } catch {
             self.error = AppError.networkError("登录失败: \(error.localizedDescription)")
@@ -248,12 +311,12 @@ final class AccountStore {
     }
 
     /// 保存新账户
-    func saveAccount(_ account: AccountPersist) async throws {
+    func saveAccount(_ account: AccountPersist, expiresIn: Int = 3600) async throws {
         let context = dataContainer.mainContext
         let targetUserId = account.userId
 
         // 保存到 Keychain
-        saveTokensToKeychain(for: account)
+        saveTokensToKeychain(for: account, expiresIn: expiresIn)
 
         // 检查是否已存在
         let descriptor = FetchDescriptor<AccountPersist>(
@@ -313,7 +376,7 @@ final class AccountStore {
     }
 
     /// 更新账户信息
-    func updateAccount(_ account: AccountPersist) throws {
+    func updateAccount(_ account: AccountPersist, expiresIn: Int = 3600) throws {
         let context = dataContainer.mainContext
         let targetUserId = account.userId
 
@@ -332,7 +395,7 @@ final class AccountStore {
             existing.isMailAuthorized = account.isMailAuthorized
             try context.save()
             // 同步保存到 Keychain，确保下次启动时加载的是最新 token
-            saveTokensToKeychain(for: existing)
+            saveTokensToKeychain(for: existing, expiresIn: expiresIn)
         }
     }
 
@@ -464,7 +527,7 @@ final class AccountStore {
         guard let account = currentAccount else { return }
 
         do {
-            let (accessToken, refreshToken, user) = try await PixivAPI.shared.refreshAccessToken(account.refreshToken)
+            let (accessToken, refreshToken, user, expiresIn) = try await PixivAPI.shared.refreshAccessToken(account.refreshToken)
 
             // 更新账户信息
             account.accessToken = accessToken
@@ -477,7 +540,7 @@ final class AccountStore {
             account.xRestrict = user.xRestrict ?? 0
             account.isMailAuthorized = (user.isMailAuthorized ?? false) ? 1 : 0
 
-            try dataContainer.save()
+            try updateAccount(account, expiresIn: expiresIn)
         } catch {
             print("刷新账户信息失败: \(error)")
         }

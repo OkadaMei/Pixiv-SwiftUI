@@ -52,7 +52,7 @@ final class AuthAPI {
 
     /// 使用 code 登录
     func loginWithCode(_ code: String, codeVerifier: String) async throws -> (
-        accessToken: String, refreshToken: String, user: User
+        accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
         // swiftlint:disable:next force_unwrapping
         let url = URL(string: APIEndpoint.oauthURL + "/auth/token")!
@@ -78,11 +78,13 @@ final class AuthAPI {
             let accessToken: String
             let refreshToken: String?
             let user: User
+            let expiresIn: Int
 
             enum CodingKeys: String, CodingKey {
                 case accessToken = "access_token"
                 case refreshToken = "refresh_token"
                 case user
+                case expiresIn = "expires_in"
             }
         }
 
@@ -98,21 +100,22 @@ final class AuthAPI {
         return (
             response.accessToken,
             response.refreshToken ?? "",
-            response.user
+            response.user,
+            response.expiresIn
         )
     }
 
     /// 使用 refresh_token 登录
     func loginWithRefreshToken(_ refreshToken: String) async throws -> (
-        accessToken: String, user: User
+        accessToken: String, user: User, expiresIn: Int
     ) {
-        let (accessToken, _, user) = try await refreshAccessToken(refreshToken)
-        return (accessToken, user)
+        let (accessToken, _, user, expiresIn) = try await refreshAccessToken(refreshToken)
+        return (accessToken, user, expiresIn)
     }
 
     /// 刷新 accessToken
     func refreshAccessToken(_ refreshToken: String) async throws -> (
-        accessToken: String, refreshToken: String, user: User
+        accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
         // swiftlint:disable:next force_unwrapping
         let url = URL(string: APIEndpoint.oauthURL + "/auth/token")!
@@ -136,11 +139,13 @@ final class AuthAPI {
             let accessToken: String
             let refreshToken: String?
             let user: User
+            let expiresIn: Int
 
             enum CodingKeys: String, CodingKey {
                 case accessToken = "access_token"
                 case refreshToken = "refresh_token"
                 case user
+                case expiresIn = "expires_in"
             }
         }
 
@@ -156,7 +161,8 @@ final class AuthAPI {
         return (
             response.accessToken,
             response.refreshToken ?? refreshToken,
-            response.user
+            response.user,
+            response.expiresIn
         )
     }
 }

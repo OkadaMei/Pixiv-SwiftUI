@@ -57,6 +57,7 @@ enum KeychainHelper {
         case accessToken = "access_token"
         case refreshToken = "refresh_token"
         case phpsessid = "phpsessid"
+        case tokenExpiry = "token_expiry"
     }
 
     static func accountKey(userId: String, type: AuthTokenType) -> String {
