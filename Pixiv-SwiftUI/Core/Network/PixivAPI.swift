@@ -7,12 +7,41 @@ final class PixivAPI {
     static let shared = PixivAPI()
 
     private let authAPI = AuthAPI()
-    private var searchAPI: SearchAPI?
-    private(set) var illustAPI: IllustAPI?
-    private var userAPI: UserAPI?
-    private var bookmarkAPI: BookmarkAPI?
-    private(set) var mangaAPI: MangaAPI?
-    private(set) var novelAPI: NovelAPI?
+
+    /// 缓存 auth headers，子 API 将在首次使用时懒加载
+    private var cachedAuthHeaders: [String: String]?
+
+    /// 懒加载的子 API — 首次访问时才创建
+    private(set) lazy var searchAPI: SearchAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return SearchAPI(authHeaders: headers)
+    }()
+
+    private(set) lazy var illustAPI: IllustAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return IllustAPI(authHeaders: headers)
+    }()
+
+    private(set) lazy var userAPI: UserAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return UserAPI(authHeaders: headers)
+    }()
+
+    private(set) lazy var bookmarkAPI: BookmarkAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return BookmarkAPI(authHeaders: headers)
+    }()
+
+    private(set) lazy var mangaAPI: MangaAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return MangaAPI(authHeaders: headers)
+    }()
+
+    private(set) lazy var novelAPI: NovelAPI? = {
+        guard let headers = cachedAuthHeaders else { return nil }
+        return NovelAPI(authHeaders: headers)
+    }()
+
     private(set) var ajaxAPI: AjaxAPI?
 
     private var isAjaxSessionReady = false
@@ -26,18 +55,12 @@ final class PixivAPI {
         var pAbId2: String?
     }
 
-    /// 设置访问令牌并初始化其他API类
+    /// 设置访问令牌并缓存 headers，子 API 在使用时懒加载
     func setAccessToken(_ token: String) {
         authAPI.setAccessToken(token)
 
-        // 有了token后初始化其他API类
-        let headers = getAuthHeaders(for: token)
-        searchAPI = SearchAPI(authHeaders: headers)
-        illustAPI = IllustAPI(authHeaders: headers)
-        userAPI = UserAPI(authHeaders: headers)
-        bookmarkAPI = BookmarkAPI(authHeaders: headers)
-        mangaAPI = MangaAPI(authHeaders: headers)
-        novelAPI = NovelAPI(authHeaders: headers)
+        // 仅缓存 headers，子 API 延迟到首次使用时创建
+        cachedAuthHeaders = getAuthHeaders(for: token)
 
         ajaxAPI = AjaxAPI()
         ajaxAPI?.setSessionCookies(

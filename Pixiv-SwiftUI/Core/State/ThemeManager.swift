@@ -17,7 +17,8 @@ final class ThemeManager {
 
     init(userSettingStore: UserSettingStore = .shared) {
         self.userSettingStore = userSettingStore
-        updateThemeColor()
+        // updateThemeColor() 延迟到 UserSetting 异步加载完成后调用
+        // 参见 AppInitializer.performInitialization()
     }
 
     func updateThemeColor() {

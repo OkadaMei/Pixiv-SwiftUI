@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import Observation
 
 /// 应用启动初始化器，负责协调启动过程中的各种任务
@@ -11,14 +12,15 @@ final class AppInitializer {
     var accountStore: AccountStore?
     var illustStore: IllustStore?
     var userSettingStore: UserSettingStore?
+    var modelContainer: ModelContainer?
 
     private init() {}
 
     /// 执行应用初始化序列
     func performInitialization() async {
-        // 1. 配置基础服务
-        CacheConfig.configureKingfisher()
-        UgoiraStore.cleanupLegacyCache()
+        // 1. 初始化 SwiftData 容器（此时 LaunchScreenView 已显示，不会阻塞首帧）
+        let container = DataContainer.shared.modelContainer
+        self.modelContainer = container
 
         // 2. 初始化核心 Store
         let aStore = AccountStore.shared
@@ -32,23 +34,29 @@ final class AppInitializer {
             group.addTask { await uStore.loadUserSettingAsync() }
         }
 
-        // 4. 更新初始化状态
+        // 4. 设置加载完成后刷新主题色（此时 UserSetting 已就绪）
+        ThemeManager.shared.updateThemeColor()
+
+        // 5. 更新初始化状态
         self.accountStore = aStore
         self.illustStore = iStore
         self.userSettingStore = uStore
-
-        // 5. 稍微延迟以确保 UI 衔接自然
-        try? await Task.sleep(for: .milliseconds(200))
 
         // 6. 结束启动状态
         withAnimation(.easeInOut(duration: 0.4)) {
             self.isLaunching = false
         }
 
-        // 7. 后续任务
+        // 7. 后续任务（不阻塞 UI 展示）
         AccountStore.shared.markLoginAttempted()
 
-        // 8. 检查更新（后台执行）
+        // 8. 后台配置基础服务（不阻塞启动）
+        Task {
+            CacheConfig.configureKingfisher()
+            UgoiraStore.cleanupLegacyCache()
+        }
+
+        // 9. 检查更新（后台执行）
         checkForUpdateOnLaunch()
     }
 

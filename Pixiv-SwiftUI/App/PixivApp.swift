@@ -33,7 +33,7 @@ struct PixivApp: App {
                         .environment(initializer.illustStore ?? IllustStore.shared)
                         .environment(initializer.userSettingStore ?? UserSettingStore.shared)
                         .environment(ThemeManager.shared)
-                        .modelContainer(DataContainer.shared.modelContainer)
+                        .modelContainer(initializer.modelContainer ?? DataContainer.shared.modelContainer)
                 }
             }
             .sheet(isPresented: $showUpdateSheet) {

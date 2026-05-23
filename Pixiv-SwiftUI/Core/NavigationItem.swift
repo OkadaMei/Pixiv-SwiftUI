@@ -43,30 +43,30 @@ enum NavigationItem: String, CaseIterable, Identifiable, Hashable {
     var destination: some View {
         switch self {
         case .recommend:
-            RecommendView()
+            LazyView(RecommendView())
         case .ranking:
-            NavigationStack {
+            LazyView(NavigationStack {
                 IllustRankingPage()
                     .pixivNavigationDestinations()
-            }
+            })
         case .updates:
-            UpdatesPage()
+            LazyView(UpdatesPage())
         case .bookmarks:
-            BookmarksPage()
+            LazyView(BookmarksPage())
         case .search:
-            SearchView()
+            LazyView(SearchView())
         case .novel:
-            NovelPage()
+            LazyView(NovelPage())
         case .history:
-            NavigationStack {
+            LazyView(NavigationStack {
                 BrowseHistoryView()
                     .pixivNavigationDestinations()
-            }
+            })
         case .downloads:
-            NavigationStack {
+            LazyView(NavigationStack {
                 DownloadTasksView()
                     .pixivNavigationDestinations()
-            }
+            })
         }
     }
 
