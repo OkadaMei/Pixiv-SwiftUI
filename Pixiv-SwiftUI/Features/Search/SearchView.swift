@@ -37,10 +37,22 @@ struct SearchView: View {
         #endif
     }
 
+    private func trendTagHeight(_ tag: TrendTag) -> CGFloat {
+        guard let ratio = tag.illust.aspectRatio, ratio > 0 else { return 1.0 }
+        return 1.0 / ratio
+    }
+
     private var trendTagColumns: [[TrendTag]] {
         var result = Array(repeating: [TrendTag](), count: columnCount)
-        for (index, item) in store.trendTags.enumerated() {
-            result[index % columnCount].append(item)
+        var columnHeights = Array(repeating: CGFloat(0), count: columnCount)
+
+        guard columnCount > 0 else { return result }
+
+        for item in store.trendTags {
+            if let minIndex = columnHeights.indices.min(by: { columnHeights[$0] < columnHeights[$1] }) {
+                result[minIndex].append(item)
+                columnHeights[minIndex] += trendTagHeight(item)
+            }
         }
         return result
     }
