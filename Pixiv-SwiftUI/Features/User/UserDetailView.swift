@@ -288,7 +288,7 @@ struct UserDetailView: View {
                         }
                         .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "ellipsis")
                     }
                 }
             }

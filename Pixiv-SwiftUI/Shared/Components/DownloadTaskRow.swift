@@ -192,7 +192,7 @@ struct DownloadTaskRow: View {
 
             Button("删除", role: .destructive, action: { Task { await downloadStore.deleteTask(id: task.id) } })
         } label: {
-            Image(systemName: "ellipsis.circle")
+            Image(systemName: "ellipsis")
                 .font(.title3)
         }
         .buttonStyle(.plain)

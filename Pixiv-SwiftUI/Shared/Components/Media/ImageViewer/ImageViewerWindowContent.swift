@@ -77,7 +77,7 @@ struct ImageViewerWindowContent: View {
                         Label("复制", systemImage: "doc.on.doc")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                 }
             }
         }

@@ -87,7 +87,7 @@ struct DeletedBookmarkDetailView: View {
                         Label("从缓存中移除", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                 }
             }
         }

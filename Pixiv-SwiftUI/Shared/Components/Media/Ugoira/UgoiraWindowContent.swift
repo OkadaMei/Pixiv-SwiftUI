@@ -99,7 +99,7 @@ struct UgoiraWindowContent: View {
                         )
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(.primary)
                         .frame(width: 32, height: 32)

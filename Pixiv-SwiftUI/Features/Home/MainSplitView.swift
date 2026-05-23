@@ -161,7 +161,7 @@ struct MainSplitView: View {
                                     }
                                 }
                             } label: {
-                                Image(systemName: "ellipsis.circle")
+                                Image(systemName: "ellipsis")
                                     .font(.title3)
                                     .foregroundColor(.primary)
                             }
