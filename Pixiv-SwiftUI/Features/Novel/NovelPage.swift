@@ -79,6 +79,7 @@ struct NovelPage: View {
                 ToolbarItem(placement: .primaryAction) {
                     ProfileButton(accountStore: accountStore, isPresented: $showProfilePanel)
                 }
+                .hideSharedBackgroundIfAvailable()
                 #endif
                 #if os(macOS)
                 ToolbarItem {

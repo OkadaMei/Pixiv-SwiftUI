@@ -245,6 +245,7 @@ ScrollView {
                 ToolbarItem {
                     ProfileButton(accountStore: accountStore, isPresented: $showProfilePanel)
                 }
+                .hideSharedBackgroundIfAvailable()
                 #endif
                 #if os(macOS)
                 ToolbarItem {
