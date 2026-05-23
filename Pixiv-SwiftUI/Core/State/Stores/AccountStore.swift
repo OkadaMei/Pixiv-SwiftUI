@@ -331,6 +331,8 @@ final class AccountStore {
             existing.xRestrict = account.xRestrict
             existing.isMailAuthorized = account.isMailAuthorized
             try context.save()
+            // 同步保存到 Keychain，确保下次启动时加载的是最新 token
+            saveTokensToKeychain(for: existing)
         }
     }
 
