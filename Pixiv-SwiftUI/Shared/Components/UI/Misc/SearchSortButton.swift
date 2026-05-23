@@ -35,7 +35,7 @@ struct SearchSortButton: View {
                 .disabled(option.requiresPremium && !isPremium)
             }
         } label: {
-            Image(systemName: "arrow.up.arrow.down.circle")
+            Image(systemName: "arrow.up.arrow.down")
         }
     }
 }

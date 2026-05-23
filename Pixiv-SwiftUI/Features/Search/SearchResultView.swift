@@ -465,28 +465,6 @@ struct SearchResultView: View {
     }
 }
 
-private struct SearchAIFilterButton: View {
-    @Binding var showsAIGeneratedWorks: Bool
-
-    var body: some View {
-        Menu {
-            Button {
-                showsAIGeneratedWorks.toggle()
-            } label: {
-                HStack {
-                    Text(String(localized: "显示 AI 生成作品"))
-                    if showsAIGeneratedWorks {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
-        } label: {
-            Image(systemName: "sparkles")
-                .symbolVariant(showsAIGeneratedWorks ? .none : .fill)
-        }
-    }
-}
-
 private struct SearchFiltersButton: View {
     @Binding var filterState: SearchFilterState
     @State private var isPresentingSheet = false
@@ -495,7 +473,7 @@ private struct SearchFiltersButton: View {
         Button {
             isPresentingSheet = true
         } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle")
+            Image(systemName: "line.3.horizontal.decrease")
                 .symbolVariant(filterState.hasActiveFilters ? .fill : .none)
         }
         #if os(macOS)
