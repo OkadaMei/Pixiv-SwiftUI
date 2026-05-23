@@ -38,10 +38,14 @@ struct FollowingListView: View {
                     #endif
                     .padding()
             } else if !store.following.isEmpty {
-                Text(String(localized: "已经到底了"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding()
+                HStack {
+                    Spacer()
+                    Text(String(localized: "已经到底了"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding()
             }
         }
         .refreshable {
