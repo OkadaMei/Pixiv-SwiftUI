@@ -47,8 +47,9 @@ final class ImageViewerWindowManager {
         .frame(minWidth: 400, minHeight: 300)
 
         let hostingController = NSHostingController(rootView: contentView)
+        hostingController.sceneBridgingOptions = [.toolbars]
 
-        let styleMask: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        let styleMask: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .unifiedTitleAndToolbar]
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 800),
                               styleMask: styleMask,
                               backing: .buffered,
@@ -95,8 +96,9 @@ final class ImageViewerWindowManager {
         .frame(minWidth: 400, minHeight: 300)
 
         let hostingController = NSHostingController(rootView: contentView)
+        hostingController.sceneBridgingOptions = [.toolbars]
 
-        let styleMask: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        let styleMask: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView, .unifiedTitleAndToolbar]
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 800),
                               styleMask: styleMask,
                               backing: .buffered,
@@ -145,7 +147,9 @@ final class ImageViewerWindowManager {
         )
         .frame(minWidth: 400, minHeight: 300)
 
-        window.contentViewController = NSHostingController(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView)
+        hostingController.sceneBridgingOptions = [.toolbars]
+        window.contentViewController = hostingController
         window.title = title
 
         adjustWindowSize(window: window, aspectRatios: aspectRatios, initialPage: initialPage)
@@ -161,7 +165,9 @@ final class ImageViewerWindowManager {
         )
         .frame(minWidth: 400, minHeight: 300)
 
-        window.contentViewController = NSHostingController(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView)
+        hostingController.sceneBridgingOptions = [.toolbars]
+        window.contentViewController = hostingController
         window.title = illust.title
 
         let aspectRatio = illust.safeAspectRatio

@@ -67,7 +67,8 @@ struct ImageViewerWindowContent: View {
             )
         }
         .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Spacer()
                 Menu {
                     Button(action: saveCurrentImage) {
                         Label("保存…", systemImage: "square.and.arrow.down")

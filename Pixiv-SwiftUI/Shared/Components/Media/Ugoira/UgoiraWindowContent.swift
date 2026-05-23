@@ -84,6 +84,7 @@ struct UgoiraWindowContent: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                Spacer()
                 Menu {
                     Button(action: { showExportPanel = true }) {
                         Label("导出 GIF", systemImage: "square.and.arrow.up")
