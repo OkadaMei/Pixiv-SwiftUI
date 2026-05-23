@@ -79,6 +79,7 @@ struct ImageViewerWindowContent: View {
                 } label: {
                     Image(systemName: "ellipsis")
                 }
+                .menuIndicator(.hidden)
             }
         }
         .onHover { hovering in

@@ -110,6 +110,7 @@ struct UgoiraWindowContent: View {
                                 .stroke(Color.primary.opacity(0.15), lineWidth: 0.5)
                         )
                 }
+                .menuIndicator(.hidden)
                 .menuStyle(.borderlessButton)
             }
         }

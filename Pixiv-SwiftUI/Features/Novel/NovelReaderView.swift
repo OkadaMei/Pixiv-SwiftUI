@@ -96,6 +96,7 @@ struct NovelReaderView: View {
                 } label: {
                     Image(systemName: "ellipsis")
                 }
+                .menuIndicator(.hidden)
             }
         }
         #if os(macOS)

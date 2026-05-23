@@ -290,6 +290,7 @@ struct UserDetailView: View {
                     } label: {
                         Image(systemName: "ellipsis")
                     }
+                    .menuIndicator(.hidden)
                 }
             }
         }

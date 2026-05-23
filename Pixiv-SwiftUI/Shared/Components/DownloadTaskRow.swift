@@ -195,6 +195,7 @@ struct DownloadTaskRow: View {
             Image(systemName: "ellipsis")
                 .font(.title3)
         }
+        .menuIndicator(.hidden)
         .buttonStyle(.plain)
     }
 }
