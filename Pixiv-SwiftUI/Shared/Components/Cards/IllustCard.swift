@@ -4,7 +4,7 @@ import SwiftUI
 #endif
 
 /// 插画卡片组件
-struct IllustCard: View {
+struct IllustCard: View, Equatable {
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -16,6 +16,17 @@ struct IllustCard: View {
     let feedPreviewQuality: Int
     let shouldBlur: Bool
     let accentColor: Color
+
+    /// Equatable：Illusts 是类，按 id 比较；expiration 非 Equatable，跳过（极少变化）。
+    static func == (lhs: IllustCard, rhs: IllustCard) -> Bool {
+        lhs.illust.id == rhs.illust.id &&
+        lhs.columnCount == rhs.columnCount &&
+        lhs.columnWidth == rhs.columnWidth &&
+        lhs.showsBookmarkCount == rhs.showsBookmarkCount &&
+        lhs.feedPreviewQuality == rhs.feedPreviewQuality &&
+        lhs.shouldBlur == rhs.shouldBlur &&
+        lhs.accentColor == rhs.accentColor
+    }
 
     init(
         illust: Illusts,

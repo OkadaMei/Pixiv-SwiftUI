@@ -11,25 +11,34 @@ struct UpdatesPage: View {
     @Environment(ThemeManager.self) var themeManager
     var accountStore: AccountStore = AccountStore.shared
     @State private var prefetchTracker = PrefetchTracker()
+    @State private var filteredUpdates: [Illusts] = []
+    @State private var shouldBlurFlags: [Bool] = []
 
     private var restrictString: String {
         selectedRestrict == .privateAccess ? "private" : "public"
     }
 
-    private var filteredUpdates: [Illusts] {
+    private func recalculateFilteredUpdates() {
         let base = settingStore.filterIllusts(store.updates)
         switch contentType {
         case .all:
-            return base
+            filteredUpdates = base
         case .illust:
-            return base.filter { $0.type != "manga" }
+            filteredUpdates = base.filter { $0.type != "manga" }
         case .manga:
-            return base.filter { $0.type == "manga" }
+            filteredUpdates = base.filter { $0.type == "manga" }
         }
+        shouldBlurFlags = filteredUpdates.map { settingStore.userSetting.shouldBlurIllust($0) }
     }
 
-    private var isLoggedIn: Bool {
-        accountStore.isLoggedIn
+    private func shouldBlurFromCache(for illust: Illusts) -> Bool {
+        guard let index = filteredUpdates.firstIndex(where: { $0.id == illust.id }),
+              index < shouldBlurFlags.count
+        else { return false }
+        return shouldBlurFlags[index]
+    }
+
+    private var isLoggedIn: Bool {        accountStore.isLoggedIn
     }
 
     private var skeletonItemCount: Int {
@@ -86,9 +95,10 @@ struct UpdatesPage: View {
                                                 columnWidth: columnWidth,
                                                 expiration: DefaultCacheExpiration.updates,
                                                 feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                                                shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                                shouldBlur: shouldBlurFromCache(for: illust),
                                                 accentColor: themeManager.currentColor
                                             )
+                                            .equatable()
                                         }
                                         .buttonStyle(.plain)
                                         .onAppear {
@@ -198,6 +208,12 @@ struct UpdatesPage: View {
                     }
                 }
             }
+            .onChange(of: contentType) { _, _ in
+                recalculateFilteredUpdates()
+            }
+            .onChange(of: store.updates) { _, _ in
+                recalculateFilteredUpdates()
+            }
             .sheet(isPresented: $showProfilePanel) {
                 #if os(iOS)
                 ProfilePanelView(accountStore: accountStore, isPresented: $showProfilePanel)
@@ -215,6 +231,7 @@ struct UpdatesPage: View {
             .sheet(isPresented: $showAuthView) {
                 AuthView(accountStore: accountStore, onGuestMode: nil)
             }
+            .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredUpdates)
         }
     }
 }

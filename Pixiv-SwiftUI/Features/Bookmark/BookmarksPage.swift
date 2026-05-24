@@ -17,6 +17,9 @@ struct BookmarksPage: View {
 
     var initialRestrict: String?
     @State private var prefetchTracker = PrefetchTracker()
+    @State private var filteredBookmarksCache: [Illusts] = []
+    @State private var shouldBlurFlags: [Bool] = []
+    @State private var bookmarkCacheEnabledFlags: [Bool] = []
 
     private let cache = CacheManager.shared
 
@@ -24,16 +27,36 @@ struct BookmarksPage: View {
         settingStore.userSetting.bookmarkCacheEnabled
     }
 
-    private var filteredBookmarks: [Illusts] {
+    private func recalculateCaches() {
         let base = settingStore.filterIllusts(store.bookmarks)
         switch contentType {
         case .all:
-            return base
+            filteredBookmarksCache = base
         case .illust:
-            return base.filter { $0.type != "manga" }
+            filteredBookmarksCache = base.filter { $0.type != "manga" }
         case .manga:
-            return base.filter { $0.type == "manga" }
+            filteredBookmarksCache = base.filter { $0.type == "manga" }
         }
+        shouldBlurFlags = filteredBookmarksCache.map { settingStore.userSetting.shouldBlurIllust($0) }
+        bookmarkCacheEnabledFlags = filteredBookmarksCache.map { _ in settingStore.userSetting.bookmarkCacheEnabled }
+    }
+
+    private func shouldBlur(for illust: Illusts) -> Bool {
+        guard let index = filteredBookmarksCache.firstIndex(where: { $0.id == illust.id }),
+              index < shouldBlurFlags.count
+        else { return false }
+        return shouldBlurFlags[index]
+    }
+
+    private func isBookmarkCacheEnabled(for illust: Illusts) -> Bool {
+        guard let index = filteredBookmarksCache.firstIndex(where: { $0.id == illust.id }),
+              index < bookmarkCacheEnabledFlags.count
+        else { return true }
+        return bookmarkCacheEnabledFlags[index]
+    }
+
+    private var filteredBookmarks: [Illusts] {
+        filteredBookmarksCache
     }
 
     private var deletedBookmarks: [BookmarkCache] {
@@ -294,7 +317,14 @@ ScrollView {
                     }
                 }
             }
+            .onChange(of: contentType) { _, _ in
+                recalculateCaches()
+            }
+            .onChange(of: store.bookmarks) { _, _ in
+                recalculateCaches()
+            }
             .onAppear {
+                recalculateCaches()
                 if let initialRestrict = initialRestrict {
                     store.bookmarkRestrict = initialRestrict
                 }
@@ -313,6 +343,7 @@ ScrollView {
             .navigationDestination(for: BookmarkCache.self) { cache in
                 DeletedBookmarkDetailView(cache: cache)
             }
+            .onFilterSettingsChange(from: settingStore, perform: recalculateCaches)
         }
     }
 
@@ -353,10 +384,11 @@ ScrollView {
             isDeleted: isDeleted,
             cacheStatus: cacheStatus,
             feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-            shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
-            bookmarkCacheEnabled: settingStore.userSetting.bookmarkCacheEnabled,
+            shouldBlur: shouldBlur(for: illust),
+            bookmarkCacheEnabled: isBookmarkCacheEnabled(for: illust),
             accentColor: themeManager.currentColor
         )
+        .equatable()
     }
 }
 

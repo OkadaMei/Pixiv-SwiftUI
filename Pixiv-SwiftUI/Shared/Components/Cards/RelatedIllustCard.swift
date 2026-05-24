@@ -5,7 +5,7 @@ import SwiftUI
 #endif
 
 /// 相关推荐插画卡片（简化版）
-struct RelatedIllustCard: View {
+struct RelatedIllustCard: View, Equatable {
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -16,6 +16,15 @@ struct RelatedIllustCard: View {
     let feedPreviewQuality: Int
     let shouldBlur: Bool
     let shouldHide: Bool
+
+    static func == (lhs: RelatedIllustCard, rhs: RelatedIllustCard) -> Bool {
+        lhs.illust.id == rhs.illust.id &&
+        lhs.showTitle == rhs.showTitle &&
+        lhs.columnWidth == rhs.columnWidth &&
+        lhs.feedPreviewQuality == rhs.feedPreviewQuality &&
+        lhs.shouldBlur == rhs.shouldBlur &&
+        lhs.shouldHide == rhs.shouldHide
+    }
 
     init(
         illust: Illusts,

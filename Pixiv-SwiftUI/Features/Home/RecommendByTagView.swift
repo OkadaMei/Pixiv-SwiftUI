@@ -11,13 +11,22 @@ struct RecommendByTagView: View {
     @Environment(ThemeManager.self) var themeManager
     @Environment(\.dismiss) private var dismiss
     @State private var prefetchTracker = PrefetchTracker()
+    @State private var filteredIllusts: [Illusts] = []
+    @State private var shouldBlurFlags: [Bool] = []
 
-    private var filteredIllusts: [Illusts] {
-        settingStore.filterIllusts(illusts)
+    private func recalculateFilteredIllusts() {
+        filteredIllusts = settingStore.filterIllusts(illusts)
+        shouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
     }
 
-    private var skeletonItemCount: Int {
-        #if os(macOS)
+    private func shouldBlurFromCache(for illust: Illusts) -> Bool {
+        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
+              index < shouldBlurFlags.count
+        else { return false }
+        return shouldBlurFlags[index]
+    }
+
+    private var skeletonItemCount: Int {        #if os(macOS)
         32
         #else
         12
@@ -68,9 +77,10 @@ struct RecommendByTagView: View {
                                     columnCount: dynamicColumnCount,
                                     columnWidth: columnWidth,
                                     feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                                    shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                    shouldBlur: shouldBlurFromCache(for: illust),
                                     accentColor: themeManager.currentColor
                                 )
+                                .equatable()
                             }
                             .buttonStyle(.plain)
                             .onAppear {
@@ -103,6 +113,12 @@ struct RecommendByTagView: View {
                 }
             }
         }
+        .task {
+            if illusts.isEmpty {
+                await fetchIllusts(refresh: true)
+            }
+        }
+        .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredIllusts)
         .navigationTitle(target.translatedName ?? target.tag)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -133,6 +149,7 @@ struct RecommendByTagView: View {
     private func fetchIllusts(refresh: Bool = false) async {
         if refresh {
             illusts = []
+            recalculateFilteredIllusts()
             fetchIndex = 0
             hasMoreData = true
             errorMessage = nil
@@ -159,6 +176,7 @@ struct RecommendByTagView: View {
                 }
             }
             illusts = results
+            recalculateFilteredIllusts()
 
             fetchIndex = idsToFetch.count
             hasMoreData = fetchIndex < target.illustIds.count
@@ -192,6 +210,7 @@ struct RecommendByTagView: View {
             }
 
             illusts.append(contentsOf: newIllusts)
+            recalculateFilteredIllusts()
             fetchIndex = nextIndex
             hasMoreData = fetchIndex < target.illustIds.count
         } catch {

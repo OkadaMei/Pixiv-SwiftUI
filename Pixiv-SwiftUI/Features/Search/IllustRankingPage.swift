@@ -14,6 +14,8 @@ struct IllustRankingPage: View {
     @Environment(AccountStore.self) var accountStore
     @Environment(ThemeManager.self) var themeManager
     @State private var prefetchTracker = PrefetchTracker()
+    @State private var filteredIllusts: [Illusts] = []
+    @State private var shouldBlurFlags: [Bool] = []
 
     private var rankingModes: [IllustRankingMode] {
         settingStore.enabledIllustRankingModes
@@ -31,8 +33,16 @@ struct IllustRankingPage: View {
         nextUrl != nil
     }
 
-    private var filteredIllusts: [Illusts] {
-        settingStore.filterIllusts(illusts)
+    private func recalculateFilteredIllusts() {
+        filteredIllusts = settingStore.filterIllusts(illusts)
+        shouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
+    }
+
+    private func shouldBlurFromCache(for illust: Illusts) -> Bool {
+        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
+              index < shouldBlurFlags.count
+        else { return false }
+        return shouldBlurFlags[index]
     }
 
     private var latestDisplayDate: Date {
@@ -137,9 +147,9 @@ struct IllustRankingPage: View {
                                 .background {
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                                         .fill(isSelected ? Color.primary.opacity(0.1) : .clear)
-                                }
-                        }
-                        .buttonStyle(.plain)
+            }
+            .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredIllusts)
+        }                        .buttonStyle(.plain)
                         .id(mode.id)
                     }
                 }
@@ -225,9 +235,10 @@ struct IllustRankingPage: View {
                                     columnWidth: columnWidth,
                                     expiration: DefaultCacheExpiration.recommend,
                                     feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                                    shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                    shouldBlur: shouldBlurFromCache(for: illust),
                                     accentColor: themeManager.currentColor
                                 )
+                                .equatable()
                             }
                             .buttonStyle(.plain)
                             .onAppear {
@@ -244,8 +255,10 @@ struct IllustRankingPage: View {
                                     #endif
                                     .padding()
                                     .id(nextUrl)
-                                    .onAppear {
-                                        Task {
+            .onChange(of: illusts) { _, _ in
+                recalculateFilteredIllusts()
+            }
+            .onAppear {                                        Task {
                                             await store.loadMoreRanking(mode: selectedMode)
                                         }
                                     }
@@ -330,6 +343,7 @@ struct IllustRankingPage: View {
                 }
             }
             .onAppear {
+                recalculateFilteredIllusts()
                 if !hasInitializedMode {
                     hasInitializedMode = true
                     if let initialMode = initialMode, rankingModes.contains(initialMode) {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 收藏卡片组件（支持显示已删除标记和缓存状态）
-struct BookmarkCard: View {
+struct BookmarkCard: View, Equatable {
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -15,6 +15,18 @@ struct BookmarkCard: View {
     let shouldBlur: Bool
     let bookmarkCacheEnabled: Bool
     let accentColor: Color
+
+    static func == (lhs: BookmarkCard, rhs: BookmarkCard) -> Bool {
+        lhs.illust.id == rhs.illust.id &&
+        lhs.columnCount == rhs.columnCount &&
+        lhs.columnWidth == rhs.columnWidth &&
+        lhs.isDeleted == rhs.isDeleted &&
+        lhs.cacheStatus == rhs.cacheStatus &&
+        lhs.feedPreviewQuality == rhs.feedPreviewQuality &&
+        lhs.shouldBlur == rhs.shouldBlur &&
+        lhs.bookmarkCacheEnabled == rhs.bookmarkCacheEnabled &&
+        lhs.accentColor == rhs.accentColor
+    }
 
     init(
         illust: Illusts,

@@ -497,3 +497,29 @@ struct LazyView<Content: View>: View {
         build()
     }
 }
+
+// MARK: - 过滤设置变化监听
+
+struct FilterSettingsChangeModifier: ViewModifier {
+    let settingStore: UserSettingStore
+    let onChange: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: settingStore.userSetting.r18DisplayMode) { _, _ in onChange() }
+            .onChange(of: settingStore.userSetting.r18gDisplayMode) { _, _ in onChange() }
+            .onChange(of: settingStore.userSetting.spoilerDisplayMode) { _, _ in onChange() }
+            .onChange(of: settingStore.userSetting.aiDisplayMode) { _, _ in onChange() }
+            .onChange(of: settingStore.blockedTags) { _, _ in onChange() }
+            .onChange(of: settingStore.blockedUsers) { _, _ in onChange() }
+            .onChange(of: settingStore.blockedIllusts) { _, _ in onChange() }
+    }
+}
+
+extension View {
+    /// 监听所有影响插画过滤/模糊/隐藏的用户设置属性，
+    /// 当其中任何一个变化时触发 `onChange` 回调，确保 cached filtered 数据及时更新。
+    func onFilterSettingsChange(from settingStore: UserSettingStore, perform action: @escaping () -> Void) -> some View {
+        modifier(FilterSettingsChangeModifier(settingStore: settingStore, onChange: action))
+    }
+}

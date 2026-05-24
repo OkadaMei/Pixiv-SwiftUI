@@ -32,6 +32,8 @@ struct SearchResultView: View {
     @Environment(ThemeManager.self) var themeManager
     @Environment(\.dismiss) private var dismiss
     @State private var prefetchTracker = PrefetchTracker()
+    /// 预计算 shouldBlur 标志，避免在 WaterfallGrid 内容闭包中重复读取 settingStore
+    @State private var cachedShouldBlurFlags: [Bool] = []
     let instanceId = UUID()
 
     private var viewId: String {
@@ -40,6 +42,11 @@ struct SearchResultView: View {
 
     private var filteredIllusts: [Illusts] {
         settingStore.filterIllusts(store.illustResults)
+    }
+
+    /// 在 store.illustResults 变化时重新计算 shouldBlurFlags
+    private func recalculateShouldBlurFlags() {
+        cachedShouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
     }
 
     private var filteredUsers: [UserPreviews] {
@@ -64,6 +71,14 @@ struct SearchResultView: View {
 
     private var shouldShowNovelBookmarkCount: Bool {
         novelSortOption != .popularDesc || settingStore.userSetting.showSearchPopularBookmarkCount
+    }
+
+    /// 从预计算的 shouldBlurFlags 中查找对应 illust 的模糊标志
+    private func shouldBlurFromCache(for illust: Illusts) -> Bool {
+        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
+              index < cachedShouldBlurFlags.count
+        else { return false }
+        return cachedShouldBlurFlags[index]
     }
 
     private func performIllustSearch() async {
@@ -214,9 +229,10 @@ struct SearchResultView: View {
                             columnWidth: columnWidth,
                             showsBookmarkCount: shouldShowIllustBookmarkCount,
                             feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                            shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                            shouldBlur: shouldBlurFromCache(for: illust),
                             accentColor: themeManager.currentColor
                         )
+                        .equatable()
                     }
                     .buttonStyle(.plain)
                     .onAppear {
@@ -435,8 +451,14 @@ struct SearchResultView: View {
             }
             .onChange(of: filterState) { _, _ in
                 Task {
-                    await performCurrentTabSearch()
+                    await performIllustSearch()
                 }
+            }
+            .onChange(of: store.illustResults) { _, _ in
+                recalculateShouldBlurFlags()
+            }
+            .onAppear {
+                recalculateShouldBlurFlags()
             }
             .onChange(of: selectedTab) { _, newValue in
                 print("[SearchResultView] selectedTab changed to \(newValue)")
@@ -462,6 +484,7 @@ struct SearchResultView: View {
                 store.cancelBackgroundTasks()
                 print("[SearchResultView] disappeared: word='\(word)', viewId=\(viewId)")
             }
+            .onFilterSettingsChange(from: settingStore, perform: recalculateShouldBlurFlags)
         }
     }
 }

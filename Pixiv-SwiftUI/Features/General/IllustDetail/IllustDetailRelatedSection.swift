@@ -15,10 +15,6 @@ struct IllustDetailRelatedSection: View {
 
     let width: CGFloat
 
-    private var filteredIllusts: [Illusts] {
-        settingStore.filterIllusts(relatedIllusts)
-    }
-
     private var actualColumnCount: Int {
         #if os(macOS)
         // 在详情页侧边栏中，调整列数触发阈值以适应较窄的宽度
@@ -37,6 +33,29 @@ struct IllustDetailRelatedSection: View {
     @State private var dynamicColumnCount: Int = 2
     @State private var loadMoreError: String?
     @State private var prefetchTracker = PrefetchTracker()
+    @State private var filteredIllusts: [Illusts] = []
+    @State private var shouldBlurFlags: [Bool] = []
+    @State private var shouldHideFlags: [Bool] = []
+
+    private func recalculateCaches() {
+        filteredIllusts = settingStore.filterIllusts(relatedIllusts)
+        shouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
+        shouldHideFlags = filteredIllusts.map { settingStore.userSetting.shouldHideIllust($0) }
+    }
+
+    private func shouldBlur(for illust: Illusts) -> Bool {
+        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
+              index < shouldBlurFlags.count
+        else { return false }
+        return shouldBlurFlags[index]
+    }
+
+    private func shouldHide(for illust: Illusts) -> Bool {
+        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
+              index < shouldHideFlags.count
+        else { return false }
+        return shouldHideFlags[index]
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -79,12 +98,17 @@ struct IllustDetailRelatedSection: View {
         }
         .frame(maxWidth: width)
         .padding(.bottom, 30)
+        .onChange(of: relatedIllusts) { _, _ in
+            recalculateCaches()
+        }
         .onAppear {
+            recalculateCaches()
             print("[IllustDetailRelatedSection] onAppear - relatedCount: \(relatedIllusts.count), isLoggedIn: \(isLoggedIn)")
             if isLoggedIn && relatedIllusts.isEmpty && !isLoadingRelated {
                 fetchRelatedIllusts()
             }
         }
+        .onFilterSettingsChange(from: settingStore, perform: recalculateCaches)
     }
 
     private var notLoggedInView: some View {
@@ -161,9 +185,10 @@ struct IllustDetailRelatedSection: View {
                         showTitle: false,
                         columnWidth: columnWidth,
                         feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                        shouldBlur: settingStore.userSetting.shouldBlurIllust(relatedIllust),
-                        shouldHide: settingStore.userSetting.shouldHideIllust(relatedIllust)
+                        shouldBlur: shouldBlur(for: relatedIllust),
+                        shouldHide: shouldHide(for: relatedIllust)
                     )
+                    .equatable()
                 }
                 .buttonStyle(.plain)
                 .onAppear {
