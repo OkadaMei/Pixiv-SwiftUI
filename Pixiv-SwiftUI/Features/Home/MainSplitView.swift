@@ -12,8 +12,7 @@ struct MainSplitView: View {
     @State private var showDataExport = false
     @State private var showClearCacheAlert = false
     @State private var showClearHistoryAlert = false
-    @State private var showWebLoginWebView = false
-    @State private var loginURL: URL?
+    @State private var loginWebViewItem: LoginWebViewItem?
     @State private var showingManualPHPSESSIDAlert = false
     @State private var manualPHPSESSIDInput = ""
     @Environment(UserSettingStore.self) var userSettingStore
@@ -110,8 +109,7 @@ struct MainSplitView: View {
                                             let codeChallenge = PKCEHelper.generateCodeChallenge(codeVerifier: codeVerifier)
                                             let urlString = "https://app-api.pixiv.net/web/v1/login?code_challenge=\(codeChallenge)&code_challenge_method=S256&client=pixiv-android"
                                             if let url = URL(string: urlString) {
-                                                self.loginURL = url
-                                                self.showWebLoginWebView = true
+                                                self.loginWebViewItem = LoginWebViewItem(url: url)
                                             }
                                         }
 
@@ -256,40 +254,38 @@ struct MainSplitView: View {
         .sheet(isPresented: $showDataExport) {
             DataExportView()
         }
-        .sheet(isPresented: $showWebLoginWebView) {
-            if let url = loginURL {
-                LoginWebView(url: url) { _, cookies in
-                    showWebLoginWebView = false
-                    var phpSessId: String?
-                    var yuidB: String?
-                    var pAbDId: String?
-                    var pAbId: String?
-                    var pAbId2: String?
+        .sheet(item: $loginWebViewItem) { item in
+            LoginWebView(url: item.url) { _, cookies in
+                loginWebViewItem = nil
+                var phpSessId: String?
+                var yuidB: String?
+                var pAbDId: String?
+                var pAbId: String?
+                var pAbId2: String?
 
-                    for cookie in cookies where cookie.domain.contains("pixiv.net") {
-                        switch cookie.name {
-                        case "PHPSESSID":
-                            if cookie.value.contains("_") {
-                                phpSessId = cookie.value
-                            }
-                        case "yuid_b": yuidB = cookie.value
-                        case "p_ab_d_id": pAbDId = cookie.value
-                        case "p_ab_id": pAbId = cookie.value
-                        case "p_ab_id_2": pAbId2 = cookie.value
-                        default: break
+                for cookie in cookies where cookie.domain.contains("pixiv.net") {
+                    switch cookie.name {
+                    case "PHPSESSID":
+                        if cookie.value.contains("_") {
+                            phpSessId = cookie.value
                         }
+                    case "yuid_b": yuidB = cookie.value
+                    case "p_ab_d_id": pAbDId = cookie.value
+                    case "p_ab_id": pAbId = cookie.value
+                    case "p_ab_id_2": pAbId2 = cookie.value
+                    default: break
                     }
-
-                    accountStore.updateCurrentAccountAjaxCookies(
-                        phpSessId: phpSessId,
-                        yuidB: yuidB,
-                        pAbDId: pAbDId,
-                        pAbId: pAbId,
-                        pAbId2: pAbId2
-                    )
                 }
-                .frame(width: 800, height: 660)
+
+                accountStore.updateCurrentAccountAjaxCookies(
+                    phpSessId: phpSessId,
+                    yuidB: yuidB,
+                    pAbDId: pAbDId,
+                    pAbId: pAbId,
+                    pAbId2: pAbId2
+                )
             }
+            .frame(width: 800, height: 660)
         }
         .alert("输入 PHPSESSID", isPresented: $showingManualPHPSESSIDAlert) {
             TextField("请输入类似 xxxx_xxxx 的 Cookie 值", text: $manualPHPSESSIDInput)

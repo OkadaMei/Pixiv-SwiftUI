@@ -14,8 +14,7 @@ struct ProfilePanelView: View {
     @State private var cacheSize: String = "计算中..."
     @State private var path = NavigationPath()
     @State private var showingAuthView = false
-    @State private var showWebLoginWebView = false
-    @State private var loginURL: URL?
+    @State private var loginWebViewItem: LoginWebViewItem?
     @State private var showingManualPHPSESSIDAlert = false
     @State private var manualPHPSESSIDInput = ""
 
@@ -105,8 +104,7 @@ struct ProfilePanelView: View {
                                 let codeChallenge = PKCEHelper.generateCodeChallenge(codeVerifier: codeVerifier)
                                 let urlString = "https://app-api.pixiv.net/web/v1/login?code_challenge=\(codeChallenge)&code_challenge_method=S256&client=pixiv-android"
                                 if let url = URL(string: urlString) {
-                                    self.loginURL = url
-                                    self.showWebLoginWebView = true
+                                    self.loginWebViewItem = LoginWebViewItem(url: url)
                                 }
                             }) {
                                 Label("通过网页登录", systemImage: "globe")
@@ -199,11 +197,10 @@ struct ProfilePanelView: View {
             .sheet(isPresented: $showingAuthView) {
                 AuthView(accountStore: accountStore, onGuestMode: nil)
             }
-            .sheet(isPresented: $showWebLoginWebView) {
-                if let url = loginURL {
+            .sheet(item: $loginWebViewItem) { item in
                     NavigationStack {
-                        LoginWebView(url: url) { _, cookies in
-                            showWebLoginWebView = false
+                        LoginWebView(url: item.url) { _, cookies in
+                            loginWebViewItem = nil
                             var phpSessId: String?
                             var yuidB: String?
                             var pAbDId: String?
@@ -237,13 +234,12 @@ struct ProfilePanelView: View {
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button(String(localized: "取消")) {
-                                    showWebLoginWebView = false
+                                    loginWebViewItem = nil
                                 }
                             }
                         }
                     }
                 }
-            }
             .alert("确认登出", isPresented: $showingLogoutAlert) {
                 Button("取消", role: .cancel) { }
                 Button("登出", role: .destructive) {

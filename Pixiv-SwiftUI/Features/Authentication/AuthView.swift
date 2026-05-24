@@ -14,8 +14,7 @@ struct AuthView: View {
     @State private var refreshToken: String = ""
     @State private var codeVerifier: String = ""
     @State private var phpSessId: String = ""
-    @State private var showLoginWebView = false
-    @State private var loginURL: URL?
+    @State private var loginWebViewItem: LoginWebViewItem?
     @Bindable var accountStore: AccountStore
     var onGuestMode: (() -> Void)?
 
@@ -77,18 +76,17 @@ struct AuthView: View {
         #if os(macOS)
         .frame(width: 450, height: 660)
         #endif
-        .sheet(isPresented: $showLoginWebView) {
-            if let url = loginURL {
+        .sheet(item: $loginWebViewItem) { item in
                 #if os(macOS)
-                LoginWebView(url: url) { code, cookies in
-                    showLoginWebView = false
+                LoginWebView(url: item.url) { code, cookies in
+                    loginWebViewItem = nil
                     handleLoginCallback(code: code, cookies: cookies)
                 }
                 .frame(width: 800, height: 600)
                 #else
                 NavigationStack {
-                    LoginWebView(url: url) { code, cookies in
-                        showLoginWebView = false
+                    LoginWebView(url: item.url) { code, cookies in
+                        loginWebViewItem = nil
                         handleLoginCallback(code: code, cookies: cookies)
                     }
                     .navigationTitle(String(localized: "登录 Pixiv"))
@@ -96,14 +94,13 @@ struct AuthView: View {
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button(String(localized: "取消")) {
-                                showLoginWebView = false
+                                loginWebViewItem = nil
                             }
                         }
                     }
                 }
                 #endif
             }
-        }
     }
 
     var unifiedLoginView: some View {
@@ -192,8 +189,7 @@ struct AuthView: View {
         let urlString = "https://app-api.pixiv.net/web/v1/login?code_challenge=\(codeChallenge)&code_challenge_method=S256&client=pixiv-android"
         guard let url = URL(string: urlString) else { return }
 
-        self.loginURL = url
-        self.showLoginWebView = true
+        self.loginWebViewItem = LoginWebViewItem(url: url)
     }
 
     func handleLoginCallback(code: String, cookies: [HTTPCookie]) {

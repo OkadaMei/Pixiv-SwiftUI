@@ -8,6 +8,12 @@ private typealias Representable = NSViewRepresentable
 private typealias Representable = UIViewRepresentable
 #endif
 
+/// Identifiable wrapper for login URL, used with .sheet(item:) to avoid state timing issues.
+struct LoginWebViewItem: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
 struct LoginWebView: Representable {
     let url: URL
     let onCallback: (String, [HTTPCookie]) -> Void
