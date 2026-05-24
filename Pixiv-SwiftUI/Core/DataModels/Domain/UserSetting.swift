@@ -646,3 +646,30 @@ struct BlockedNovelInfoData: Codable {
     var authorName: String?
     var thumbnailUrl: String?
 }
+
+// MARK: - 显示辅助方法
+
+extension UserSetting {
+    /// 根据当前用户的显示设置判断指定插画是否需要模糊
+    func shouldBlurIllust(_ illust: Illusts) -> Bool {
+        if illust.xRestrict == 1 && r18DisplayMode == 1 { return true }
+        if illust.xRestrict == 2 && r18gDisplayMode == 1 { return true }
+        if illust.isSpoiler && spoilerDisplayMode == 1 { return true }
+        return false
+    }
+
+    /// 根据当前用户的显示设置判断指定插画是否应该隐藏
+    func shouldHideIllust(_ illust: Illusts) -> Bool {
+        let isR18 = illust.xRestrict == 1
+        let isR18G = illust.xRestrict == 2
+        let isSpoiler = illust.isSpoiler
+        let isAI = illust.illustAIType == 2
+
+        let hideR18 = (isR18 && r18DisplayMode == 2) || (!isR18 && r18DisplayMode == 3)
+        let hideR18G = (isR18G && r18gDisplayMode == 2) || (!isR18G && r18gDisplayMode == 3)
+        let hideSpoiler = (isSpoiler && spoilerDisplayMode == 2) || (!isSpoiler && spoilerDisplayMode == 3)
+        let hideAI = (isAI && aiDisplayMode == 1) || (!isAI && aiDisplayMode == 2)
+
+        return hideR18 || hideR18G || hideSpoiler || hideAI
+    }
+}

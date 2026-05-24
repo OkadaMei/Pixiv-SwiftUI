@@ -5,8 +5,6 @@ import SwiftUI
 
 /// 插画卡片组件
 struct IllustCard: View {
-    @Environment(UserSettingStore.self) var userSettingStore
-    @Environment(ThemeManager.self) var themeManager
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -15,19 +13,28 @@ struct IllustCard: View {
     var columnWidth: CGFloat?
     var expiration: CacheExpiration?
     var showsBookmarkCount: Bool
+    let feedPreviewQuality: Int
+    let shouldBlur: Bool
+    let accentColor: Color
 
     init(
         illust: Illusts,
         columnCount: Int = 2,
         columnWidth: CGFloat? = nil,
         expiration: CacheExpiration? = nil,
-        showsBookmarkCount: Bool = false
+        showsBookmarkCount: Bool = false,
+        feedPreviewQuality: Int = 0,
+        shouldBlur: Bool = false,
+        accentColor: Color = .accentColor
     ) {
         self.illust = illust
         self.columnCount = columnCount
         self.columnWidth = columnWidth
         self.expiration = expiration
         self.showsBookmarkCount = showsBookmarkCount
+        self.feedPreviewQuality = feedPreviewQuality
+        self.shouldBlur = shouldBlur
+        self.accentColor = accentColor
     }
 
     private var isR18: Bool {
@@ -40,13 +47,6 @@ struct IllustCard: View {
 
     private var isSpoiler: Bool {
         return illust.isSpoiler
-    }
-
-    private var shouldBlur: Bool {
-        if isR18 && userSettingStore.userSetting.r18DisplayMode == 1 { return true }
-        if isR18G && userSettingStore.userSetting.r18gDisplayMode == 1 { return true }
-        if isSpoiler && userSettingStore.userSetting.spoilerDisplayMode == 1 { return true }
-        return false
     }
 
     /// 获取收藏图标，根据收藏状态和类型返回不同的图标
@@ -73,7 +73,7 @@ struct IllustCard: View {
     @ViewBuilder
     private var thumbnailImage: some View {
         let image = CachedAsyncImage(
-            urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+            urlString: ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality),
             aspectRatio: illust.safeAspectRatio,
             idealWidth: columnWidth,
             expiration: expiration
@@ -179,11 +179,11 @@ struct IllustCard: View {
                     if illust.isBookmarked {
                         toggleBookmark(forceUnbookmark: true)
                     } else {
-                        toggleBookmark(isPrivate: userSettingStore.userSetting.defaultPrivateLike)
+                        toggleBookmark(isPrivate: UserSettingStore.shared.userSetting.defaultPrivateLike)
                     }
                 } label: {
                     Image(systemName: bookmarkIconName)
-                        .foregroundColor(illust.isBookmarked ? themeManager.currentColor : .secondary)
+                        .foregroundColor(illust.isBookmarked ? accentColor : .secondary)
                         .font(.system(size: 20))
                 }
                 .buttonStyle(.plain)
@@ -412,7 +412,7 @@ struct IllustCard: View {
         illustAIType: 0
     )
 
-    IllustCard(illust: illust, columnCount: 2)
+    IllustCard(illust: illust, columnCount: 2, showsBookmarkCount: true)
         .padding()
         .frame(width: 390)
 }
@@ -464,7 +464,7 @@ struct IllustCard: View {
         illustAIType: 0
     )
 
-    IllustCard(illust: illust, columnCount: 2)
+    IllustCard(illust: illust, columnCount: 2, showsBookmarkCount: true)
         .padding()
         .frame(width: 390)
 }

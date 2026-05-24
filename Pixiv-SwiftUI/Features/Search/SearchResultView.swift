@@ -212,7 +212,10 @@ struct SearchResultView: View {
                             illust: illust,
                             columnCount: columnCount,
                             columnWidth: columnWidth,
-                            showsBookmarkCount: shouldShowIllustBookmarkCount
+                            showsBookmarkCount: shouldShowIllustBookmarkCount,
+                            feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                            shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                            accentColor: themeManager.currentColor
                         )
                     }
                     .buttonStyle(.plain)
@@ -340,7 +343,7 @@ struct SearchResultView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount), spacing: 12) {
                 ForEach(filteredUsers, id: \.id) { userPreview in
                     NavigationLink(value: userPreview.user) {
-                        UserPreviewCard(userPreview: userPreview)
+                        UserPreviewCard(userPreview: userPreview, accentColor: themeManager.currentColor)
                     }
                     .buttonStyle(.plain)
                 }

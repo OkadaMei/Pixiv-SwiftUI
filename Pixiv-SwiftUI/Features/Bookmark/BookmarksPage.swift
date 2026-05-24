@@ -11,6 +11,7 @@ struct BookmarksPage: View {
     @State private var selectedRestrict: TypeFilterButton.RestrictType? = .publicAccess
     @State private var cacheFilter: BookmarkCacheFilter = .all
     @Environment(UserSettingStore.self) var settingStore
+    @Environment(ThemeManager.self) var themeManager
     var accountStore: AccountStore = AccountStore.shared
     @State private var bookmarkCacheStore = BookmarkCacheStore.shared
 
@@ -350,7 +351,11 @@ ScrollView {
             columnWidth: columnWidth,
             expiration: DefaultCacheExpiration.bookmarks,
             isDeleted: isDeleted,
-            cacheStatus: cacheStatus
+            cacheStatus: cacheStatus,
+            feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+            shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+            bookmarkCacheEnabled: settingStore.userSetting.bookmarkCacheEnabled,
+            accentColor: themeManager.currentColor
         )
     }
 }

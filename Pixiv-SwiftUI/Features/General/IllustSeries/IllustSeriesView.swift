@@ -126,7 +126,7 @@ struct IllustSeriesView: View {
             LazyVStack(spacing: 12) {
                 ForEach(Array(store.illusts.enumerated()), id: \.element.id) { index, illust in
                     NavigationLink(value: illust) {
-                        IllustSeriesCard(illust: illust, index: index)
+                        IllustSeriesCard(illust: illust, index: index, feedPreviewQuality: settingStore.userSetting.feedPreviewQuality)
                     }
                     #if os(macOS)
                     .buttonStyle(.plain)

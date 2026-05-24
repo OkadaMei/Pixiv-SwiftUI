@@ -2,7 +2,12 @@ import SwiftUI
 
 struct UserPreviewCard: View {
     let userPreview: UserPreviews
-    @Environment(ThemeManager.self) var themeManager
+    let accentColor: Color
+
+    init(userPreview: UserPreviews, accentColor: Color = .accentColor) {
+        self.userPreview = userPreview
+        self.accentColor = accentColor
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -29,7 +34,7 @@ struct UserPreviewCard: View {
                 if let isFollowed = userPreview.user.isFollowed {
                     Image(systemName: isFollowed ? "person.badge.minus" : "person.badge.plus")
                         .font(.system(size: 14))
-                        .foregroundColor(isFollowed ? .secondary : themeManager.currentColor)
+                        .foregroundColor(isFollowed ? .secondary : accentColor)
                         .padding(8)
                         .background(Color.primary.opacity(0.05))
                         .clipShape(Circle())

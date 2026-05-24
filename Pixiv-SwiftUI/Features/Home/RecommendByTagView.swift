@@ -63,7 +63,14 @@ struct RecommendByTagView: View {
                     } else {
                         WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                             NavigationLink(value: illust) {
-                                IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth)
+                                IllustCard(
+                                    illust: illust,
+                                    columnCount: dynamicColumnCount,
+                                    columnWidth: columnWidth,
+                                    feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                    shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                    accentColor: themeManager.currentColor
+                                )
                             }
                             .buttonStyle(.plain)
                             .onAppear {

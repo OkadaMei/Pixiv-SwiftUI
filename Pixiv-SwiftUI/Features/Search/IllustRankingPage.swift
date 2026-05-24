@@ -12,6 +12,7 @@ struct IllustRankingPage: View {
     @State private var showProfilePanel = false
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
+    @Environment(ThemeManager.self) var themeManager
     @State private var prefetchTracker = PrefetchTracker()
 
     private var rankingModes: [IllustRankingMode] {
@@ -218,7 +219,15 @@ struct IllustRankingPage: View {
                     } else {
                         WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                             NavigationLink(value: illust) {
-                                IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth, expiration: DefaultCacheExpiration.recommend)
+                                IllustCard(
+                                    illust: illust,
+                                    columnCount: dynamicColumnCount,
+                                    columnWidth: columnWidth,
+                                    expiration: DefaultCacheExpiration.recommend,
+                                    feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                    shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                    accentColor: themeManager.currentColor
+                                )
                             }
                             .buttonStyle(.plain)
                             .onAppear {

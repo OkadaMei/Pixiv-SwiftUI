@@ -2,8 +2,6 @@ import SwiftUI
 
 /// 收藏卡片组件（支持显示已删除标记和缓存状态）
 struct BookmarkCard: View {
-    @Environment(UserSettingStore.self) var userSettingStore
-    @Environment(ThemeManager.self) var themeManager
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -13,6 +11,10 @@ struct BookmarkCard: View {
     var expiration: CacheExpiration?
     var isDeleted: Bool = false
     var cacheStatus: BookmarkCacheStatus = .none
+    let feedPreviewQuality: Int
+    let shouldBlur: Bool
+    let bookmarkCacheEnabled: Bool
+    let accentColor: Color
 
     init(
         illust: Illusts,
@@ -20,7 +22,11 @@ struct BookmarkCard: View {
         columnWidth: CGFloat? = nil,
         expiration: CacheExpiration? = nil,
         isDeleted: Bool = false,
-        cacheStatus: BookmarkCacheStatus = .none
+        cacheStatus: BookmarkCacheStatus = .none,
+        feedPreviewQuality: Int = 0,
+        shouldBlur: Bool = false,
+        bookmarkCacheEnabled: Bool = true,
+        accentColor: Color = .accentColor
     ) {
         self.illust = illust
         self.columnCount = columnCount
@@ -28,6 +34,10 @@ struct BookmarkCard: View {
         self.expiration = expiration
         self.isDeleted = isDeleted
         self.cacheStatus = cacheStatus
+        self.feedPreviewQuality = feedPreviewQuality
+        self.shouldBlur = shouldBlur
+        self.bookmarkCacheEnabled = bookmarkCacheEnabled
+        self.accentColor = accentColor
     }
 
     private var isR18: Bool {
@@ -40,13 +50,6 @@ struct BookmarkCard: View {
 
     private var isSpoiler: Bool {
         return illust.isSpoiler
-    }
-
-    private var shouldBlur: Bool {
-        if isR18 && userSettingStore.userSetting.r18DisplayMode == 1 { return true }
-        if isR18G && userSettingStore.userSetting.r18gDisplayMode == 1 { return true }
-        if isSpoiler && userSettingStore.userSetting.spoilerDisplayMode == 1 { return true }
-        return false
     }
 
     private var bookmarkIconName: String {
@@ -79,7 +82,7 @@ struct BookmarkCard: View {
                 return illust.imageUrls.medium
             }
         }
-        return ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality)
+        return ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality)
     }
 
     var body: some View {
@@ -130,7 +133,7 @@ struct BookmarkCard: View {
 
                     Spacer()
 
-                    if cacheStatus != .none && userSettingStore.userSetting.bookmarkCacheEnabled {
+                    if cacheStatus != .none && bookmarkCacheEnabled {
                         HStack {
                             cacheStatusLabel
                             Spacer()
@@ -174,11 +177,11 @@ struct BookmarkCard: View {
                         if illust.isBookmarked {
                             toggleBookmark(forceUnbookmark: true)
                         } else {
-                            toggleBookmark(isPrivate: userSettingStore.userSetting.defaultPrivateLike)
+                            toggleBookmark(isPrivate: UserSettingStore.shared.userSetting.defaultPrivateLike)
                         }
                     }) {
                         Image(systemName: bookmarkIconName)
-                            .foregroundColor(illust.isBookmarked ? themeManager.currentColor : .secondary)
+                            .foregroundColor(illust.isBookmarked ? accentColor : .secondary)
                             .font(.system(size: 20))
                     }
                     .buttonStyle(.plain)

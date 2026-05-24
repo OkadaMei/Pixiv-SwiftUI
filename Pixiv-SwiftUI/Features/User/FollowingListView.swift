@@ -4,6 +4,7 @@ struct FollowingListView: View {
     @State var store: FollowingListStore
     @State private var isRefreshing: Bool = false
     let userId: String
+    @Environment(ThemeManager.self) var themeManager
 
     @State private var columnCount: Int = 1
     @State private var selectedRestrict: TypeFilterButton.RestrictType? = .publicAccess
@@ -17,7 +18,7 @@ struct FollowingListView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount), spacing: 16) {
                 ForEach(store.following) { preview in
                     NavigationLink(value: preview.user) {
-                        UserPreviewCard(userPreview: preview)
+                        UserPreviewCard(userPreview: preview, accentColor: themeManager.currentColor)
                     }
                     .buttonStyle(.plain)
                     .onAppear {

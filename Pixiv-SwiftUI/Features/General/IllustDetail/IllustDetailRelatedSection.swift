@@ -156,7 +156,14 @@ struct IllustDetailRelatedSection: View {
                 aspectRatio: { $0.safeAspectRatio }
             ) { relatedIllust, columnWidth in
                 NavigationLink(value: relatedIllust) {
-                    RelatedIllustCard(illust: relatedIllust, showTitle: false, columnWidth: columnWidth)
+                    RelatedIllustCard(
+                        illust: relatedIllust,
+                        showTitle: false,
+                        columnWidth: columnWidth,
+                        feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                        shouldBlur: settingStore.userSetting.shouldBlurIllust(relatedIllust),
+                        shouldHide: settingStore.userSetting.shouldHideIllust(relatedIllust)
+                    )
                 }
                 .buttonStyle(.plain)
                 .onAppear {

@@ -20,6 +20,7 @@ struct RecommendView: View {
     @State private var showProfilePanel = false
     @State private var showAuthView = false
     @Environment(AccountStore.self) var accountStore
+    @Environment(ThemeManager.self) var themeManager
 
     @State private var searchStore = SearchStore.shared
 
@@ -133,7 +134,15 @@ struct RecommendView: View {
                 } else {
                     WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                         NavigationLink(value: illust) {
-                            IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth, expiration: DefaultCacheExpiration.recommend)
+                            IllustCard(
+                                illust: illust,
+                                columnCount: dynamicColumnCount,
+                                columnWidth: columnWidth,
+                                expiration: DefaultCacheExpiration.recommend,
+                                feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                accentColor: themeManager.currentColor
+                            )
                         }
                         .buttonStyle(.plain)
                         .onAppear {

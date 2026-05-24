@@ -1,19 +1,20 @@
 import SwiftUI
 
 struct IllustSeriesCard: View {
-    @Environment(UserSettingStore.self) var userSettingStore
     let illust: Illusts
     let index: Int
+    let feedPreviewQuality: Int
 
-    init(illust: Illusts, index: Int) {
+    init(illust: Illusts, index: Int, feedPreviewQuality: Int = 0) {
         self.illust = illust
         self.index = index
+        self.feedPreviewQuality = feedPreviewQuality
     }
 
     var body: some View {
         HStack(spacing: 12) {
             CachedAsyncImage(
-                urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+                urlString: ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality),
                 expiration: DefaultCacheExpiration.illustDetail
             )
             .frame(width: 80, height: 80)

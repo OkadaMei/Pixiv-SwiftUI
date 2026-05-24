@@ -6,6 +6,7 @@ struct SauceNaoResultListView: View {
     let requestId: UUID
     @State private var store: SauceNaoResultListStore
     @Environment(UserSettingStore.self) private var settingStore
+    @Environment(ThemeManager.self) private var themeManager
 
     init(requestId: UUID) {
         self.requestId = requestId
@@ -66,7 +67,10 @@ struct SauceNaoResultListView: View {
                                     SauceNaoResultWaterfallCard(
                                         item: item,
                                         columnCount: dynamicColumnCount,
-                                        columnWidth: columnWidth
+                                        columnWidth: columnWidth,
+                                        feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                        shouldBlur: settingStore.userSetting.shouldBlurIllust(item.illust),
+                                        accentColor: themeManager.currentColor
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -97,12 +101,18 @@ private struct SauceNaoResultWaterfallCard: View {
     let item: SauceNaoResultItem
     let columnCount: Int
     let columnWidth: CGFloat
+    let feedPreviewQuality: Int
+    let shouldBlur: Bool
+    let accentColor: Color
 
     var body: some View {
         IllustCard(
             illust: item.illust,
             columnCount: columnCount,
-            columnWidth: columnWidth
+            columnWidth: columnWidth,
+            feedPreviewQuality: feedPreviewQuality,
+            shouldBlur: shouldBlur,
+            accentColor: accentColor
         )
         .overlay(alignment: .topTrailing) {
             Text(item.similarityTagText)

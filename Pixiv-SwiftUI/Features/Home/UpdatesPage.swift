@@ -8,6 +8,7 @@ struct UpdatesPage: View {
     @State private var contentType: TypeFilterButton.ContentType = .all
     @State private var selectedRestrict: TypeFilterButton.RestrictType? = .publicAccess
     @Environment(UserSettingStore.self) var settingStore
+    @Environment(ThemeManager.self) var themeManager
     var accountStore: AccountStore = AccountStore.shared
     @State private var prefetchTracker = PrefetchTracker()
 
@@ -83,7 +84,10 @@ struct UpdatesPage: View {
                                                 illust: illust,
                                                 columnCount: dynamicColumnCount,
                                                 columnWidth: columnWidth,
-                                                expiration: DefaultCacheExpiration.updates
+                                                expiration: DefaultCacheExpiration.updates,
+                                                feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                                shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                                                accentColor: themeManager.currentColor
                                             )
                                         }
                                         .buttonStyle(.plain)

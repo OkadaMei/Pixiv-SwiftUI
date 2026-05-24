@@ -536,6 +536,7 @@ struct IllustWaterfallView: View {
     let onLoadMore: () -> Void
     let width: CGFloat?
     @Environment(UserSettingStore.self) var settingStore
+    @Environment(ThemeManager.self) var themeManager
 
     @State private var dynamicColumnCount: Int = ResponsiveGrid.initialColumnCount(userSetting: UserSettingStore.shared.userSetting)
     @State private var prefetchTracker = PrefetchTracker()
@@ -563,7 +564,14 @@ struct IllustWaterfallView: View {
             VStack(spacing: 12) {
                 WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: width.map { $0 - 24 }, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                     NavigationLink(value: illust) {
-                        IllustCard(illust: illust, columnCount: dynamicColumnCount, columnWidth: columnWidth)
+                        IllustCard(
+                            illust: illust,
+                            columnCount: dynamicColumnCount,
+                            columnWidth: columnWidth,
+                            feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                            shouldBlur: settingStore.userSetting.shouldBlurIllust(illust),
+                            accentColor: themeManager.currentColor
+                        )
                     }
                     .buttonStyle(.plain)
                     .onAppear {

@@ -6,7 +6,6 @@ import SwiftUI
 
 /// 相关推荐插画卡片（简化版）
 struct RelatedIllustCard: View {
-    @Environment(UserSettingStore.self) var userSettingStore
     #if os(macOS)
     @Environment(\.openWindow) var openWindow
     #endif
@@ -14,12 +13,26 @@ struct RelatedIllustCard: View {
     let showTitle: Bool
     let columnWidth: CGFloat?
     let onTap: (() -> Void)?
+    let feedPreviewQuality: Int
+    let shouldBlur: Bool
+    let shouldHide: Bool
 
-    init(illust: Illusts, showTitle: Bool = true, columnWidth: CGFloat? = nil, onTap: (() -> Void)? = nil) {
+    init(
+        illust: Illusts,
+        showTitle: Bool = true,
+        columnWidth: CGFloat? = nil,
+        onTap: (() -> Void)? = nil,
+        feedPreviewQuality: Int = 0,
+        shouldBlur: Bool = false,
+        shouldHide: Bool = false
+    ) {
         self.illust = illust
         self.showTitle = showTitle
         self.columnWidth = columnWidth
         self.onTap = onTap
+        self.feedPreviewQuality = feedPreviewQuality
+        self.shouldBlur = shouldBlur
+        self.shouldHide = shouldHide
     }
 
     private var isR18: Bool {
@@ -34,33 +47,12 @@ struct RelatedIllustCard: View {
         return illust.isSpoiler
     }
 
-    private var shouldBlur: Bool {
-        if isR18 && userSettingStore.userSetting.r18DisplayMode == 1 { return true }
-        if isR18G && userSettingStore.userSetting.r18gDisplayMode == 1 { return true }
-        if isSpoiler && userSettingStore.userSetting.spoilerDisplayMode == 1 { return true }
-        return false
-    }
-
-    private var shouldHide: Bool {
-        let r18Mode = userSettingStore.userSetting.r18DisplayMode
-        let r18gMode = userSettingStore.userSetting.r18gDisplayMode
-        let spoilerMode = userSettingStore.userSetting.spoilerDisplayMode
-        let aiMode = userSettingStore.userSetting.aiDisplayMode
-
-        let hideR18 = (isR18 && r18Mode == 2) || (!isR18 && r18Mode == 3)
-        let hideR18G = (isR18G && r18gMode == 2) || (!isR18G && r18gMode == 3)
-        let hideSpoiler = (isSpoiler && spoilerMode == 2) || (!isSpoiler && spoilerMode == 3)
-        let hideAI = (isAI && aiMode == 1) || (!isAI && aiMode == 2)
-
-        return hideR18 || hideR18G || hideSpoiler || hideAI
+    private var isUgoira: Bool {
+        return illust.type == "ugoira"
     }
 
     private var isAI: Bool {
         return illust.illustAIType == 2
-    }
-
-    private var isUgoira: Bool {
-        return illust.type == "ugoira"
     }
 
     private var isManga: Bool {
@@ -75,7 +67,7 @@ struct RelatedIllustCard: View {
                 ZStack(alignment: .topTrailing) {
                     if let onTap = onTap {
                         CachedAsyncImage(
-                            urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+                            urlString: ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality),
                             aspectRatio: illust.safeAspectRatio,
                             idealWidth: columnWidth
                         )
@@ -84,7 +76,7 @@ struct RelatedIllustCard: View {
                         .onTapGesture(perform: onTap)
                     } else {
                         CachedAsyncImage(
-                            urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+                            urlString: ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality),
                             aspectRatio: illust.safeAspectRatio,
                             idealWidth: columnWidth
                         )
