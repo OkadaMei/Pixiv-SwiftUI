@@ -115,8 +115,7 @@ The project relies on a locally maintained optimized tag translation library `Re
 - **Manual Creation**: Manually create a file with the basic structure in the project root directory:
   ```bash
   mkdir -p Resources
-  echo '{"timestamp": "2026-01-01T00:00:00", "tags": {}}' > Resources/tags.json
-  ```
+   echo '{"timestamp": "2026-01-01T00:00:00", "tags": {}}' > Resources/tags.json  ```
 
 > The file released in the Release section contains complete optimized translation data.
 

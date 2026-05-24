@@ -2,14 +2,14 @@
 """
 Pixiv 标签导出脚本
 
-将数据库中的中文翻译导出为 JSON 格式，供主项目使用。
+将数据库中的翻译导出为多语言 JSON 格式，供主项目使用。
 
 使用方法:
     python export_tags.py
 
 导出格式:
-    JSON 对象，键为标签名，值为中文翻译
-    {"R-18": "18禁", "オリジナル": "原创", ...}
+    JSON 对象，每个标签对应一个语言字典
+    {"R-18": {"zh": "18禁"}, "オリジナル": {"zh": "原创"}, ...}
 """
 
 import json
@@ -38,30 +38,57 @@ logger = logging.getLogger(__name__)
 
 
 class TagExporter:
+    LANGUAGE_COLUMNS = {
+        "zh": ("chinese_translation", "chinese_reviewed"),
+        "en": ("english_translation", "english_reviewed"),
+    }
+
     def __init__(self, db_path: str, output_path: str):
         self.db_path = db_path
         self.output_path = output_path
 
-    def get_translated_tags(self) -> Dict[str, str]:
-        """从数据库获取所有已审核的翻译标签"""
+    def get_translated_tags(self) -> Dict[str, Dict[str, str]]:
+        """从数据库获取所有已审核的翻译标签，按语言组织"""
         conn = None
         try:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                """
-                SELECT name, chinese_translation
-                FROM pixiv_tags
-                WHERE chinese_translation IS NOT NULL
-                  AND chinese_translation != ''
-                  AND chinese_reviewed = 1
-                  AND name NOT GLOB '*[0-9]users入り'
-                ORDER BY frequency DESC
-                """
-            )
-            return {
-                row["name"]: row["chinese_translation"] for row in cursor.fetchall()
-            }
+
+            # 收集每种语言的翻译
+            lang_translations: Dict[str, Dict[str, str]] = {}
+            for lang_code, (trans_col, review_col) in self.LANGUAGE_COLUMNS.items():
+                cursor = conn.execute(
+                    f"""
+                    SELECT name, {trans_col} AS translation
+                    FROM pixiv_tags
+                    WHERE {trans_col} IS NOT NULL
+                      AND {trans_col} != ''
+                      AND {review_col} = 1
+                      AND name NOT GLOB '*[0-9]users入り'
+                    ORDER BY frequency DESC
+                    """
+                )
+                rows = cursor.fetchall()
+                if rows:
+                    lang_translations[lang_code] = {
+                        row["name"]: row["translation"] for row in rows
+                    }
+
+            # 合并为嵌套结构
+            all_tag_names = set()
+            for trans_dict in lang_translations.values():
+                all_tag_names.update(trans_dict.keys())
+
+            result: Dict[str, Dict[str, str]] = {}
+            for name in all_tag_names:
+                lang_dict: Dict[str, str] = {}
+                for lang_code, trans_dict in lang_translations.items():
+                    if name in trans_dict:
+                        lang_dict[lang_code] = trans_dict[name]
+                if lang_dict:
+                    result[name] = lang_dict
+
+            return result
         except Exception as e:
             logger.error(f"从数据库导出标签失败: {e}")
             return {}

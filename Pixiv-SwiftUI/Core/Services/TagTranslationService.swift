@@ -7,9 +7,15 @@ final class TagTranslationService {
 
     private let logger = Logger(subsystem: "com.pixiv.app", category: "TagTranslation")
 
-    private var translations: [String: String] = [:]
+    /// [tagName: [languageCode: translation]]
+    private var translations: [String: [String: String]] = [:]
     private(set) var timestamp: String = ""
     private(set) var isLoaded: Bool = false
+
+    /// 当前系统语言代码（如 "zh"、"en"、"ja"）
+    private var currentLanguageCode: String {
+        Locale.current.language.languageCode?.identifier ?? "en"
+    }
 
     /// 元标签正则表达式：匹配 "前缀+数字+users入り" 格式
     private let usersInRegex = try? NSRegularExpression(pattern: "^(.*?)(\\d+)users入り$", options: [])
@@ -41,17 +47,20 @@ final class TagTranslationService {
         }
     }
 
-    /// 获取标签翻译
+    /// 获取当前系统语言对应的翻译
     /// - Parameter tagName: 标签名称
-    /// - Returns: 中文翻译，如果不存在则返回 nil
-    func getTranslation(for tagName: String) -> String? {
-        return translations[tagName]
+    /// - Returns: 翻译文本，如果该语言无译文则返回 nil
+    func preferredTranslation(for tagName: String) -> String? {
+        translations[tagName]?[currentLanguageCode]
     }
 
     /// 处理元标签（如 xxx100users入り、xxx生誕祭）
     /// - Parameter tagName: 标签名称
     /// - Returns: 优化后的翻译，如果不是元标签格式则返回 nil
     private func getMetaTagTranslation(for tagName: String) -> String? {
+        // 元标签后缀为中文，仅当系统语言为中文时启用
+        guard currentLanguageCode == "zh" else { return nil }
+
         let range = NSRange(tagName.startIndex..., in: tagName)
 
         // 1. 匹配 xxx生誕祭[数字] / xxx誕生祭[数字]
@@ -62,7 +71,7 @@ final class TagTranslationService {
             let prefix = String(tagName[prefixRange])
             let number = String(tagName[numberRange])
             if !prefix.isEmpty {
-                let prefixTranslation = getTranslation(for: prefix) ?? prefix
+                let prefixTranslation = preferredTranslation(for: prefix) ?? prefix
                 return "\(prefixTranslation)\(number)生日"
             }
         }
@@ -73,7 +82,7 @@ final class TagTranslationService {
            let prefixRange = Range(match.range(at: 1), in: tagName) {
             let prefix = String(tagName[prefixRange])
             if !prefix.isEmpty {
-                let prefixTranslation = getTranslation(for: prefix) ?? prefix
+                let prefixTranslation = preferredTranslation(for: prefix) ?? prefix
                 return "\(prefixTranslation)生日"
             }
         }
@@ -85,18 +94,18 @@ final class TagTranslationService {
            let numberRange = Range(match.range(at: 2), in: tagName) {
             let prefix = String(tagName[prefixRange])
             let number = String(tagName[numberRange])
-            let prefixTranslation = prefix.isEmpty ? "" : (getTranslation(for: prefix) ?? prefix)
+            let prefixTranslation = prefix.isEmpty ? "" : (preferredTranslation(for: prefix) ?? prefix)
             return "\(prefixTranslation)\(number)用户收藏"
         }
 
         return nil
     }
 
-    /// 获取显示的翻译（优先本地，其次官方）
+    /// 获取显示的翻译
     /// - Parameters:
     ///   - tagName: 标签名称
     ///   - officialTranslation: API 官方翻译
-    /// - Returns: 优先返回本地翻译，如果不存在则返回官方翻译
+    /// - Returns: 根据显示模式返回对应翻译
     func getDisplayTranslation(for tagName: String, officialTranslation: String?) -> String? {
         let displayMode = UserSettingStore.shared.userSetting.tagTranslationDisplayMode
         switch displayMode {
@@ -108,21 +117,18 @@ final class TagTranslationService {
             if let metaTranslation = getMetaTagTranslation(for: tagName) {
                 return metaTranslation
             }
-            if let localTranslation = getTranslation(for: tagName) {
-                return localTranslation
-            }
-            return officialTranslation
+            return preferredTranslation(for: tagName) ?? officialTranslation
         default:
             return officialTranslation
         }
     }
 
-    /// 检查是否有本地翻译
+    /// 检查当前系统语言下是否有该标签的翻译
     func hasTranslation(for tagName: String) -> Bool {
-        return translations[tagName] != nil
+        translations[tagName]?[currentLanguageCode] != nil
     }
 
-    /// 搜索标签（支持 tag 名和翻译双向搜索）
+    /// 搜索标签（支持 tag 名和当前语言翻译双向搜索）
     /// - Parameters:
     ///   - query: 搜索关键词
     ///   - limit: 最大返回数量
@@ -136,9 +142,10 @@ final class TagTranslationService {
         var containsMatches: [UnifiedSearchSuggestion] = []
         var seenTags = Set<String>()
 
-        for (tagName, translation) in translations {
+        for (tagName, langDict) in translations {
             let lowercasedTagName = tagName.lowercased()
-            let lowercasedTranslation = translation.lowercased()
+            let translation = langDict[currentLanguageCode]
+            let lowercasedTranslation = translation?.lowercased() ?? ""
 
             var matchType: TagMatchType?
 
@@ -189,10 +196,5 @@ final class TagTranslationService {
         results.append(contentsOf: Array(containsMatches.prefix(maxContains)))
 
         return results
-    }
-
-    /// 获取所有翻译数据（用于外部搜索）
-    func getAllTranslations() -> [String: String] {
-        return translations
     }
 }
