@@ -3,7 +3,7 @@ import SwiftUI
 /// 主导航视图
 @available(iOS 16.0, *)
 struct MainTabView: View {
-    @Bindable var accountStore: AccountStore
+    let accountStore: AccountStore
 
     var body: some View {
         if #available(iOS 26.0, macOS 26.0, *) {

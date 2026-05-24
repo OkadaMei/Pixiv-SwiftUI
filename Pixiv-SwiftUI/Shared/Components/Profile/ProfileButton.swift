@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ProfileButton: View {
-    @Bindable var accountStore: AccountStore
+    let accountStore: AccountStore
     @Binding var isPresented: Bool
 
     var body: some View {

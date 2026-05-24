@@ -79,7 +79,7 @@ settingStore.filterIllusts()
 
 ### 🟠 P1 — 高优先级
 
-#### 3. WaterfallGrid 通过 GeometryReader 频繁触发列重算
+#### 3. WaterfallGrid 通过 GeometryReader 频繁触发列重算 (待修复)
 
 **关键词**: GeometryReader、布局重算、列分布
 
@@ -146,21 +146,15 @@ settingStore.filterIllusts()
 **涉及文件**:
 - `Pixiv-SwiftUI/Core/Network/CacheConfig.swift` — 缓存配置
 
-**优化建议**:
-在 `AppDelegate` 或 `ScenePhase` 变化中监听内存警告，主动清理 Kingfisher 缓存：
+**当前状态**: **✅ 已修复**
 
-```swift
-NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { _ in
-    ImageCache.default.clearMemoryCache()
-    PixivImageLoader.sharedImageCache?.clearMemoryCache()
-}
-```
+**修复方式**: 在 `PixivApp.swift` 中添加 `didReceiveMemoryWarningNotification` 监听，调用 `ImageCache.default.clearMemoryCache()` 及 `BookmarkCacheService`、各 Store 的清空方法。
 
 ---
 
 ### 🟡 P2 — 中优先级
 
-#### 7. 递归分页风险
+#### 7. 递归分页风险 (待修复)
 
 **关键词**: 分页、无限循环、API 限流
 
@@ -170,25 +164,24 @@ NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWa
 **涉及文件**:
 - `Pixiv-SwiftUI/Features/Home/RecommendView.swift`（第 382-385 行）
 
-**优化建议**: 在递归路径中加入重试计数限制或延迟。
+**当前状态**: **✅ 卡片组件已修复**（commit `10eee38`），大型视图（RecommendView、SearchResultView 等）待处理。
 
+**已完成的修复**:
+- `IllustCard`、`BookmarkCard`、`RelatedIllustCard`、`IllustSeriesCard`、`UserPreviewCard` 移除 `@Environment` Store 依赖，改为通过参数传入具体值
+- 5 个卡片组件共移除 7 个 `@Environment` Store 依赖
+- 在 `UserSetting` 上新增 `shouldBlurIllust(_:)`、`shouldHideIllust(_:)` 辅助方法
+
+**剩余工作**:
 ---
 
-#### 8. SwiftData 计算属性未标记 `@Transient`
+#### 8. SwiftData 计算属性（无需修改）
 
-**关键词**: @Model、@Transient、SwiftData
+**关键词**: SwiftData、@Transient
 
 **问题描述**:
-`Illust` 模型中的 `safeAspectRatio`、`isSpoiler`、`isManga` 等 6 个计算属性未标注 `@Transient`，SwiftData 会尝试处理它们，增加不必要的开销。
+`Illust` 模型中的 `safeAspectRatio`、`isSpoiler`、`isManga` 等计算属性在 SwiftData 中不会自动持久化——SwiftData 仅持久化存储属性，`@Transient` 仅适用于存储属性。**计算属性无需标注 `@Transient`，此条属于误报。**
 
-**涉及文件**:
-- `Pixiv-SwiftUI/Core/DataModels/Domain/Illust.swift`
-
-**优化建议**:
-```swift
-@Transient
-var safeAspectRatio: CGFloat { ... }
-```
+**结论**: 无需修改。
 
 ---
 
@@ -217,8 +210,11 @@ var safeAspectRatio: CGFloat { ... }
 
 **涉及文件**:
 - `Pixiv-SwiftUI/Shared/Components/Text/NovelSpanRenderer.swift`（第 139、216、238 行）
+- `eraseToAnyView()` 扩展方法
 
-**优化建议**: 直接移除 `.eraseToAnyView()` 调用。
+**当前状态**: **✅ 已修复**
+
+**修复方式**: 移除三处 `.eraseToAnyView()` 调用及对应的 `View` 扩展方法。
 
 ---
 
@@ -227,7 +223,7 @@ var safeAspectRatio: CGFloat { ... }
 **关键词**: @Bindable、观察开销
 
 **问题描述**:
-以下视图中 Store 仅用于读取，无需 `@Bindable`。`@Bindable` 比普通 `@Environment` 有额外的观察开销：
+以下视图中 Store 仅用于读取，无需 `@Bindable`。`@Bindable` 比普通 `let` 引用有额外的观察开销：
 
 | 视图 | Store | 读/写 |
 |------|-------|-------|
@@ -240,11 +236,13 @@ var safeAspectRatio: CGFloat { ... }
 - `Pixiv-SwiftUI/Features/Home/MainTabView.swift`
 - `Pixiv-SwiftUI/Shared/Components/Profile/ProfileButton.swift`
 
-**优化建议**: 将 `@Bindable` 改为 `@Environment(StoreType.self)` 只读访问。
+**当前状态**: **✅ 已修复**
+
+**修复方式**: 将 `@Bindable var` 改为 `let` 声明。
 
 ---
 
-#### 12. `FetchDescriptor` 缺少 `fetchLimit`
+#### 12. `FetchDescriptor` 缺少 `fetchLimit`（评估后跳过）
 
 **关键词**: SwiftData、查询、fetchLimit
 
@@ -253,11 +251,11 @@ var safeAspectRatio: CGFloat { ... }
 
 **涉及文件**: 所有使用 `FetchDescriptor` 的 Store（共 48 处引用）
 
-**优化建议**: 对分页/列表查询显式设置 `.fetchLimit`。
+**结论**: 经逐处审查，大部分查询已通过精确 `#Predicate` 限定结果集。少量全表扫描（如 `BookmarkCache.loadCachedBookmarks`）实际需要全部数据以支持完整功能。**此条目收益有限，无进一步操作。**
 
 ---
 
-#### 13. 频繁查询字段缺少索引
+#### 13. 频繁查询字段加索引
 
 **关键词**: SwiftData、索引、查询性能
 
@@ -266,12 +264,11 @@ var safeAspectRatio: CGFloat { ... }
 
 **涉及文件**: 所有 SwiftData 模型文件
 
-**优化建议**:
-```swift
-@Attribute(.unique) var id: Int
-// 对频繁查询字段添加索引
-@Attribute(.indexed) var ownerId: Int
-```
+**当前状态**: **✅ 已修复**
+
+**修复方式**: 
+- `Illust.ownerId` 添加 `@Attribute(.indexed)`
+- `BookmarkCache.ownerId` 添加 `@Attribute(.indexed)`
 
 ---
 
@@ -347,19 +344,20 @@ var safeAspectRatio: CGFloat { ... }
 | 序号 | 问题 | 预估工作量 | 备注 |
 |------|------|-----------|------|
 | #2 | 主线程同步 I/O | ✅ 已修复 | commit `c67a20a` |
-| #6 | 内存警告处理 | ~0.1 天 | 几行代码 |
-| #10 | 移除 `.eraseToAnyView()` | ~0.1 天 | 三处删除 |
-| #11 | 移除不必要的 `@Bindable` | ~0.1 天 | 三处改动 |
+| #6 | 内存警告处理 | ✅ 已修复 | |
+| #10 | 移除 `.eraseToAnyView()` | ✅ 已修复 | |
+| #11 | 移除不必要的 `@Bindable` | ✅ 已修复 | |
 
 ### 🥈 第二优先级（结构性优化）
 
 | 序号 | 问题 | 预估工作量 | 备注 |
 |------|------|-----------|------|
-| #1 | @Observable 过度订阅 | ~5.5 天 | 拆子视图+参数化 |
+| #1 | @Observable 过度订阅（卡片部分） | ✅ 已修复 | commit `10eee38` |
+| #1 | @Observable 过度订阅（大视图剩余） | ~5.5 天 | 拆子视图+参数化 |
 | #3 | GeometryReader 频繁重算 | ~0.5 天 | 加节流 |
-| #8 | 计算属性 @Transient | ~0.1 天 | 加注解 |
-| #12 | fetchLimit | ~0.3 天 | 逐个 Store |
-| #13 | 字段索引 | ~0.2 天 | 加注解 |
+| #8 | 计算属性 @Transient | 无需修改 | 误报 |
+| #12 | fetchLimit | 跳过 | 收益有限 |
+| #13 | 字段索引 | ✅ 已修复 | |
 
 ### 🥉 第三优先级（架构级改动）
 

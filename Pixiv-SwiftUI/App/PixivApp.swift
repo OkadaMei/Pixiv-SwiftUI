@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import Kingfisher
 #if os(macOS)
 import AppKit
 #endif
@@ -50,6 +51,11 @@ struct PixivApp: App {
             .task {
                 await initializer.performInitialization()
             }
+            #if os(iOS)
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+                handleMemoryWarning()
+            }
+            #endif
             #if os(macOS)
             .frame(minWidth: 1000, minHeight: 700)
             #endif
@@ -103,6 +109,15 @@ struct PixivApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         #endif
+    }
+
+    /// 收到内存警告时清理 Kingfisher 等内存缓存
+    private func handleMemoryWarning() {
+        ImageCache.default.clearMemoryCache()
+        BookmarkCacheService.shared.getCache().clearMemoryCache()
+        IllustStore.shared.clearMemoryCache()
+        NovelStore.shared.clearMemoryCache()
+        SearchStore.shared.clearMemoryCache()
     }
 }
 

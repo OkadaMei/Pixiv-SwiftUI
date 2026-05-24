@@ -136,7 +136,6 @@ struct NovelSpanRenderer: View {
                     .padding()
             }
         }
-        .eraseToAnyView()
     }
 
     @ViewBuilder
@@ -213,7 +212,6 @@ struct NovelSpanRenderer: View {
                     .foregroundColor(textColor)
             }
         }
-        .eraseToAnyView()
     }
 
     private var rubyTextView: some View {
@@ -235,7 +233,6 @@ struct NovelSpanRenderer: View {
                     .foregroundColor(textColor)
             }
         }
-        .eraseToAnyView()
     }
 
     private var textColor: Color {
@@ -250,10 +247,4 @@ struct NovelSpanRenderer: View {
     }
 
     @Environment(\.colorScheme) private var colorScheme
-}
-
-extension View {
-    func eraseToAnyView() -> AnyView {
-        AnyView(self)
-    }
 }

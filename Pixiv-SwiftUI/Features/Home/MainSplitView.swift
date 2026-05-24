@@ -4,7 +4,7 @@ import SwiftData
 
 /// macOS 侧边栏导航架构
 struct MainSplitView: View {
-    @Bindable var accountStore: AccountStore
+    let accountStore: AccountStore
     @State private var selectedItem: NavigationItem? = .recommend
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var showAuthView = false

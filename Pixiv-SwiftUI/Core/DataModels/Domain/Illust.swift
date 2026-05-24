@@ -4,7 +4,7 @@ import SwiftData
 /// 插画信息
 @Model
 final class Illusts: Codable {
-    var id: Int
+    @Attribute(.unique) var id: Int
     var ownerId: String = "guest"
     var title: String
     var type: String
