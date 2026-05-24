@@ -705,13 +705,9 @@ final class UserSettingStore {
         // 剧透内容过滤
         switch userSetting.spoilerDisplayMode {
         case 2:
-            result = result.filter { illust in
-                !illust.tags.contains { spoilerTags.contains($0.name.lowercased()) }
-            }
+            result = result.filter { !$0.isSpoiler }
         case 3:
-            result = result.filter { illust in
-                illust.tags.contains { spoilerTags.contains($0.name.lowercased()) }
-            }
+            result = result.filter { $0.isSpoiler }
         default:
             break
         }

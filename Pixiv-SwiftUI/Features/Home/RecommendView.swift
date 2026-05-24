@@ -23,8 +23,8 @@ struct RecommendView: View {
 
     @State private var searchStore = SearchStore.shared
 
-    /// 记录已预取到的位置索引，避免重复预取
-    @State private var prefetchedUpToIndex: Int = 0
+    /// 预取进度追踪器（引用类型，避免 @State 触发不必要的视图重绘）
+    @State private var prefetchTracker = PrefetchTracker()
 
     private let cache = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
@@ -332,7 +332,7 @@ struct RecommendView: View {
             from: currentIllust,
             in: filteredIllusts,
             quality: settingStore.userSetting.feedPreviewQuality,
-            prefetchedUpToIndex: &prefetchedUpToIndex
+            tracker: prefetchTracker
         )
     }
 
@@ -391,7 +391,7 @@ struct RecommendView: View {
                         cache.set((illusts, result.nextUrl), forKey: cacheKey, expiration: expiration)
 
                         // 重置预取跟踪（新数据已追加，后续 onAppear 会接上）
-                        prefetchedUpToIndex = 0
+                        prefetchTracker.prefetchedUpToIndex = 0
                     }
                 }
             } catch {
@@ -492,7 +492,7 @@ struct RecommendView: View {
                 nextUrl = result.nextUrl
                 hasMoreData = result.nextUrl != nil
                 isLoading = false
-                prefetchedUpToIndex = 0
+                prefetchTracker.prefetchedUpToIndex = 0
 
                 cache.set((illusts, result.nextUrl), forKey: cacheKey, expiration: expiration)
 

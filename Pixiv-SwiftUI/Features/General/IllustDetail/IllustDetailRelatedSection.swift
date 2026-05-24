@@ -36,7 +36,7 @@ struct IllustDetailRelatedSection: View {
 
     @State private var dynamicColumnCount: Int = 2
     @State private var loadMoreError: String?
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -160,7 +160,7 @@ struct IllustDetailRelatedSection: View {
                 }
                 .buttonStyle(.plain)
                 .onAppear {
-                    prefetchIllustsIfNeeded(from: relatedIllust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                    prefetchIllustsIfNeeded(from: relatedIllust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                 }
             }
 

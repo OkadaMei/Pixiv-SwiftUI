@@ -12,7 +12,7 @@ struct IllustRankingPage: View {
     @State private var showProfilePanel = false
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
 
     private var rankingModes: [IllustRankingMode] {
         settingStore.enabledIllustRankingModes
@@ -222,7 +222,7 @@ struct IllustRankingPage: View {
                             }
                             .buttonStyle(.plain)
                             .onAppear {
-                                prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                                prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                             }
                         }
                         .padding(.horizontal, 12)

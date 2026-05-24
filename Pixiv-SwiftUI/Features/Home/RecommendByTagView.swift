@@ -10,7 +10,7 @@ struct RecommendByTagView: View {
     @Environment(UserSettingStore.self) var settingStore
     @Environment(ThemeManager.self) var themeManager
     @Environment(\.dismiss) private var dismiss
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
 
     private var filteredIllusts: [Illusts] {
         settingStore.filterIllusts(illusts)
@@ -67,7 +67,7 @@ struct RecommendByTagView: View {
                             }
                             .buttonStyle(.plain)
                             .onAppear {
-                                prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                                prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                             }
                         }
                         .padding(.horizontal, 12)

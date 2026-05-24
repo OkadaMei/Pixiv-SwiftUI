@@ -39,7 +39,7 @@ struct IllustCard: View {
     }
 
     private var isSpoiler: Bool {
-        return illust.tags.contains { spoilerTags.contains($0.name.lowercased()) }
+        return illust.isSpoiler
     }
 
     private var shouldBlur: Bool {
@@ -69,17 +69,27 @@ struct IllustCard: View {
         return illust.type == "manga"
     }
 
+    /// 条件化 blur：仅需要模糊时附加 blur 修饰符，避免 radius=0 时的无效渲染开销
+    @ViewBuilder
+    private var thumbnailImage: some View {
+        let image = CachedAsyncImage(
+            urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
+            aspectRatio: illust.safeAspectRatio,
+            idealWidth: columnWidth,
+            expiration: expiration
+        )
+        if shouldBlur {
+            image.blur(radius: 20)
+        } else {
+            image
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .topTrailing) {
-                CachedAsyncImage(
-                    urlString: ImageURLHelper.getImageURL(from: illust, quality: userSettingStore.userSetting.feedPreviewQuality),
-                    aspectRatio: illust.safeAspectRatio,
-                    idealWidth: columnWidth,
-                    expiration: expiration
-                )
-                .clipped()
-                .blur(radius: shouldBlur ? 20 : 0)
+                thumbnailImage
+                    .clipped()
 
                 HStack(spacing: 4) {
                     if isManga {

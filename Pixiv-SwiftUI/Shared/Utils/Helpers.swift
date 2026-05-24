@@ -1,5 +1,8 @@
 import SwiftUI
 import Kingfisher
+#if canImport(AppKit) && !targetEnvironment(macCatalyst)
+import AppKit
+#endif
 
 struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -39,12 +42,17 @@ public struct CachedAsyncImage: View {
         self.targetCache = targetCache
     }
 
-    @State private var isLoaded = false
-
     public var body: some View {
         Group {
             if let urlString = urlString, let url = URL(string: urlString), !urlString.isEmpty {
-                buildKFImage(url: url)
+                let image = buildKFImage(url: url)
+                let processedImage: KFImage = {
+                    if let processor = downsamplingProcessor {
+                        return image.setProcessor(processor)
+                    }
+                    return image
+                }()
+                processedImage
                     .placeholder {
                         placeholderView
                     }
@@ -53,9 +61,6 @@ public struct CachedAsyncImage: View {
                     .requestModifier(PixivImageLoader.shared)
                     .diskCacheExpiration(expiration.kingfisherExpiration)
                     .memoryCacheExpiration(expiration.kingfisherExpiration)
-                    .onSuccess { _ in
-                        isLoaded = true
-                    }
                     .resizable()
             } else {
                 placeholderView
@@ -63,6 +68,32 @@ public struct CachedAsyncImage: View {
         }
         .aspectRatio(aspectRatio, contentMode: contentMode)
         .clipped()
+    }
+
+    /// 降采样处理器：根据 idealWidth 和卡片的屏幕像素尺寸生成缩略图，大幅降低内存占用
+    private var downsamplingProcessor: DownsamplingImageProcessor? {
+        guard let idealWidth = idealWidth, idealWidth > 0 else { return nil }
+        let scale: CGFloat = {
+#if canImport(UIKit)
+            return UIScreen.main.scale
+#elseif canImport(AppKit)
+            return NSScreen.main?.backingScaleFactor ?? 2.0
+#else
+            return 2.0
+#endif
+        }()
+        let targetWidth = idealWidth * scale
+        let targetHeight: CGFloat
+        if let ratio = aspectRatio, ratio > 0, ratio.isFinite {
+            targetHeight = targetWidth / ratio
+        } else {
+            // 没有宽高比时使用 2 倍宽度作为上限（罕见的超长图场景）
+            targetHeight = targetWidth * 2
+        }
+        let size = CGSize(width: targetWidth, height: targetHeight)
+        // 仅当目标尺寸合理时才降采样（避免对极小/无效尺寸的图片产生副作用）
+        guard size.width >= 50 && size.height >= 50 else { return nil }
+        return DownsamplingImageProcessor(size: size)
     }
 
     private func buildKFImage(url: URL) -> KFImage {
@@ -269,22 +300,22 @@ struct ImageURLHelper {
 }
 
 /// 卡片出现时预取后续图片，保持始终领先视口约 ahead 张
-/// - 通过 `prefetchedUpToIndex` inout 跟踪进度，避免重复预取
-/// - 每个页面只需声明 `@State private var prefetchedUpToIndex = 0` 并调用此函数
+/// - 通过 `PrefetchTracker`（引用类型）跟踪进度，避免 @State 触发不必要的视图重绘
+/// - 每个页面只需声明 `@State private var prefetchTracker = PrefetchTracker()` 并调用此函数
 /// - Parameters:
-///   - prefetchedUpToIndex: 页面的 @State，记录已预取到的位置
+///   - tracker: 引用类型追踪器，记录已预取到的位置
 ///   - ahead: 领先当前卡片多少张，默认 6
 func prefetchIllustsIfNeeded(
     from currentIllust: Illusts,
     in illusts: [Illusts],
     quality: Int,
-    prefetchedUpToIndex: inout Int,
+    tracker: PrefetchTracker,
     ahead: Int = 6
 ) {
     guard let index = illusts.firstIndex(where: { $0.id == currentIllust.id }) else { return }
     let target = index + ahead
-    guard target > prefetchedUpToIndex, target < illusts.count else { return }
-    prefetchedUpToIndex = target
+    guard target > tracker.prefetchedUpToIndex, target < illusts.count else { return }
+    tracker.prefetchedUpToIndex = target
     ImageURLHelper.prefetchImages(from: illusts, quality: quality, maxCount: ahead, offset: target)
 }
 

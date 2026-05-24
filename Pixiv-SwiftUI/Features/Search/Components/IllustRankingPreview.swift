@@ -114,7 +114,7 @@ struct IllustRankingCard: View {
     }
 
     private var isSpoiler: Bool {
-        return illust.tags.contains { spoilerTags.contains($0.name.lowercased()) }
+        return illust.isSpoiler
     }
 
     private var shouldBlur: Bool {

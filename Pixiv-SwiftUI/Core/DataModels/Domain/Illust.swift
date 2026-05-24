@@ -43,6 +43,12 @@ final class Illusts: Codable {
         return ratio.isFinite && ratio > 0 ? ratio : 1.0
     }
 
+    /// 是否为剧透内容（集中定义，避免各卡片重复遍历 tags）
+    var isSpoiler: Bool {
+        let spoilerTags: Set<String> = ["ネタバレ", "spoiler", "ネタバレ注意"]
+        return tags.contains { spoilerTags.contains($0.name.lowercased()) }
+    }
+
     var isManga: Bool {
         type == "manga"
     }

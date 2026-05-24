@@ -9,7 +9,7 @@ struct UpdatesPage: View {
     @State private var selectedRestrict: TypeFilterButton.RestrictType? = .publicAccess
     @Environment(UserSettingStore.self) var settingStore
     var accountStore: AccountStore = AccountStore.shared
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
 
     private var restrictString: String {
         selectedRestrict == .privateAccess ? "private" : "public"
@@ -88,7 +88,7 @@ struct UpdatesPage: View {
                                         }
                                         .buttonStyle(.plain)
                                         .onAppear {
-                                            prefetchIllustsIfNeeded(from: illust, in: filteredUpdates, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                                            prefetchIllustsIfNeeded(from: illust, in: filteredUpdates, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                                         }
                                     }
                                     .padding(.horizontal, 12)

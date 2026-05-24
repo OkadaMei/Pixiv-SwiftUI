@@ -15,7 +15,7 @@ struct BookmarksPage: View {
     @State private var bookmarkCacheStore = BookmarkCacheStore.shared
 
     var initialRestrict: String?
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
 
     private let cache = CacheManager.shared
 
@@ -140,7 +140,7 @@ ScrollView {
                                     }
                                     .buttonStyle(.plain)
                                     .onAppear {
-                                        prefetchIllustsIfNeeded(from: illust, in: filteredBookmarks, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                                        prefetchIllustsIfNeeded(from: illust, in: filteredBookmarks, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                                     }
                                 }
                                 .padding(.horizontal, 12)

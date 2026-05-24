@@ -31,7 +31,7 @@ struct SearchResultView: View {
     @Environment(AccountStore.self) var accountStore
     @Environment(ThemeManager.self) var themeManager
     @Environment(\.dismiss) private var dismiss
-    @State private var prefetchedUpToIndex: Int = 0
+    @State private var prefetchTracker = PrefetchTracker()
     let instanceId = UUID()
 
     private var viewId: String {
@@ -217,7 +217,7 @@ struct SearchResultView: View {
                     }
                     .buttonStyle(.plain)
                     .onAppear {
-                        prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, prefetchedUpToIndex: &prefetchedUpToIndex)
+                        prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                     }
                 }
 
