@@ -486,6 +486,20 @@ final class AccountStore {
             self.error = AppError.databaseError("无法保存 Ajax 会话: \(error)")
         }
 
+        // 同步保存 PHPSESSID 到 Keychain，确保下次启动时能恢复
+        if let sessionId = current.webPHPSESSID {
+            try? KeychainHelper.save(
+                sessionId,
+                service: KeychainHelper.Service.authTokens,
+                account: KeychainHelper.accountKey(userId: current.userId, type: .phpsessid)
+            )
+        } else {
+            try? KeychainHelper.delete(
+                service: KeychainHelper.Service.authTokens,
+                account: KeychainHelper.accountKey(userId: current.userId, type: .phpsessid)
+            )
+        }
+
         PixivAPI.shared.setAjaxSessionCookies(
             phpSessId: current.webPHPSESSID,
             yuidB: current.webYuidB,

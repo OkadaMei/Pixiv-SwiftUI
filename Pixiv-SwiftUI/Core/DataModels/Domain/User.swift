@@ -172,7 +172,7 @@ final class AccountPersist: Codable, Identifiable {
 
     @Transient var accessToken: String = ""
     @Transient var refreshToken: String = ""
-    @Transient var webPHPSESSID: String?
+    var webPHPSESSID: String?
 
     var deviceToken: String
     var name: String
