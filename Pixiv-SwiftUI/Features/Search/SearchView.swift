@@ -113,22 +113,21 @@ struct SearchView: View {
     @MainActor
     private func searchWithImageURL(_ url: URL) async {
         do {
-            let data = try loadImageData(from: url)
+            // 在后台线程读取文件，避免阻塞主线程
+            let data = try await Task.detached {
+                let hasAccess = url.startAccessingSecurityScopedResource()
+                defer {
+                    if hasAccess {
+                        url.stopAccessingSecurityScopedResource()
+                    }
+                }
+                return try Data(contentsOf: url)
+            }.value
             let fileName = url.lastPathComponent.isEmpty ? "image.jpg" : url.lastPathComponent
             await searchWithImageData(data, fileName: fileName)
         } catch {
             showSauceToastMessage("读取图片失败: \(error.localizedDescription)")
         }
-    }
-
-    private func loadImageData(from url: URL) throws -> Data {
-        let hasAccess = url.startAccessingSecurityScopedResource()
-        defer {
-            if hasAccess {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-        return try Data(contentsOf: url)
     }
 
     @MainActor
