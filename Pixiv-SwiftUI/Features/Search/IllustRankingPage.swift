@@ -255,10 +255,8 @@ struct IllustRankingPage: View {
                                     #endif
                                     .padding()
                                     .id(nextUrl)
-            .onChange(of: illusts) { _, _ in
-                recalculateFilteredIllusts()
-            }
-            .onAppear {                                        Task {
+                                    .onAppear {
+                                        Task {
                                             await store.loadMoreRanking(mode: selectedMode)
                                         }
                                     }
@@ -336,6 +334,9 @@ struct IllustRankingPage: View {
                 Task {
                     await loadRankings()
                 }
+            }
+            .onChange(of: illusts) { _, _ in
+                recalculateFilteredIllusts()
             }
             .onReceive(NotificationCenter.default.publisher(for: .refreshCurrentPage)) { _ in
                 Task {
