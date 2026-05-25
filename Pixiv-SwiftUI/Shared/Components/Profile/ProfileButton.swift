@@ -8,12 +8,14 @@ struct ProfileButton: View {
         Button(action: { isPresented = true }) {
             if let account = accountStore.currentAccount, accountStore.isLoggedIn {
                 AnimatedAvatarImage(
-                    urlString: account.userImage, size: 44,
+                    urlString: account.userImage, size: 42,
                     expiration: DefaultCacheExpiration.myAvatar)
             } else {
                 Image(systemName: "person.circle.fill")
-                    .imageScale(.large)
+                    .resizable()
+                    .scaledToFill()
                     .foregroundStyle(.secondary)
+                    .frame(width: 42, height: 42)
             }
         }
         .buttonStyle(.plain)
