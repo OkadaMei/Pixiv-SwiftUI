@@ -28,11 +28,9 @@ final class AppInitializer {
         let uStore = UserSettingStore.shared
 
         // 3. 异步加载持久化数据
-        // 并行加载账户和设置
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { await aStore.loadAccountsAsync() }
-            group.addTask { await uStore.loadUserSettingAsync() }
-        }
+        // 用户设置依赖当前账户 ownerId，必须在账户恢复后再加载。
+        await aStore.loadAccountsAsync()
+        await uStore.loadUserSettingAsync()
 
         // 4. 账户加载完成后，主动刷新已过期的 token（启动画面期间进行）
         if aStore.isLoggedIn {
