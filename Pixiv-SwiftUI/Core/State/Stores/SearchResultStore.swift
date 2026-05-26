@@ -113,6 +113,7 @@ final class SearchResultStore {
     var novelLimit: Int = 30
     var novelHasMore: Bool = false
     var isLoadingMoreNovels: Bool = false
+    var novelLoadMoreErrorMessage: String?
 
     @ObservationIgnored private let api = PixivAPI.shared
     @ObservationIgnored private let pseudoPopularInitialSamplePageCount = 1
@@ -589,6 +590,7 @@ final class SearchResultStore {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
+        novelLoadMoreErrorMessage = nil
         self.novelPseudoPopularTargetCount = 0
         self.novelPseudoPopularSamplePageCount = 0
         self.novelPseudoPopularSessionID = UUID()
@@ -676,6 +678,7 @@ final class SearchResultStore {
     ) async {
         guard !isLoading, !isLoadingMoreNovels, novelHasMore else { return }
         isLoadingMoreNovels = true
+        novelLoadMoreErrorMessage = nil
         let baseWord = normalizeSearchWord(word)
         let usesPseudoPopularSort = preferLocalPopularSort && sort == SearchSortOption.popularDesc.rawValue
         let usesUsersTagPseudoPopularSort = usesPseudoPopularSort && searchTarget != .titleAndCaption
@@ -767,6 +770,7 @@ final class SearchResultStore {
             }
         } catch {
             print("Failed to load more novels: \(error)")
+            novelLoadMoreErrorMessage = error.localizedDescription
         }
         isLoadingMoreNovels = false
     }
