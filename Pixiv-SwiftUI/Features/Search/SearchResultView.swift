@@ -20,6 +20,8 @@ private struct SearchFilterState: Equatable {
 }
 
 struct SearchResultView: View {
+    private let novelAutoLoadBurstLimit = 5
+
     let word: String
     let preloadToken: UUID?
     @State var store = SearchResultStore()
@@ -27,6 +29,8 @@ struct SearchResultView: View {
     @State private var sortOption: SearchSortOption = SearchSortOption(rawValue: UserSettingStore.shared.userSetting.defaultSearchSort) ?? .dateDesc
     @State private var novelSortOption: SearchSortOption = SearchSortOption(rawValue: UserSettingStore.shared.userSetting.defaultSearchSort) ?? .dateDesc
     @State private var filterState = SearchFilterState()
+    @State private var isResolvingNovelLoadMore = false
+    @State private var isNovelLoadMorePaused = false
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
     @Environment(ThemeManager.self) var themeManager
@@ -99,6 +103,7 @@ struct SearchResultView: View {
     }
 
     private func performNovelSearch() async {
+        isNovelLoadMorePaused = false
         await store.searchNovels(
             word: word,
             sort: novelSortOption.rawValue,
@@ -146,6 +151,45 @@ struct SearchResultView: View {
         )
     }
 
+    @MainActor
+    private func loadMoreNovelResultsRespectingFilters(forceManualContinuation: Bool = false) async {
+        if forceManualContinuation {
+            isNovelLoadMorePaused = false
+        }
+
+        guard !isResolvingNovelLoadMore, !isNovelLoadMorePaused else { return }
+
+        let initialVisibleCount = filteredNovels.count
+        isResolvingNovelLoadMore = true
+        defer {
+            isResolvingNovelLoadMore = false
+        }
+
+        var attempts = 0
+
+        while store.novelHasMore && attempts < novelAutoLoadBurstLimit {
+            let totalCountBeforeLoad = store.novelResults.count
+            await loadMoreNovelResults()
+            attempts += 1
+
+            if store.novelLoadMoreErrorMessage != nil || !store.novelHasMore {
+                return
+            }
+
+            if filteredNovels.count > initialVisibleCount {
+                return
+            }
+
+            if store.novelResults.count <= totalCountBeforeLoad {
+                break
+            }
+        }
+
+        if store.novelHasMore && filteredNovels.count == initialVisibleCount && store.novelLoadMoreErrorMessage == nil {
+            isNovelLoadMorePaused = true
+        }
+    }
+
     @ViewBuilder
     private var novelLoadMoreFooter: some View {
         if let errorMessage = store.novelLoadMoreErrorMessage {
@@ -167,13 +211,32 @@ struct SearchResultView: View {
                 .buttonStyle(.bordered)
             }
             .padding()
+        } else if isNovelLoadMorePaused {
+            VStack(spacing: 8) {
+                Text("已连续跳过多页被屏蔽内容")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                Text("继续加载会再向后查找可显示的小说")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("继续加载") {
+                    Task {
+                        await loadMoreNovelResultsRespectingFilters(forceManualContinuation: true)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
         } else {
             ProgressView()
                 .padding()
                 .id("novel-load-more-\(store.novelResults.count)")
                 .onAppear {
                     Task {
-                        await loadMoreNovelResults()
+                        await loadMoreNovelResultsRespectingFilters()
                     }
                 }
         }
