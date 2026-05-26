@@ -147,6 +147,39 @@ struct SearchResultView: View {
     }
 
     @ViewBuilder
+    private var novelLoadMoreFooter: some View {
+        if let errorMessage = store.novelLoadMoreErrorMessage {
+            VStack(spacing: 8) {
+                Text("加载更多失败")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("重试") {
+                    Task {
+                        await loadMoreNovelResults()
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+        } else {
+            ProgressView()
+                .padding()
+                .id("novel-load-more-\(store.novelResults.count)")
+                .onAppear {
+                    Task {
+                        await loadMoreNovelResults()
+                    }
+                }
+        }
+    }
+
+    @ViewBuilder
     private func resultContent(columnCount: Int, waterfallWidth: CGFloat?, userColumnCount: Int) -> some View {
         if store.isLoading && store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
             SkeletonIllustWaterfallGrid(
@@ -267,16 +300,11 @@ struct SearchResultView: View {
         if filteredNovels.isEmpty && !store.novelResults.isEmpty && !store.isLoading {
             if store.novelHasMore {
                 VStack(spacing: 12) {
-                    ProgressView()
-                        .onAppear {
-                            Task {
-                                await loadMoreNovelResults()
-                            }
-                        }
-
                     Text("正在加载更多结果")
                         .font(.caption)
                         .foregroundColor(.secondary)
+
+                    novelLoadMoreFooter
                 }
                 .frame(minHeight: 300)
             } else {
@@ -311,16 +339,7 @@ struct SearchResultView: View {
                 }
 
                 if store.novelHasMore {
-                    ProgressView()
-                        #if os(macOS)
-                        .controlSize(.small)
-                        #endif
-                        .padding()
-                        .onAppear {
-                            Task {
-                                await loadMoreNovelResults()
-                            }
-                        }
+                    novelLoadMoreFooter
                 } else if !filteredNovels.isEmpty {
                     Text(String(localized: "已经到底了"))
                         .font(.caption)
