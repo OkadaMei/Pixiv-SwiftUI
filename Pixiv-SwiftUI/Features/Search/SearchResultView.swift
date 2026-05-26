@@ -31,6 +31,8 @@ struct SearchResultView: View {
     @State private var filterState = SearchFilterState()
     @State private var isResolvingNovelLoadMore = false
     @State private var isNovelLoadMorePaused = false
+    @State private var isResolvingIllustLoadMore = false
+    @State private var isIllustLoadMorePaused = false
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
     @Environment(ThemeManager.self) var themeManager
@@ -159,6 +161,9 @@ struct SearchResultView: View {
 
         guard !isResolvingNovelLoadMore, !isNovelLoadMorePaused else { return }
 
+        // 取消后台 enrichment，防止其异步修改 novelHasMore 干扰重试判断
+        store.cancelNovelBackgroundTasks()
+
         let initialVisibleCount = filteredNovels.count
         isResolvingNovelLoadMore = true
         defer {
@@ -170,13 +175,24 @@ struct SearchResultView: View {
         while store.novelHasMore && attempts < novelAutoLoadBurstLimit {
             let totalCountBeforeLoad = store.novelResults.count
             await loadMoreNovelResults()
+            // 取消刚被 rescheduled 的 enrichment，防止其在下次检查前修改 novelHasMore
+            store.cancelNovelBackgroundTasks()
             attempts += 1
 
-            if store.novelLoadMoreErrorMessage != nil || !store.novelHasMore {
+            if store.novelLoadMoreErrorMessage != nil {
                 return
             }
 
-            if filteredNovels.count > initialVisibleCount {
+            if !store.novelHasMore {
+                return
+            }
+
+            // 计算新加载页中可见项的比例
+            let newlyFetchedCount = store.novelResults.count - totalCountBeforeLoad
+            let newlyVisibleCount = filteredNovels.count - initialVisibleCount
+
+            if newlyFetchedCount > 0 && newlyVisibleCount * 2 >= newlyFetchedCount {
+                // 至少一半的结果是可见的 → 正常滚动加载即可，退出重试
                 return
             }
 
@@ -185,7 +201,10 @@ struct SearchResultView: View {
             }
         }
 
-        if store.novelHasMore && filteredNovels.count == initialVisibleCount && store.novelLoadMoreErrorMessage == nil {
+        // 尝试了 novelAutoLoadBurstLimit 次后仍无足够可见内容 + 仍有更多 → 进入暂停态
+        store.cancelNovelBackgroundTasks()
+
+        if store.novelHasMore && store.novelLoadMoreErrorMessage == nil {
             isNovelLoadMorePaused = true
         }
     }
@@ -233,10 +252,111 @@ struct SearchResultView: View {
         } else {
             ProgressView()
                 .padding()
-                .id("novel-load-more-\(store.novelResults.count)")
                 .onAppear {
                     Task {
                         await loadMoreNovelResultsRespectingFilters()
+                    }
+                }
+        }
+    }
+
+    @MainActor
+    private func loadMoreIllustResultsRespectingFilters(forceManualContinuation: Bool = false) async {
+        if forceManualContinuation {
+            isIllustLoadMorePaused = false
+        }
+
+        guard !isResolvingIllustLoadMore, !isIllustLoadMorePaused else { return }
+
+        store.cancelIllustBackgroundTasks()
+
+        let initialVisibleCount = filteredIllusts.count
+        let initialStoreCount = store.illustResults.count
+        isResolvingIllustLoadMore = true
+        defer {
+            isResolvingIllustLoadMore = false
+        }
+
+        var attempts = 0
+
+        while store.illustHasMore && attempts < novelAutoLoadBurstLimit {
+            let totalCountBeforeLoad = store.illustResults.count
+            await loadMoreIllustResults()
+            store.cancelIllustBackgroundTasks()
+            attempts += 1
+
+            if store.illustLoadMoreErrorMessage != nil {
+                return
+            }
+
+            if !store.illustHasMore {
+                return
+            }
+
+            let newlyFetchedCount = store.illustResults.count - totalCountBeforeLoad
+            let newlyVisibleCount = filteredIllusts.count - initialVisibleCount
+
+            if newlyFetchedCount > 0 && newlyVisibleCount * 2 >= newlyFetchedCount {
+                continue
+            }
+        }
+
+        store.cancelIllustBackgroundTasks()
+
+        // 暂停条件：可见项增长极少（不到总量的10%）
+        let totalFetched = store.illustResults.count - initialStoreCount
+        let visibleGain = filteredIllusts.count - initialVisibleCount
+        if store.illustHasMore && visibleGain * 10 < totalFetched && store.illustLoadMoreErrorMessage == nil {
+            isIllustLoadMorePaused = true
+        }
+    }
+
+    @ViewBuilder
+    private var illustLoadMoreFooter: some View {
+        if let errorMessage = store.illustLoadMoreErrorMessage {
+            VStack(spacing: 8) {
+                Text("加载更多失败")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("重试") {
+                    Task {
+                        await loadMoreIllustResults()
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+        } else if isIllustLoadMorePaused {
+            VStack(spacing: 8) {
+                Text("已连续跳过多页被屏蔽内容")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                Text("继续加载会再向后查找可显示的插画")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("继续加载") {
+                    Task {
+                        await loadMoreIllustResultsRespectingFilters(forceManualContinuation: true)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+        } else {
+            ProgressView()
+                .padding()
+                .onAppear {
+                    Task {
+                        await loadMoreIllustResultsRespectingFilters()
                     }
                 }
         }
@@ -299,16 +419,11 @@ struct SearchResultView: View {
         } else if filteredIllusts.isEmpty && !store.isLoading {
             if store.illustHasMore {
                 VStack(spacing: 12) {
-                    ProgressView()
-                        .onAppear {
-                            Task {
-                                await loadMoreIllustResults()
-                            }
-                        }
-
                     Text("正在加载更多结果")
                         .font(.caption)
                         .foregroundColor(.secondary)
+
+                    illustLoadMoreFooter
                 }
                 .frame(minHeight: 300)
             } else {
@@ -316,7 +431,7 @@ struct SearchResultView: View {
                 .frame(minHeight: 300)
             }
         } else {
-            VStack(spacing: 12) {
+            LazyVStack(spacing: 12) {
                 WaterfallGrid(data: filteredIllusts, columnCount: columnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                     NavigationLink(value: illust) {
                         IllustCard(
@@ -336,17 +451,8 @@ struct SearchResultView: View {
                     }
                 }
 
-                if store.illustHasMore {
-                    ProgressView()
-                        #if os(macOS)
-                        .controlSize(.small)
-                        #endif
-                        .padding()
-                        .onAppear {
-                            Task {
-                                await loadMoreIllustResults()
-                            }
-                        }
+                if store.illustHasMore && !store.isLoading {
+                    illustLoadMoreFooter
                 } else if !filteredIllusts.isEmpty {
                     Text(String(localized: "已经到底了"))
                         .font(.caption)

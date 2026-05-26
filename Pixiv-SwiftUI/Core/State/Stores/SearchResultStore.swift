@@ -104,6 +104,7 @@ final class SearchResultStore {
     var illustLimit: Int = 30
     var illustHasMore: Bool = false
     var isLoadingMoreIllusts: Bool = false
+    var illustLoadMoreErrorMessage: String?
 
     var userOffset: Int = 0
     var userHasMore: Bool = false
@@ -399,6 +400,7 @@ final class SearchResultStore {
     ) async {
         guard !isLoading, !isLoadingMoreIllusts, illustHasMore else { return }
         isLoadingMoreIllusts = true
+        illustLoadMoreErrorMessage = nil
         let baseWord = normalizeSearchWord(word)
         let usesPseudoPopularSort = preferLocalPopularSort && sort == SearchSortOption.popularDesc.rawValue
         let usesUsersTagPseudoPopularSort = usesPseudoPopularSort && searchTarget != .titleAndCaption
@@ -483,12 +485,13 @@ final class SearchResultStore {
                     offset: self.illustOffset,
                     limit: self.illustLimit
                 )
-                self.illustResults += more
+                self.illustResults = mergeUniqueResults(self.illustResults, with: more)
                 self.illustOffset += more.count
                 self.illustHasMore = more.count == illustLimit
             }
         } catch {
             print("Failed to load more illusts: \(error)")
+            illustLoadMoreErrorMessage = error.localizedDescription
         }
         isLoadingMoreIllusts = false
     }
@@ -764,7 +767,7 @@ final class SearchResultStore {
                     offset: self.novelOffset,
                     limit: self.novelLimit
                 )
-                self.novelResults += more
+                self.novelResults = mergeUniqueResults(self.novelResults, with: more)
                 self.novelOffset += more.count
                 self.novelHasMore = more.count == novelLimit
             }
@@ -783,6 +786,20 @@ final class SearchResultStore {
         cancelIllustPseudoPopularPreload()
         cancelNovelPseudoPopularPreload()
         cancelSupplementalSearch()
+    }
+
+    /// 取消小说搜索相关的后台任务（enrichment + preload），防止其异步修改 novelHasMore
+    func cancelNovelBackgroundTasks() {
+        novelPseudoPopularSessionID = UUID()
+        cancelNovelPseudoPopularEnrichment()
+        cancelNovelPseudoPopularPreload()
+    }
+
+    /// 取消插画搜索相关的后台任务（enrichment + preload），防止其异步修改 illustHasMore
+    func cancelIllustBackgroundTasks() {
+        illustPseudoPopularSessionID = UUID()
+        cancelIllustPseudoPopularEnrichment()
+        cancelIllustPseudoPopularPreload()
     }
 
     private func fetchNovelResults(
