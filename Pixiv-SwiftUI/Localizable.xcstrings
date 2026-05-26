@@ -2092,7 +2092,14 @@
       }
     },
     "加载更多失败" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to load more"
+          }
+        }
+      }
     },
     "动图" : {
       "localizations" : {
@@ -3535,7 +3542,14 @@
       }
     },
     "已连续跳过多页被屏蔽内容" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped multiple pages of blocked content"
+          }
+        }
+      }
     },
     "布局" : {
       "localizations" : {
@@ -6396,13 +6410,34 @@
       }
     },
     "继续加载" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue Loading"
+          }
+        }
+      }
     },
     "继续加载会再向后查找可显示的小说" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clicking \"Continue Loading\" will search for more novels to display"
+          }
+        }
+      }
     },
     "继续加载会再向后查找可显示的插画" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clicking \"Continue Loading\" will search for more illustrations to display"
+          }
+        }
+      }
     },
     "继续播放" : {
       "localizations" : {
