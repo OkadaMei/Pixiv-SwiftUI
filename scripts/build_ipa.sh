@@ -57,7 +57,7 @@ mkdir -p build
 XCODEBUILD_CMD=(
     xcodebuild
     -project Pixiv-SwiftUI.xcodeproj
-    -scheme Release
+    -scheme Pixiv-SwiftUI
     -sdk iphoneos
     -configuration Release
     -destination 'generic/platform=iOS'
