@@ -98,6 +98,8 @@ final class SearchResultStore {
 
     var isLoading: Bool = false
     var errorMessage: String?
+    @ObservationIgnored private var illustNextURL: String?
+    @ObservationIgnored private var novelNextURL: String?
 
     // 分页状态
     var illustOffset: Int = 0
@@ -168,6 +170,8 @@ final class SearchResultStore {
         self.illustOffset = 0
         self.userOffset = 0
         self.novelOffset = 0
+        self.illustNextURL = nil
+        self.novelNextURL = nil
         self.illustHasMore = false
         self.userHasMore = false
         self.novelHasMore = false
@@ -270,7 +274,7 @@ final class SearchResultStore {
                 self.illustOffset = illustBatch.nextOffset
                 self.illustHasMore = illustBatch.hasMore
             } else {
-                fetchedIllusts = try await api.searchIllusts(
+                let response = try await api.searchIllustsPage(
                     word: finalWord,
                     searchTarget: searchTarget.rawValue,
                     sort: sort,
@@ -280,8 +284,10 @@ final class SearchResultStore {
                     offset: 0,
                     limit: illustLimit
                 )
-                self.illustOffset = fetchedIllusts.count
-                self.illustHasMore = fetchedIllusts.count == illustLimit
+                fetchedIllusts = response.illusts
+                self.illustNextURL = response.nextUrl
+                self.illustOffset = nextOffset(from: response.nextUrl) ?? fetchedIllusts.count
+                self.illustHasMore = response.nextUrl != nil
             }
 
             self.illustResults = fetchedIllusts
@@ -475,19 +481,16 @@ final class SearchResultStore {
                     endDate: endDate
                 )
             } else {
-                let more = try await api.searchIllusts(
-                    word: finalWord,
-                    searchTarget: searchTarget.rawValue,
-                    sort: sort,
-                    searchAIType: searchAITypeParameter(for: showsAIGenerated),
-                    startDate: startDate,
-                    endDate: endDate,
-                    offset: self.illustOffset,
-                    limit: self.illustLimit
-                )
-                self.illustResults = mergeUniqueResults(self.illustResults, with: more)
-                self.illustOffset += more.count
-                self.illustHasMore = more.count == illustLimit
+                guard let nextURL = self.illustNextURL else {
+                    self.illustHasMore = false
+                    isLoadingMoreIllusts = false
+                    return
+                }
+                let response: IllustsResponse = try await api.fetchNext(urlString: nextURL)
+                self.illustResults = mergeUniqueResults(self.illustResults, with: response.illusts)
+                self.illustNextURL = response.nextUrl
+                self.illustOffset = nextOffset(from: response.nextUrl) ?? self.illustResults.count
+                self.illustHasMore = response.nextUrl != nil
             }
         } catch {
             print("Failed to load more illusts: \(error)")
@@ -594,6 +597,9 @@ final class SearchResultStore {
         isLoading = true
         errorMessage = nil
         novelLoadMoreErrorMessage = nil
+        novelOffset = 0
+        novelNextURL = nil
+        novelHasMore = false
         self.novelPseudoPopularTargetCount = 0
         self.novelPseudoPopularSamplePageCount = 0
         self.novelPseudoPopularSessionID = UUID()
@@ -757,19 +763,16 @@ final class SearchResultStore {
                     endDate: endDate
                 )
             } else {
-                let more = try await api.searchNovels(
-                    word: finalWord,
-                    searchTarget: searchTarget.rawValue,
-                    sort: sort,
-                    searchAIType: searchAITypeParameter(for: showsAIGenerated),
-                    startDate: startDate,
-                    endDate: endDate,
-                    offset: self.novelOffset,
-                    limit: self.novelLimit
-                )
-                self.novelResults = mergeUniqueResults(self.novelResults, with: more)
-                self.novelOffset += more.count
-                self.novelHasMore = more.count == novelLimit
+                guard let nextURL = self.novelNextURL else {
+                    self.novelHasMore = false
+                    isLoadingMoreNovels = false
+                    return
+                }
+                let response: NovelResponse = try await api.fetchNext(urlString: nextURL)
+                self.novelResults = mergeUniqueResults(self.novelResults, with: response.novels)
+                self.novelNextURL = response.nextUrl
+                self.novelOffset = nextOffset(from: response.nextUrl) ?? self.novelResults.count
+                self.novelHasMore = response.nextUrl != nil
             }
         } catch {
             print("Failed to load more novels: \(error)")
@@ -857,7 +860,7 @@ final class SearchResultStore {
             return batch.items
         }
 
-        let fetchedNovels = try await api.searchNovels(
+        let response = try await api.searchNovelsPage(
             word: baseWord + context.bookmarkFilter.suffix,
             searchTarget: context.searchTarget.rawValue,
             sort: context.sort,
@@ -867,12 +870,26 @@ final class SearchResultStore {
             offset: 0,
             limit: novelLimit
         )
+        let fetchedNovels = response.novels
 
         if updatePseudoPopularState {
-            self.novelOffset = fetchedNovels.count
-            self.novelHasMore = fetchedNovels.count == novelLimit
+            self.novelNextURL = response.nextUrl
+            self.novelOffset = nextOffset(from: response.nextUrl) ?? fetchedNovels.count
+            self.novelHasMore = response.nextUrl != nil
         }
         return fetchedNovels
+    }
+
+    private func nextOffset(from nextURL: String?) -> Int? {
+        guard
+            let nextURL,
+            let components = URLComponents(string: nextURL),
+            let value = components.queryItems?.first(where: { $0.name == "offset" })?.value
+        else {
+            return nil
+        }
+
+        return Int(value)
     }
 
     private func searchIllustsByBookmarkCount(

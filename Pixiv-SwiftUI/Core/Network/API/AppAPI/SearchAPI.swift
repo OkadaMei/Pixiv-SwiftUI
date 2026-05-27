@@ -114,6 +114,30 @@ final class SearchAPI {
         offset: Int = 0,
         limit: Int = 30
     ) async throws -> [Illusts] {
+        let response = try await searchIllustsPage(
+            word: word,
+            searchTarget: searchTarget,
+            sort: sort,
+            searchAIType: searchAIType,
+            startDate: startDate,
+            endDate: endDate,
+            offset: offset,
+            limit: limit
+        )
+
+        return response.illusts
+    }
+
+    func searchIllustsPage(
+        word: String,
+        searchTarget: String = "partial_match_for_tags",
+        sort: String = "date_desc",
+        searchAIType: Int? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        offset: Int = 0,
+        limit: Int = 30
+    ) async throws -> IllustsResponse {
         var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.searchIllust)
         var queryItems = [
             URLQueryItem(name: "word", value: word),
@@ -141,17 +165,11 @@ final class SearchAPI {
             throw NetworkError.invalidResponse
         }
 
-        struct Response: Decodable {
-            let illusts: [Illusts]
-        }
-
-        let response = try await client.get(
+        return try await client.get(
             from: url,
             headers: authHeaders,
-            responseType: Response.self
+            responseType: IllustsResponse.self
         )
-
-        return response.illusts
     }
 
     /// 获取搜索建议
@@ -197,6 +215,30 @@ final class SearchAPI {
         offset: Int = 0,
         limit: Int = 30
     ) async throws -> [Novel] {
+        let response = try await searchNovelsPage(
+            word: word,
+            searchTarget: searchTarget,
+            sort: sort,
+            searchAIType: searchAIType,
+            startDate: startDate,
+            endDate: endDate,
+            offset: offset,
+            limit: limit
+        )
+
+        return response.novels
+    }
+
+    func searchNovelsPage(
+        word: String,
+        searchTarget: String = "partial_match_for_tags",
+        sort: String = "date_desc",
+        searchAIType: Int? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        offset: Int = 0,
+        limit: Int = 30
+    ) async throws -> NovelResponse {
         var components = URLComponents(string: APIEndpoint.baseURL + "/v1/search/novel")
         var queryItems = [
             URLQueryItem(name: "word", value: word),
@@ -226,17 +268,11 @@ final class SearchAPI {
             throw NetworkError.invalidResponse
         }
 
-        struct Response: Decodable {
-            let novels: [Novel]
-        }
-
-        let response = try await client.get(
+        return try await client.get(
             from: url,
             headers: authHeaders,
-            responseType: Response.self
+            responseType: NovelResponse.self
         )
-
-        return response.novels
     }
 
     private func formatDate(_ date: Date?) -> String? {

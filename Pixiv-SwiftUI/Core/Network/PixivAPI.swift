@@ -235,6 +235,29 @@ final class PixivAPI {
         )
     }
 
+    func searchIllustsPage(
+        word: String,
+        searchTarget: String = "partial_match_for_tags",
+        sort: String = "date_desc",
+        searchAIType: Int? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        offset: Int = 0,
+        limit: Int = 30
+    ) async throws -> IllustsResponse {
+        guard let api = searchAPI else { throw NetworkError.invalidResponse }
+        return try await api.searchIllustsPage(
+            word: word,
+            searchTarget: searchTarget,
+            sort: sort,
+            searchAIType: searchAIType,
+            startDate: startDate,
+            endDate: endDate,
+            offset: offset,
+            limit: limit
+        )
+    }
+
     // MARK: - 插画相关
 
     /// 获取推荐插画
@@ -494,6 +517,29 @@ final class PixivAPI {
     ) async throws -> [Novel] {
         guard let api = searchAPI else { throw NetworkError.invalidResponse }
         return try await api.searchNovels(
+            word: word,
+            searchTarget: searchTarget,
+            sort: sort,
+            searchAIType: searchAIType,
+            startDate: startDate,
+            endDate: endDate,
+            offset: offset,
+            limit: limit
+        )
+    }
+
+    func searchNovelsPage(
+        word: String,
+        searchTarget: String = "partial_match_for_tags",
+        sort: String = "date_desc",
+        searchAIType: Int? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        offset: Int = 0,
+        limit: Int = 30
+    ) async throws -> NovelResponse {
+        guard let api = searchAPI else { throw NetworkError.invalidResponse }
+        return try await api.searchNovelsPage(
             word: word,
             searchTarget: searchTarget,
             sort: sort,
