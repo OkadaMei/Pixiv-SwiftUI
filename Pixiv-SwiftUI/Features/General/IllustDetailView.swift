@@ -283,7 +283,6 @@ struct IllustDetailView: View {
                 }
                 #endif
             }
-            .ignoresSafeArea(edges: .top)
             #if canImport(UIKit)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -411,11 +410,8 @@ struct IllustDetailView: View {
                     try? illustStore.recordGlance(illust.id, illust: illust)
                 }
             }
-            #if os(macOS)
             .navigationTitle(illust.title)
-            #endif
             #if os(iOS)
-            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
             .toolbar(isFullscreen ? .hidden : .visible, for: .tabBar)
             #endif
