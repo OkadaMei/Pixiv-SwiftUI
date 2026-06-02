@@ -205,11 +205,11 @@ struct NovelDetailView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationBarTitleDisplayMode(.inline)
             #endif
         }
+        .navigationTitle(novel.title)
         #if os(iOS)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
