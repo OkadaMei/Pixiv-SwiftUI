@@ -418,7 +418,9 @@ struct UserDetailHeaderView: View {
                         .fontWeight(.bold)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 10)
-                        .frame(width: 95)
+                        .frame(minWidth: 80)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 .buttonStyle(GlassButtonStyle(color: isFollowed ? nil : themeManager.currentColor))
                 .padding(.bottom, 8)
