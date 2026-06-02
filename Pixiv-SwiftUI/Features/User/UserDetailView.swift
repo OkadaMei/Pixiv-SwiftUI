@@ -232,13 +232,16 @@ struct UserDetailView: View {
             .refreshable {
                 await store.refresh()
             }
-            .ignoresSafeArea(edges: .top)
             .onReceive(NotificationCenter.default.publisher(for: .refreshCurrentPage)) { _ in
                 Task {
                     await store.refresh()
                 }
             }
         }
+        .navigationTitle(store.userDetail?.user.name ?? "")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             #if os(macOS)
             ToolbarItem {
@@ -380,19 +383,21 @@ struct UserDetailHeaderView: View {
     let onUnfollow: () -> Void
     @Environment(ThemeManager.self) var themeManager
 
+    private var hasBackground: Bool {
+        detail.profile.backgroundImageUrl != nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // 背景图
+            // 背景图（仅在有图时显示）
             if let bgUrl = detail.profile.backgroundImageUrl {
                 CachedAsyncImage(urlString: bgUrl, expiration: DefaultCacheExpiration.userHeader)
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
                     .clipped()
             } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 200)
+                Color.clear
+                    .frame(height: 16)
             }
 
             HStack(alignment: .bottom, spacing: 16) {
@@ -400,8 +405,8 @@ struct UserDetailHeaderView: View {
                 if let avatarUrl = detail.user.profileImageUrls.medium {
                     AnimatedAvatarImage(urlString: avatarUrl, size: 80, expiration: DefaultCacheExpiration.userAvatar)
                         .shadow(radius: 4)
-                        .offset(y: -40)
-                        .padding(.bottom, -40)
+                        .offset(y: hasBackground ? -40 : 0)
+                        .padding(.bottom, hasBackground ? -40 : 0)
                 }
 
                 Spacer()
