@@ -119,9 +119,9 @@ struct RecommendByTagView: View {
             }
         }
         .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredIllusts)
-        .navigationTitle(target.translatedName ?? target.tag)
+        .navigationTitle(target.tag)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         #endif
         .toolbar {
             ToolbarItem {
