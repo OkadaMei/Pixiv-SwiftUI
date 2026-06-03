@@ -67,6 +67,31 @@ struct IllustDetailView: View {
     @Namespace private var animation
     @Environment(\.dismiss) private var dismiss
 
+    // MARK: - Fullscreen Transition State
+    @State private var capturedImageFrame: CGRect = .zero
+    @State private var transitionPhase: TransitionPhase = .idle
+    @State private var transitionProgress: CGFloat = 0
+    @State private var isTransitioning: Bool = false
+    @State private var transitionScreenSize: CGSize = .zero
+    /// Frame saved at entering start — preserved for correct exit animation
+    @State private var savedSourceFrame: CGRect = .zero
+
+    /// Opacity of the detail page content during transitions.
+    private var detailContentOpacity: Double {
+        guard transitionPhase.isFullscreen || transitionPhase.isTransitioning else { return 1.0 }
+        if transitionPhase.isTransitioning {
+            switch transitionPhase {
+            case .entering:
+                return 1.0 - Double(transitionProgress) * 0.9
+            case .exiting:
+                return 0.1 + Double(transitionProgress) * 0.9
+            default:
+                return 1.0 - Double(transitionProgress) * 0.9
+            }
+        }
+        return 0.1
+    }
+
     private let cache = CacheManager.shared
     private let commentsExpiration: CacheExpiration = .minutes(10)
 
@@ -118,6 +143,17 @@ struct IllustDetailView: View {
             return Array(repeating: illust.safeAspectRatio, count: illust.metaPages.count)
         }
         return [illust.safeAspectRatio]
+    }
+
+    /// Detail-quality image URLs for each page (used as fallback in fullscreen viewer)
+    private var detailImageURLs: [String] {
+        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
+        if !illust.metaPages.isEmpty {
+            return illust.metaPages.indices.compactMap { index in
+                ImageURLHelper.getPageImageURL(from: illust, page: index, quality: quality)
+            }
+        }
+        return [ImageURLHelper.getImageURL(from: illust, quality: quality)]
     }
 
     var body: some View {
@@ -281,6 +317,8 @@ struct IllustDetailView: View {
                         .padding(.trailing, 16)
                     }
                 }
+                .scrollDisabled(isFullscreen || transitionPhase.isTransitioning)
+                .opacity(detailContentOpacity)
                 #endif
             }
             #if canImport(UIKit)
@@ -410,6 +448,19 @@ struct IllustDetailView: View {
                     try? illustStore.recordGlance(illust.id, illust: illust)
                 }
             }
+            .onPreferenceChange(ImageFramePreferenceKey.self) { frame in
+                guard !isFullscreen else { return }
+                if frame != .zero {
+                    capturedImageFrame = frame
+                }
+            }
+            .onChange(of: isFullscreen) { _, newValue in
+                if newValue {
+                    startEnteringTransition()
+                } else {
+                    startExitingTransition()
+                }
+            }
             .navigationTitle(illust.title)
             #if os(iOS)
             .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
@@ -417,15 +468,97 @@ struct IllustDetailView: View {
             #endif
 
             #if os(iOS)
-            if isFullscreen {
-                FullscreenImageView(
-                    imageURLs: zoomImageURLs,
-                    aspectRatios: zoomImageAspectRatios,
-                    initialPage: $currentPage,
-                    isPresented: $isFullscreen,
-                    animation: animation
-                )
-                .zIndex(1)
+            // Transition overlay — handles all phases of the fullscreen transition
+            Group {
+                switch transitionPhase {
+                case .idle:
+                    EmptyView()
+
+                case .entering(let sourceFrame, let imageURL, let aspectRatio):
+                    GeometryReader { overlayGeo in
+                        let origin = overlayGeo.frame(in: .global).origin
+                        let localSource = CGRect(
+                            origin: CGPoint(x: sourceFrame.origin.x - origin.x,
+                                           y: sourceFrame.origin.y - origin.y),
+                            size: sourceFrame.size
+                        )
+                        let target = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
+                        let localTarget = CGRect(
+                            origin: CGPoint(x: target.origin.x - origin.x,
+                                           y: target.origin.y - origin.y),
+                            size: target.size
+                        )
+                        ZStack {
+                            Color.black
+                                .ignoresSafeArea()
+                                .opacity(transitionProgress * 0.85)
+
+                            KingfisherGhostImage(
+                                urlString: imageURL,
+                                aspectRatio: aspectRatio
+                            )
+                            .frame(
+                                width: interpolatedWidth(from: localSource, to: localTarget),
+                                height: interpolatedHeight(from: localSource, to: localTarget)
+                            )
+                            .position(
+                                x: interpolatedX(from: localSource, to: localTarget),
+                                y: interpolatedY(from: localSource, to: localTarget)
+                            )
+                            .allowsHitTesting(false)
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .zIndex(1)
+
+                case .fullscreen:
+                    FullscreenImageView(
+                        imageURLs: zoomImageURLs,
+                        fallbackImageURLs: detailImageURLs,
+                        aspectRatios: zoomImageAspectRatios,
+                        initialPage: $currentPage,
+                        isPresented: $isFullscreen,
+                        animation: animation
+                    )
+                    .zIndex(1)
+
+                case .exiting(let sourceFrame, let imageURL, let aspectRatio):
+                    GeometryReader { overlayGeo in
+                        let origin = overlayGeo.frame(in: .global).origin
+                        let localSource = CGRect(
+                            origin: CGPoint(x: sourceFrame.origin.x - origin.x,
+                                           y: sourceFrame.origin.y - origin.y),
+                            size: sourceFrame.size
+                        )
+                        let target = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
+                        let localTarget = CGRect(
+                            origin: CGPoint(x: target.origin.x - origin.x,
+                                           y: target.origin.y - origin.y),
+                            size: target.size
+                        )
+                        ZStack {
+                            Color.black
+                                .ignoresSafeArea()
+                                .opacity((1.0 - transitionProgress) * 0.85)
+
+                            KingfisherGhostImage(
+                                urlString: imageURL,
+                                aspectRatio: aspectRatio
+                            )
+                            .frame(
+                                width: interpolatedWidth(from: localTarget, to: localSource),
+                                height: interpolatedHeight(from: localTarget, to: localSource)
+                            )
+                            .position(
+                                x: interpolatedX(from: localTarget, to: localSource),
+                                y: interpolatedY(from: localTarget, to: localSource)
+                            )
+                            .allowsHitTesting(false)
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .zIndex(1)
+                }
             }
             #endif
         }
@@ -799,6 +932,167 @@ struct IllustDetailView: View {
                 )
             }
         }
+    }
+
+    // MARK: - Fullscreen Transition Helpers
+
+    /// Detail-quality image URL for the current illust/page (used for entering ghost image).
+    private var enteringTransitionImageURL: String {
+        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
+        if !illust.metaPages.isEmpty, currentPage < illust.metaPages.count {
+            return ImageURLHelper.getPageImageURL(from: illust, page: currentPage, quality: quality) ?? ""
+        }
+        return ImageURLHelper.getImageURL(from: illust, quality: quality)
+    }
+
+    /// Zoom-quality image URL for the current illust/page (used for exiting ghost image,
+    /// since FullscreenImageView has already cached it).
+    private var exitingTransitionImageURL: String {
+        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.zoomQuality
+        if !illust.metaPages.isEmpty, currentPage < illust.metaPages.count {
+            return ImageURLHelper.getPageImageURL(from: illust, page: currentPage, quality: quality) ?? ""
+        }
+        return ImageURLHelper.getImageURL(from: illust, quality: quality)
+    }
+
+    /// The aspect ratio of the current illust/page to use during transition.
+    private var transitionAspectRatio: CGFloat {
+        illust.safeAspectRatio
+    }
+
+    /// Begin the entering (detail → fullscreen) transition.
+    private func startEnteringTransition() {
+        let frame = capturedImageFrame
+
+        // Save for correct exit animation (toolbar re-appearance shifts layout)
+        savedSourceFrame = frame
+
+        // If frame hasn't been captured yet, retry on next runloop
+        guard frame != .zero, frame.width > 0, frame.height > 0 else {
+            DispatchQueue.main.async {
+                let retryFrame = capturedImageFrame
+                guard retryFrame != .zero, retryFrame.width > 0, retryFrame.height > 0 else {
+                    transitionPhase = .fullscreen
+                    return
+                }
+                startEnteringTransitionWithFrame(retryFrame)
+            }
+            return
+        }
+
+        startEnteringTransitionWithFrame(frame)
+    }
+
+    private func startEnteringTransitionWithFrame(_ frame: CGRect) {
+        let url = enteringTransitionImageURL
+        guard !url.isEmpty else {
+            transitionPhase = .fullscreen
+            return
+        }
+
+        let aspectRatio = transitionAspectRatio
+        transitionProgress = 0
+        transitionPhase = .entering(sourceFrame: frame, imageURL: url, aspectRatio: aspectRatio)
+        isTransitioning = true
+
+        // Capture screen size for stable target frame calculation
+        #if os(iOS)
+        let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        let windowSize = windowScene?.windows.first?.bounds.size ?? .zero
+        transitionScreenSize = windowSize
+        #endif
+
+        // Preload the zoom-quality images for FullscreenImageView and the exit transition
+        for zoomURL in zoomImageURLs {
+            Task { await preloadImage(urlString: zoomURL) }
+        }
+
+        DispatchQueue.main.async {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                transitionProgress = 1.0
+            }
+        }
+
+        // Time-based phase switch — withAnimation sets @State immediately,
+        // so onChange won't work. Use delay matching spring duration.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [isFullscreen] in
+            guard isFullscreen else { return }
+            transitionPhase = .fullscreen
+            isTransitioning = false
+        }
+    }
+
+    /// Begin the exiting (fullscreen → detail) transition.
+    private func startExitingTransition() {
+        let exitFrame = savedSourceFrame
+
+        guard exitFrame != .zero else {
+            transitionPhase = .idle
+            return
+        }
+
+        let url = exitingTransitionImageURL
+        let aspectRatio = transitionAspectRatio
+
+        transitionProgress = 0
+        transitionPhase = .exiting(sourceFrame: exitFrame, imageURL: url, aspectRatio: aspectRatio)
+        isTransitioning = true
+
+        // Capture screen size for stable target frame calculation
+        #if os(iOS)
+        let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        let windowSize = windowScene?.windows.first?.bounds.size ?? .zero
+        transitionScreenSize = windowSize
+        #endif
+
+        DispatchQueue.main.async {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                transitionProgress = 1.0
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            transitionPhase = .idle
+            isTransitioning = false
+        }
+    }
+
+    /// Compute the target fullscreen frame for a given aspect ratio and screen size.
+    private func targetFrame(in screenSize: CGSize, aspectRatio: CGFloat) -> CGRect {
+        guard aspectRatio > 0, aspectRatio.isFinite else {
+            return CGRect(origin: .zero, size: screenSize)
+        }
+
+        let screenW = screenSize.width
+        let screenH = screenSize.height
+
+        let imageH = screenW / aspectRatio
+        if imageH <= screenH {
+            let yOffset = (screenH - imageH) / 2
+            return CGRect(x: 0, y: yOffset, width: screenW, height: imageH)
+        } else {
+            let imageW = screenH * aspectRatio
+            let xOffset = (screenW - imageW) / 2
+            return CGRect(x: xOffset, y: 0, width: imageW, height: screenH)
+        }
+    }
+
+    // MARK: - Interpolation Helpers
+
+    private func interpolatedX(from source: CGRect, to target: CGRect) -> CGFloat {
+        source.midX + (target.midX - source.midX) * transitionProgress
+    }
+
+    private func interpolatedY(from source: CGRect, to target: CGRect) -> CGFloat {
+        source.midY + (target.midY - source.midY) * transitionProgress
+    }
+
+    private func interpolatedWidth(from source: CGRect, to target: CGRect) -> CGFloat {
+        source.width + (target.width - source.width) * transitionProgress
+    }
+
+    private func interpolatedHeight(from source: CGRect, to target: CGRect) -> CGFloat {
+        source.height + (target.height - source.height) * transitionProgress
     }
 
     private func syncBookmarkCacheUpdate(restrict: String) async {

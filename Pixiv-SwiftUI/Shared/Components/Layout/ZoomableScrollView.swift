@@ -213,19 +213,24 @@ struct ZoomableScrollView: UIViewRepresentable {
 
 struct ZoomableAsyncImage: View {
     let urlString: String
+    var fallbackURL: String?
     var aspectRatio: CGFloat?
     var onDismiss: () -> Void
     var expiration: CacheExpiration?
+    var onFallbackUpgraded: (() -> Void)?
     @Binding var isZoomed: Bool
     var onDragProgress: ((CGFloat) -> Void)?
     var onDragEnded: ((Bool) -> Void)?
 
     @State private var uiImage: UIImage?
+    @State private var fallbackUIImage: UIImage?
     @State private var isLoading = true
+    @State private var isUpgrading = false
 
     var body: some View {
         GeometryReader { _ in
             if let uiImage = uiImage {
+                // Target quality image loaded — show it
                 ZoomableScrollView(
                     image: uiImage,
                     onSingleTap: onDismiss,
@@ -233,7 +238,32 @@ struct ZoomableAsyncImage: View {
                     onDragProgress: onDragProgress,
                     onDragEnded: onDragEnded
                 )
+            } else if let fallbackImage = fallbackUIImage {
+                // Fallback (detail quality) available — show it while upgrading
+                ZStack {
+                    ZoomableScrollView(
+                        image: fallbackImage,
+                        onSingleTap: onDismiss,
+                        isZoomed: $isZoomed,
+                        onDragProgress: onDragProgress,
+                        onDragEnded: onDragEnded
+                    )
+
+                    if isUpgrading {
+                        VStack {
+                            Spacer()
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .scaleEffect(0.8)
+                                .padding(8)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .padding(.bottom, 8)
+                        }
+                    }
+                }
             } else {
+                // Nothing loaded yet — generic placeholder
                 ZStack {
                     Rectangle()
                         .fill(Color.gray.opacity(0.1))
@@ -245,12 +275,41 @@ struct ZoomableAsyncImage: View {
             }
         }
         .task {
-            await loadImage()
+            await loadImages()
         }
     }
 
     @MainActor
-    private func loadImage() async {
+    private func loadImages() async {
+        // Phase 1: Load fallback (detail quality) from cache — instant if cached
+        if let fallbackURL = fallbackURL, let url = URL(string: fallbackURL) {
+            let fallbackSource: Source = shouldUseDirectConnection(url: url)
+                ? .directNetwork(url)
+                : .network(Kingfisher.KF.ImageResource(downloadURL: url))
+
+            // Try cache first for instant display
+            if let cached = try? await KingfisherManager.shared.retrieveImage(
+                with: fallbackSource,
+                options: [.onlyFromCache, .requestModifier(PixivImageLoader.shared)]
+            ) {
+                fallbackUIImage = cached.image
+                isLoading = false
+            } else {
+                // Fallback not cached — load it from network to show something
+                let fallbackOptions: KingfisherOptionsInfo = CacheConfig.options(expiration: .hours(1)) + [
+                    .requestModifier(PixivImageLoader.shared)
+                ]
+                if let result = try? await KingfisherManager.shared.retrieveImage(
+                    with: fallbackSource,
+                    options: fallbackOptions
+                ) {
+                    fallbackUIImage = result.image
+                    isLoading = false
+                }
+            }
+        }
+
+        // Phase 2: Load target (zoom quality) — may need network
         guard let url = URL(string: urlString) else {
             isLoading = false
             return
@@ -265,12 +324,21 @@ struct ZoomableAsyncImage: View {
             ? .directNetwork(url)
             : .network(Kingfisher.KF.ImageResource(downloadURL: url))
 
+        // If we already have a fallback, show upgrade indicator
+        if fallbackUIImage != nil {
+            isUpgrading = true
+        }
+
         do {
             let result = try await KingfisherManager.shared.retrieveImage(with: source, options: options)
             uiImage = result.image
             isLoading = false
+            isUpgrading = false
+            onFallbackUpgraded?()
         } catch {
             isLoading = false
+            isUpgrading = false
+            // Keep showing fallback if available
         }
     }
 
