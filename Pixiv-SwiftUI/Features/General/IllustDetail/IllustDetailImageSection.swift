@@ -16,6 +16,7 @@ struct IllustDetailImageSection: View {
     var minContainerHeight: CGFloat?
     var currentAspectRatio: Binding<CGFloat>?
     var disableAspectRatioAnimation: Bool = false
+    var onImageFrameChange: ((CGRect) -> Void)?
     @State private var pageSizes: [Int: CGSize] = [:]
     @State private var currentAspectRatioValue: CGFloat = 0
 
@@ -70,8 +71,10 @@ struct IllustDetailImageSection: View {
         Group {
             if isUgoira {
                 UgoiraLoader(illust: illust)
+                    .reportImageFrame()
             } else {
                 standardImageSection
+                    .reportImageFrame()
                     .onTapGesture {
                         #if os(macOS)
                         let quality = isManga
@@ -85,9 +88,7 @@ struct IllustDetailImageSection: View {
                             aspectRatio: illust.safeAspectRatio
                         )
                         #else
-                        withAnimation(.spring()) {
-                            isFullscreen = true
-                        }
+                        isFullscreen = true
                         #endif
                     }
             }
@@ -190,13 +191,12 @@ struct IllustDetailImageSection: View {
             }
         )
         .frame(height: containerHeight)
+        .reportImageFrame()
         .onTapGesture {
             #if os(macOS)
             openImageViewerWindow(initialPage: page)
             #else
-            withAnimation(.spring()) {
-                isFullscreen = true
-            }
+            isFullscreen = true
             #endif
         }
     }

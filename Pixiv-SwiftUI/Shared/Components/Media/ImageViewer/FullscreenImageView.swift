@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FullscreenImageView: View {
     let imageURLs: [String]
+    let fallbackImageURLs: [String]
     let aspectRatios: [CGFloat]
     @Binding var initialPage: Int
     @Binding var isPresented: Bool
@@ -37,6 +38,7 @@ struct FullscreenImageView: View {
                             if abs(index - currentPage) <= 2 {
                                 ZoomableAsyncImage(
                                     urlString: imageURLs[index],
+                                    fallbackURL: index < fallbackImageURLs.count ? fallbackImageURLs[index] : nil,
                                     aspectRatio: index < aspectRatios.count ? aspectRatios[index] : nil,
                                     onDismiss: {
                                         isPresented = false
@@ -113,13 +115,6 @@ struct FullscreenImageView: View {
         .onChange(of: currentPage) { _, newValue in
             initialPage = newValue
             isZoomed = false
-        }
-        .onChange(of: isPresented) { _, newValue in
-            if !newValue {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    dragOffset = 0
-                }
-            }
         }
     }
 }
