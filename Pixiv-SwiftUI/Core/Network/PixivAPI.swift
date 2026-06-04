@@ -133,7 +133,9 @@ final class PixivAPI {
         headers["App-OS"] = "ios"
         headers["App-OS-Version"] = "14.6"
         headers["App-Version"] = "7.13.3"
-        headers["Accept-Language"] = "zh-CN"
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let acceptLanguage = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh-CN" : "en-US"
+        headers["Accept-Language"] = acceptLanguage
         return headers
     }
 
