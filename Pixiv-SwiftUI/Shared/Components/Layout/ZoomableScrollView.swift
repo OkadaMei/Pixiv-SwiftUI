@@ -39,8 +39,6 @@ struct ZoomableScrollView: UIViewRepresentable {
         scrollView.addGestureRecognizer(panGesture)
         context.coordinator.panGesture = panGesture
 
-        scrollView.configureZoomScale()
-
         return scrollView
     }
 
