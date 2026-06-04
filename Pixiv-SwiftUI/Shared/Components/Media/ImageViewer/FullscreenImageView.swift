@@ -78,11 +78,19 @@ struct FullscreenImageView: View {
                             isPresented = false
                         }) {
                             Image(systemName: "xmark")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
-                                .frame(width: 32, height: 32)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
+                                .frame(width: 44, height: 44)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        Circle()
+                                            .fill(.black)
+                                            .glassEffect(.regular, in: Circle())
+                                    } else {
+                                        Circle()
+                                            .fill(.ultraThinMaterial)
+                                    }
+                                }
                         }
                         .padding()
                     }
