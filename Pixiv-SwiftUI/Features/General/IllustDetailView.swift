@@ -75,6 +75,7 @@ struct IllustDetailView: View {
     @State private var transitionScreenSize: CGSize = .zero
     /// Frame saved at entering start — preserved for correct exit animation
     @State private var savedSourceFrame: CGRect = .zero
+    @State private var exitDragProgress: CGFloat = 0
 
     /// Opacity of the detail page content during transitions.
     private var detailContentOpacity: Double {
@@ -517,6 +518,7 @@ struct IllustDetailView: View {
                         aspectRatios: zoomImageAspectRatios,
                         initialPage: $currentPage,
                         isPresented: $isFullscreen,
+                        exitDragProgress: $exitDragProgress,
                         animation: animation
                     )
                     .zIndex(1)
@@ -530,6 +532,13 @@ struct IllustDetailView: View {
                             size: sourceFrame.size
                         )
                         let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
+                        // 调整起始 frame 以匹配用户拖拽关闭时的位置和缩放
+                        let adjustedStart = CGRect(
+                            x: localTarget.origin.x,
+                            y: localTarget.origin.y + exitDragProgress * overlayGeo.size.height,
+                            width: localTarget.width * (1.0 - exitDragProgress * 0.3),
+                            height: localTarget.height * (1.0 - exitDragProgress * 0.3)
+                        )
                         ZStack {
                             Color.black
                                 .ignoresSafeArea()
@@ -537,15 +546,16 @@ struct IllustDetailView: View {
 
                             KingfisherGhostImage(
                                 urlString: imageURL,
+                                fallbackURLString: enteringTransitionImageURL,
                                 aspectRatio: aspectRatio
                             )
                             .frame(
-                                width: interpolatedWidth(from: localTarget, to: localSource),
-                                height: interpolatedHeight(from: localTarget, to: localSource)
+                                width: interpolatedWidth(from: adjustedStart, to: localSource),
+                                height: interpolatedHeight(from: adjustedStart, to: localSource)
                             )
                             .position(
-                                x: interpolatedX(from: localTarget, to: localSource),
-                                y: interpolatedY(from: localTarget, to: localSource)
+                                x: interpolatedX(from: adjustedStart, to: localSource),
+                                y: interpolatedY(from: adjustedStart, to: localSource)
                             )
                             .allowsHitTesting(false)
                         }

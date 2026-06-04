@@ -7,7 +7,14 @@ import Kingfisher
 /// used as the ghost image during transitions.
 struct KingfisherGhostImage: View {
     let urlString: String
+    let fallbackURLString: String?
     let aspectRatio: CGFloat
+
+    init(urlString: String, fallbackURLString: String? = nil, aspectRatio: CGFloat) {
+        self.urlString = urlString
+        self.fallbackURLString = fallbackURLString
+        self.aspectRatio = aspectRatio
+    }
 
     @State private var uiImage: UIImage?
 
@@ -32,11 +39,28 @@ struct KingfisherGhostImage: View {
     private func loadCachedImage() async {
         guard let url = URL(string: urlString) else { return }
 
-        // Try memory cache first (instant)
-        let cacheKey = url.absoluteString
-        if let cached = KingfisherManager.shared.cache.retrieveImageInMemoryCache(forKey: cacheKey) {
-            uiImage = cached
+        // 1. 尝试主 URL（通常为 zoom-quality）
+        if let image = await retrieveCachedImage(url: url) {
+            uiImage = image
             return
+        }
+
+        // 2. 如果有 fallback URL（通常为 detail-quality），尝试它
+        if let fallback = fallbackURLString, let fallbackURL = URL(string: fallback) {
+            if let image = await retrieveCachedImage(url: fallbackURL) {
+                uiImage = image
+                return
+            }
+        }
+    }
+
+    @MainActor
+    private func retrieveCachedImage(url: URL) async -> UIImage? {
+        let cacheKey = url.absoluteString
+
+        // Try memory cache first (instant)
+        if let cached = KingfisherManager.shared.cache.retrieveImageInMemoryCache(forKey: cacheKey) {
+            return cached
         }
 
         // Try disk cache — try both source types since the image could be cached under either
@@ -49,9 +73,10 @@ struct KingfisherGhostImage: View {
                 with: source,
                 options: [.onlyFromCache, .requestModifier(PixivImageLoader.shared)]
             ) {
-                uiImage = result.image
-                return
+                return result.image
             }
         }
+
+        return nil
     }
 }
