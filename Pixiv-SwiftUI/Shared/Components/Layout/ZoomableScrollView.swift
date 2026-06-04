@@ -225,7 +225,6 @@ struct ZoomableAsyncImage: View {
     @State private var uiImage: UIImage?
     @State private var fallbackUIImage: UIImage?
     @State private var isLoading = true
-    @State private var isUpgrading = false
 
     var body: some View {
         GeometryReader { _ in
@@ -240,38 +239,16 @@ struct ZoomableAsyncImage: View {
                 )
             } else if let fallbackImage = fallbackUIImage {
                 // Fallback (detail quality) available — show it while upgrading
-                ZStack {
-                    ZoomableScrollView(
-                        image: fallbackImage,
-                        onSingleTap: onDismiss,
-                        isZoomed: $isZoomed,
-                        onDragProgress: onDragProgress,
-                        onDragEnded: onDragEnded
-                    )
-
-                    if isUpgrading {
-                        VStack {
-                            Spacer()
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .scaleEffect(0.8)
-                                .padding(8)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                                .padding(.bottom, 8)
-                        }
-                    }
-                }
+                ZoomableScrollView(
+                    image: fallbackImage,
+                    onSingleTap: onDismiss,
+                    isZoomed: $isZoomed,
+                    onDragProgress: onDragProgress,
+                    onDragEnded: onDragEnded
+                )
             } else {
-                // Nothing loaded yet — generic placeholder
-                ZStack {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.1))
-
-                    ProgressView()
-                }
-                .aspectRatio(aspectRatio ?? 1.0, contentMode: .fit)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Nothing loaded yet — silent placeholder
+                Color.clear
             }
         }
         .task {
@@ -317,27 +294,20 @@ struct ZoomableAsyncImage: View {
 
         let exp = expiration ?? .days(7)
         let options: KingfisherOptionsInfo = CacheConfig.options(expiration: exp) + [
-            .transition(.fade(0.5))
+            .requestModifier(PixivImageLoader.shared)
         ]
 
         let source: Source = shouldUseDirectConnection(url: url)
             ? .directNetwork(url)
             : .network(Kingfisher.KF.ImageResource(downloadURL: url))
 
-        // If we already have a fallback, show upgrade indicator
-        if fallbackUIImage != nil {
-            isUpgrading = true
-        }
-
         do {
             let result = try await KingfisherManager.shared.retrieveImage(with: source, options: options)
             uiImage = result.image
             isLoading = false
-            isUpgrading = false
             onFallbackUpgraded?()
         } catch {
             isLoading = false
-            isUpgrading = false
             // Keep showing fallback if available
         }
     }

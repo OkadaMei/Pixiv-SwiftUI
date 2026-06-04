@@ -462,13 +462,19 @@ struct IllustDetailView: View {
             }
             .navigationTitle(illust.title)
             #if os(iOS)
-            .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
-            .toolbar(isFullscreen ? .hidden : .visible, for: .tabBar)
+            .toolbar(isFullscreen || transitionPhase.isTransitioning ? .hidden : .visible, for: .navigationBar)
+            .toolbar(isFullscreen || transitionPhase.isTransitioning ? .hidden : .visible, for: .tabBar)
             #endif
 
             #if os(iOS)
             // Transition overlay — handles all phases of the fullscreen transition
             Group {
+                // Persistent black background to prevent white flash during phase switches
+                if transitionPhase != .idle {
+                    Color.black
+                        .ignoresSafeArea()
+                }
+
                 switch transitionPhase {
                 case .idle:
                     EmptyView()
@@ -485,7 +491,7 @@ struct IllustDetailView: View {
                         ZStack {
                             Color.black
                                 .ignoresSafeArea()
-                                .opacity(transitionProgress * 0.85)
+                                .opacity(transitionProgress)
 
                             KingfisherGhostImage(
                                 urlString: imageURL,
@@ -527,7 +533,7 @@ struct IllustDetailView: View {
                         ZStack {
                             Color.black
                                 .ignoresSafeArea()
-                                .opacity((1.0 - transitionProgress) * 0.85)
+                                .opacity(1.0 - transitionProgress)
 
                             KingfisherGhostImage(
                                 urlString: imageURL,
