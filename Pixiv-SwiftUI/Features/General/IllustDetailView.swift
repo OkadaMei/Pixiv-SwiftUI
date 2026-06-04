@@ -82,11 +82,11 @@ struct IllustDetailView: View {
         if transitionPhase.isTransitioning {
             switch transitionPhase {
             case .entering:
-                return 1.0 - Double(transitionProgress) * 0.9
+                return 0.1
             case .exiting:
                 return 0.1 + Double(transitionProgress) * 0.9
             default:
-                return 1.0 - Double(transitionProgress) * 0.9
+                return 0.1
             }
         }
         return 0.1
@@ -449,7 +449,6 @@ struct IllustDetailView: View {
                 }
             }
             .onPreferenceChange(ImageFramePreferenceKey.self) { frame in
-                guard !isFullscreen else { return }
                 if frame != .zero {
                     capturedImageFrame = frame
                 }
@@ -482,12 +481,7 @@ struct IllustDetailView: View {
                                            y: sourceFrame.origin.y - origin.y),
                             size: sourceFrame.size
                         )
-                        let target = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
-                        let localTarget = CGRect(
-                            origin: CGPoint(x: target.origin.x - origin.x,
-                                           y: target.origin.y - origin.y),
-                            size: target.size
-                        )
+                        let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
                         ZStack {
                             Color.black
                                 .ignoresSafeArea()
@@ -508,7 +502,6 @@ struct IllustDetailView: View {
                             .allowsHitTesting(false)
                         }
                     }
-                    .ignoresSafeArea()
                     .zIndex(1)
 
                 case .fullscreen:
@@ -530,12 +523,7 @@ struct IllustDetailView: View {
                                            y: sourceFrame.origin.y - origin.y),
                             size: sourceFrame.size
                         )
-                        let target = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
-                        let localTarget = CGRect(
-                            origin: CGPoint(x: target.origin.x - origin.x,
-                                           y: target.origin.y - origin.y),
-                            size: target.size
-                        )
+                        let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
                         ZStack {
                             Color.black
                                 .ignoresSafeArea()
@@ -556,7 +544,6 @@ struct IllustDetailView: View {
                             .allowsHitTesting(false)
                         }
                     }
-                    .ignoresSafeArea()
                     .zIndex(1)
                 }
             }
@@ -964,7 +951,7 @@ struct IllustDetailView: View {
     private func startEnteringTransition() {
         let frame = capturedImageFrame
 
-        // Save for correct exit animation (toolbar re-appearance shifts layout)
+        // Save immediately for correct exit animation (toolbar re-appearance shifts layout)
         savedSourceFrame = frame
 
         // If frame hasn't been captured yet, retry on next runloop
