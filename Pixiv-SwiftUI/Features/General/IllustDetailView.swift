@@ -509,6 +509,7 @@ struct IllustDetailView: View {
                             .allowsHitTesting(false)
                         }
                     }
+                    .ignoresSafeArea()
                     .zIndex(1)
 
                 case .fullscreen:
@@ -560,6 +561,7 @@ struct IllustDetailView: View {
                             .allowsHitTesting(false)
                         }
                     }
+                    .ignoresSafeArea()
                     .zIndex(1)
                 }
             }
@@ -1011,7 +1013,7 @@ struct IllustDetailView: View {
         }
 
         DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 1.0)) {
                 transitionProgress = 1.0
             }
         }
@@ -1049,7 +1051,7 @@ struct IllustDetailView: View {
         #endif
 
         DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 1.0)) {
                 transitionProgress = 1.0
             }
         }

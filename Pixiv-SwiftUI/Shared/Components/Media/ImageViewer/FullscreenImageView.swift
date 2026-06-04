@@ -83,8 +83,7 @@ struct FullscreenImageView: View {
                                 .frame(width: 44, height: 44)
                                 .background {
                                     if #available(iOS 26.0, macOS 26.0, *) {
-                                        Circle()
-                                            .fill(.black)
+                                        Color.clear
                                             .glassEffect(.regular, in: Circle())
                                     } else {
                                         Circle()
