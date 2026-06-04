@@ -6,11 +6,13 @@ struct FullscreenImageView: View {
     let aspectRatios: [CGFloat]
     @Binding var initialPage: Int
     @Binding var isPresented: Bool
+    @Binding var exitDragProgress: CGFloat
     var animation: Namespace.ID
     @State private var currentPage: Int = 0
     @State private var dragOffset: CGFloat = 0
     @State private var isZoomed: Bool = false
     @State private var screenHeight: CGFloat = 0
+    @State private var currentScrollPosition: Int?
 
     private var dismissProgress: CGFloat {
         guard screenHeight > 0 else { return 0 }
@@ -32,42 +34,40 @@ struct FullscreenImageView: View {
                     .opacity(backgroundOpacity)
                     .ignoresSafeArea()
 
-                TabView(selection: $currentPage) {
-                    ForEach(0..<imageURLs.count, id: \.self) { index in
-                        ZStack {
-                            if abs(index - currentPage) <= 2 {
-                                ZoomableAsyncImage(
-                                    urlString: imageURLs[index],
-                                    fallbackURL: index < fallbackImageURLs.count ? fallbackImageURLs[index] : nil,
-                                    aspectRatio: index < aspectRatios.count ? aspectRatios[index] : nil,
-                                    onDismiss: {
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 0) {
+                        ForEach(0..<imageURLs.count, id: \.self) { index in
+                            ZoomableAsyncImage(
+                                urlString: imageURLs[index],
+                                fallbackURL: index < fallbackImageURLs.count ? fallbackImageURLs[index] : nil,
+                                aspectRatio: index < aspectRatios.count ? aspectRatios[index] : nil,
+                                onDismiss: {
+                                    isPresented = false
+                                },
+                                isZoomed: $isZoomed,
+                                onDragProgress: { progress in
+                                    dragOffset = progress * screenHeight
+                                },
+                                onDragEnded: { shouldDismiss in
+                                    if shouldDismiss {
+                                        exitDragProgress = dismissProgress
                                         isPresented = false
-                                    },
-                                    isZoomed: $isZoomed,
-                                    onDragProgress: { progress in
-                                        dragOffset = progress * screenHeight
-                                    },
-                                    onDragEnded: { shouldDismiss in
-                                        if shouldDismiss {
-                                            isPresented = false
-                                        } else {
-                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                dragOffset = 0
-                                            }
+                                    } else {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            dragOffset = 0
                                         }
                                     }
-                                )
-                            } else {
-                                Color.clear
-                            }
+                                }
+                            )
+                            .containerRelativeFrame(.horizontal)
                         }
-                        .tag(index)
                     }
+                    .scrollTargetLayout()
                 }
+                .scrollTargetBehavior(.paging)
+                .scrollIndicators(.hidden)
+                .scrollPosition(id: $currentScrollPosition)
                 .ignoresSafeArea()
-                #if canImport(UIKit)
-                .tabViewStyle(.page(indexDisplayMode: .automatic))
-                #endif
                 .scaleEffect(scale)
                 .offset(y: dragOffset)
 
@@ -112,17 +112,18 @@ struct FullscreenImageView: View {
             }
             .onAppear {
                 screenHeight = geometry.size.height
+                currentScrollPosition = initialPage
             }
             .onChange(of: geometry.size.height) { _, newValue in
                 screenHeight = newValue
             }
-        }
-        .onAppear {
-            currentPage = initialPage
-        }
-        .onChange(of: currentPage) { _, newValue in
-            initialPage = newValue
-            isZoomed = false
+            .onChange(of: currentScrollPosition) { _, newId in
+                if let page = newId, page != currentPage {
+                    currentPage = page
+                    initialPage = page
+                    isZoomed = false
+                }
+            }
         }
     }
 }

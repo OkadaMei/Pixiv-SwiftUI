@@ -14,8 +14,6 @@ struct ZoomableScrollView: UIViewRepresentable {
     func makeUIView(context: Context) -> CenteredScrollView {
         let scrollView = CenteredScrollView()
         scrollView.delegate = context.coordinator
-        scrollView.maximumZoomScale = 3.0
-        scrollView.minimumZoomScale = 1.0
         scrollView.showsVerticalScrollIndicator = false
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.backgroundColor = .clear
@@ -41,6 +39,8 @@ struct ZoomableScrollView: UIViewRepresentable {
         scrollView.addGestureRecognizer(panGesture)
         context.coordinator.panGesture = panGesture
 
+        scrollView.configureZoomScale()
+
         return scrollView
     }
 
@@ -50,6 +50,7 @@ struct ZoomableScrollView: UIViewRepresentable {
                 imageView.image = image
                 imageView.frame = CGRect(origin: .zero, size: image.size)
                 uiView.contentSize = image.size
+                uiView.hasConfiguredZoom = false
             }
             uiView.setNeedsLayout()
         }
@@ -60,29 +61,45 @@ struct ZoomableScrollView: UIViewRepresentable {
     }
 
     class CenteredScrollView: UIScrollView {
+        fileprivate var hasConfiguredZoom = false
+        private var lastConfiguredBoundsSize: CGSize = .zero
+
         override func layoutSubviews() {
             super.layoutSubviews()
+
+            let currentBoundsSize = bounds.size
+            if !hasConfiguredZoom || lastConfiguredBoundsSize != currentBoundsSize {
+                if currentBoundsSize.width > 0, currentBoundsSize.height > 0 {
+                    configureZoomScale()
+                    hasConfiguredZoom = true
+                    lastConfiguredBoundsSize = currentBoundsSize
+                }
+            }
+
             centerImage()
         }
 
-        func centerImage() {
+        func configureZoomScale() {
             guard let imageView = subviews.first(where: { $0 is UIImageView }) as? UIImageView,
                   let image = imageView.image else { return }
 
             let boundsSize = bounds.size
-            if boundsSize.width == 0 || boundsSize.height == 0 { return }
-
-            let imageSize = image.size
-            let xScale = boundsSize.width / imageSize.width
-            let yScale = boundsSize.height / imageSize.height
+            let xScale = boundsSize.width / image.size.width
+            let yScale = boundsSize.height / image.size.height
             let minScale = min(xScale, yScale)
 
-            if minimumZoomScale != minScale {
-                minimumZoomScale = minScale
-                if zoomScale < minScale || (zoomScale == 1.0 && minScale < 1.0) {
-                    zoomScale = minScale
-                }
-            }
+            minimumZoomScale = minScale
+            maximumZoomScale = 3.0
+
+            // 首次配置或 bounds 改变时重置 zoom 到适应屏幕的尺寸
+            zoomScale = minScale
+        }
+
+        func centerImage() {
+            guard let imageView = subviews.first(where: { $0 is UIImageView }) as? UIImageView else { return }
+
+            let boundsSize = bounds.size
+            guard boundsSize.width > 0, boundsSize.height > 0 else { return }
 
             var frameToCenter = imageView.frame
 
@@ -153,11 +170,12 @@ struct ZoomableScrollView: UIViewRepresentable {
 
             let translation = gesture.translation(in: scrollView)
             let velocity = gesture.velocity(in: scrollView)
+            let deadZone: CGFloat = 15
 
             switch gesture.state {
             case .began:
                 startPanPoint = translation
-                isDraggingToDismiss = !parent.isZoomed && translation.y > 0
+                isDraggingToDismiss = false
 
             case .changed:
                 guard !parent.isZoomed else {
@@ -165,17 +183,20 @@ struct ZoomableScrollView: UIViewRepresentable {
                     return
                 }
 
-                if translation.y > 0 {
-                    isDraggingToDismiss = true
+                if translation.y > deadZone {
+                    if !isDraggingToDismiss {
+                        isDraggingToDismiss = true
+                    }
                     let screenHeight = scrollView.bounds.height
                     let progress = min(translation.y / screenHeight, 1.0)
                     parent.onDragProgress?(progress)
-                } else {
+                } else if translation.y <= 0 {
                     if isDraggingToDismiss {
                         parent.onDragProgress?(0)
                     }
                     isDraggingToDismiss = false
                 }
+                // translation.y 在 0 ~ deadZone 之间时保持当前状态（滞后）
 
             case .ended, .cancelled:
                 if isDraggingToDismiss {
@@ -199,12 +220,11 @@ struct ZoomableScrollView: UIViewRepresentable {
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             if gestureRecognizer === panGesture {
-                guard let scrollView = gestureRecognizer.view as? UIScrollView else { return true }
+                guard let scrollView = gestureRecognizer.view as? UIScrollView else { return false }
                 let velocity = (gestureRecognizer as? UIPanGestureRecognizer)?.velocity(in: scrollView) ?? .zero
-
-                if !parent.isZoomed && velocity.y > abs(velocity.x) && velocity.y > 0 {
-                    return true
-                }
+                // 仅当未缩放且纯向下滑动时启动关闭手势；
+                // 水平/斜向滑动直接拒绝，确保 TabView 翻页手势独占触摸序列
+                return !parent.isZoomed && velocity.y > abs(velocity.x) && velocity.y > 0
             }
             return true
         }
