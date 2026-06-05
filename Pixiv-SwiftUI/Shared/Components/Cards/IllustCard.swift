@@ -223,8 +223,8 @@ struct IllustCard: View, Equatable {
                 shadowOffset: CGSize(width: 0, height: 2)
             )
         )
+        #if os(macOS)
         .contextMenu {
-            #if os(macOS)
             Button {
                 openWindow(id: "illust-detail", value: illust.id)
             } label: {
@@ -232,7 +232,6 @@ struct IllustCard: View, Equatable {
             }
 
             Divider()
-            #endif
 
             if illust.isBookmarked {
                 if illust.bookmarkRestrict == "private" {
@@ -289,22 +288,11 @@ struct IllustCard: View, Equatable {
                         avatarUrl: illust.user.profileImageUrls?.medium
                     )
                 } label: {
-                    Label("屏蔽此作者", systemImage: "person.slash")
-                }
-
-                Menu {
-                    ForEach(illust.tags, id: \.name) { tag in
-                        Button {
-                            try? UserSettingStore.shared.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
-                        } label: {
-                            Text(tag.translatedName ?? tag.name)
-                        }
-                    }
-                } label: {
-                    Label("屏蔽此标签", systemImage: "tag.slash")
+                    Label("屏蔽此用户", systemImage: "person.slash")
                 }
             }
         }
+        #endif
     }
 
     private func toggleBookmark(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
