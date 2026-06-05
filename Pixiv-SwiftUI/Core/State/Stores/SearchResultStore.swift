@@ -1,8 +1,7 @@
-// swiftlint:disable file_length
 import SwiftUI
 import Observation
 
-private protocol BookmarkSortableSearchResult {
+protocol BookmarkSortableSearchResult {
     var id: Int { get }
     var totalBookmarks: Int { get }
     var createDate: String { get }
@@ -14,13 +13,13 @@ extension Novel: BookmarkSortableSearchResult {}
 @MainActor
 @Observable
 final class SearchResultStore {
-    private struct SearchBatch<T> {
+    struct SearchBatch<T> {
         let items: [T]
         let nextOffset: Int
         let hasMore: Bool
     }
 
-    private struct SearchRequestSignature: Equatable {
+    struct SearchRequestSignature: Equatable {
         let word: String
         let sort: String
         let preferLocalPopularSort: Bool
@@ -31,7 +30,7 @@ final class SearchResultStore {
         let endDate: String?
     }
 
-    private struct SearchExecutionContext {
+    struct SearchExecutionContext {
         let word: String
         let sort: String
         let preferLocalPopularSort: Bool
@@ -40,56 +39,6 @@ final class SearchResultStore {
         let searchTarget: SearchTargetOption
         let startDate: Date?
         let endDate: Date?
-    }
-
-    private struct PseudoPopularQuery: Hashable {
-        let word: String
-        let searchTarget: SearchTargetOption
-    }
-
-    private struct PseudoPopularSessionKey: Equatable {
-        let word: String
-        let showsAIGenerated: Bool
-        let bookmarkFilter: BookmarkFilterOption
-        let searchTarget: SearchTargetOption
-        let minimumBookmarkCount: Int
-        let startDate: String?
-        let endDate: String?
-        let usesUsersTagBuckets: Bool
-    }
-
-    private struct PseudoPopularQueryState {
-        let query: PseudoPopularQuery
-        var nextOffset: Int = 0
-        var fetchedPageCount: Int = 0
-        var isExhausted: Bool = false
-    }
-
-    private struct PseudoPopularBucketState {
-        let threshold: BookmarkFilterOption
-        var queryStates: [PseudoPopularQueryState]
-    }
-
-    private struct PseudoPopularFallbackState {
-        var nextOffset: Int = 0
-        var fetchedPageCount: Int = 0
-        var isExhausted: Bool = false
-    }
-
-    private struct IllustPseudoPopularSessionState {
-        let key: PseudoPopularSessionKey
-        var allowedPagesPerSource: Int = 0
-        var items: [Illusts] = []
-        var bucketStates: [PseudoPopularBucketState] = []
-        var fallbackState = PseudoPopularFallbackState()
-    }
-
-    private struct NovelPseudoPopularSessionState {
-        let key: PseudoPopularSessionKey
-        var allowedPagesPerSource: Int = 0
-        var items: [Novel] = []
-        var bucketStates: [PseudoPopularBucketState] = []
-        var fallbackState = PseudoPopularFallbackState()
     }
 
     var illustResults: [Illusts] = []
@@ -118,35 +67,35 @@ final class SearchResultStore {
     var isLoadingMoreNovels: Bool = false
     var novelLoadMoreErrorMessage: String?
 
-    @ObservationIgnored private let api = PixivAPI.shared
-    @ObservationIgnored private let pseudoPopularInitialSamplePageCount = 1
-    @ObservationIgnored private let pseudoPopularBackgroundSamplePageCount = 3
-    @ObservationIgnored private let pseudoPopularColdStartTargetCount = 8
-    @ObservationIgnored private let pseudoPopularSearchEntryPreloadTargetCount = 6
-    @ObservationIgnored private let pseudoPopularFastEntryTargetCount = 12
-    @ObservationIgnored private let pseudoPopularPreloadWarmupDelayMilliseconds = 250
-    @ObservationIgnored private let pseudoPopularDeferredPreloadDelayMilliseconds = 1200
-    @ObservationIgnored private let pseudoPopularSearchEntryAwaitMilliseconds = 120
-    @ObservationIgnored private let pseudoPopularImplicitMinimumBookmarkCount = BookmarkFilterOption.users100.rawValue
-    @ObservationIgnored private let pseudoPopularTitleAndCaptionMinimumBookmarkCount = BookmarkFilterOption.users250.rawValue
-    @ObservationIgnored private var illustPseudoPopularTargetCount: Int = 0
-    @ObservationIgnored private var novelPseudoPopularTargetCount: Int = 0
-    @ObservationIgnored private var illustPseudoPopularSamplePageCount: Int = 0
-    @ObservationIgnored private var novelPseudoPopularSamplePageCount: Int = 0
-    @ObservationIgnored private var illustPseudoPopularSessionID = UUID()
-    @ObservationIgnored private var novelPseudoPopularSessionID = UUID()
-    @ObservationIgnored private var illustPseudoPopularEnrichmentTask: Task<Void, Never>?
-    @ObservationIgnored private var novelPseudoPopularEnrichmentTask: Task<Void, Never>?
-    @ObservationIgnored private var illustPseudoPopularPreloadTask: Task<Void, Never>?
-    @ObservationIgnored private var novelPseudoPopularPreloadTask: Task<Void, Never>?
-    @ObservationIgnored private var supplementalSearchTask: Task<Void, Never>?
-    @ObservationIgnored private var illustPseudoPopularSession: IllustPseudoPopularSessionState?
-    @ObservationIgnored private var novelPseudoPopularSession: NovelPseudoPopularSessionState?
-    @ObservationIgnored private var novelSearchSignature: SearchRequestSignature?
-    @ObservationIgnored private var activeSearchSessionID = UUID()
-    private static let searchEntryPreheater = SearchResultStore()
-    private static var searchEntryPreloadToken: UUID?
-    private static var searchEntryPreloadTask: Task<Void, Never>?
+    @ObservationIgnored let api = PixivAPI.shared
+    @ObservationIgnored let pseudoPopularInitialSamplePageCount = 1
+    @ObservationIgnored let pseudoPopularBackgroundSamplePageCount = 3
+    @ObservationIgnored let pseudoPopularColdStartTargetCount = 8
+    @ObservationIgnored let pseudoPopularSearchEntryPreloadTargetCount = 6
+    @ObservationIgnored let pseudoPopularFastEntryTargetCount = 12
+    @ObservationIgnored let pseudoPopularPreloadWarmupDelayMilliseconds = 250
+    @ObservationIgnored let pseudoPopularDeferredPreloadDelayMilliseconds = 1200
+    @ObservationIgnored let pseudoPopularSearchEntryAwaitMilliseconds = 120
+    @ObservationIgnored let pseudoPopularImplicitMinimumBookmarkCount = BookmarkFilterOption.users100.rawValue
+    @ObservationIgnored let pseudoPopularTitleAndCaptionMinimumBookmarkCount = BookmarkFilterOption.users250.rawValue
+    @ObservationIgnored var illustPseudoPopularTargetCount: Int = 0
+    @ObservationIgnored var novelPseudoPopularTargetCount: Int = 0
+    @ObservationIgnored var illustPseudoPopularSamplePageCount: Int = 0
+    @ObservationIgnored var novelPseudoPopularSamplePageCount: Int = 0
+    @ObservationIgnored var illustPseudoPopularSessionID = UUID()
+    @ObservationIgnored var novelPseudoPopularSessionID = UUID()
+    @ObservationIgnored var illustPseudoPopularEnrichmentTask: Task<Void, Never>?
+    @ObservationIgnored var novelPseudoPopularEnrichmentTask: Task<Void, Never>?
+    @ObservationIgnored var illustPseudoPopularPreloadTask: Task<Void, Never>?
+    @ObservationIgnored var novelPseudoPopularPreloadTask: Task<Void, Never>?
+    @ObservationIgnored var supplementalSearchTask: Task<Void, Never>?
+    @ObservationIgnored var illustPseudoPopularSession: IllustPseudoPopularSessionState?
+    @ObservationIgnored var novelPseudoPopularSession: NovelPseudoPopularSessionState?
+    @ObservationIgnored var novelSearchSignature: SearchRequestSignature?
+    @ObservationIgnored var activeSearchSessionID = UUID()
+    static let searchEntryPreheater = SearchResultStore()
+    static var searchEntryPreloadToken: UUID?
+    static var searchEntryPreloadTask: Task<Void, Never>?
 
     func search(
         word: String,
@@ -892,526 +841,9 @@ final class SearchResultStore {
         return Int(value)
     }
 
-    private func searchIllustsByBookmarkCount(
-        word: String,
-        showsAIGenerated: Bool,
-        searchTarget: SearchTargetOption,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        minimumBookmarkCount: Int = 0,
-        samplePageCount: Int
-    ) async throws -> SearchBatch<Illusts> {
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: .none,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: false
-        )
-        let sessionID = illustPseudoPopularSessionID
+    // MARK: - Helper 方法
 
-        prepareIllustPseudoPopularSessionIfNeeded(for: sessionKey)
-        if var session = illustPseudoPopularSession {
-            session.allowedPagesPerSource = max(session.allowedPagesPerSource, max(1, samplePageCount))
-            illustPseudoPopularSession = session
-        }
-
-        try await populateIllustPseudoPopularSession(targetCount: targetCount, sessionID: sessionID)
-        try validateIllustPseudoPopularSession(sessionID)
-
-        guard let session = illustPseudoPopularSession else {
-            return SearchBatch(items: [], nextOffset: 0, hasMore: false)
-        }
-
-        let sorted = sortResultsByBookmarkCount(session.items)
-        let limited = Array(sorted.prefix(targetCount))
-
-        return SearchBatch(
-            items: limited,
-            nextOffset: limited.count,
-            hasMore: sorted.count > targetCount || illustSessionCanFetchMore(session)
-        )
-    }
-
-    private func searchNovelsByBookmarkCount(
-        word: String,
-        showsAIGenerated: Bool,
-        searchTarget: SearchTargetOption,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        minimumBookmarkCount: Int = 0,
-        samplePageCount: Int
-    ) async throws -> SearchBatch<Novel> {
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: .none,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: false
-        )
-        let sessionID = novelPseudoPopularSessionID
-
-        prepareNovelPseudoPopularSessionIfNeeded(for: sessionKey)
-        if var session = novelPseudoPopularSession {
-            session.allowedPagesPerSource = max(session.allowedPagesPerSource, max(1, samplePageCount))
-            novelPseudoPopularSession = session
-        }
-
-        try await populateNovelPseudoPopularSession(targetCount: targetCount, sessionID: sessionID)
-        try validateNovelPseudoPopularSession(sessionID)
-
-        guard let session = novelPseudoPopularSession else {
-            return SearchBatch(items: [], nextOffset: 0, hasMore: false)
-        }
-
-        let sorted = sortResultsByBookmarkCount(session.items)
-        let limited = Array(sorted.prefix(targetCount))
-
-        return SearchBatch(
-            items: limited,
-            nextOffset: limited.count,
-            hasMore: sorted.count > targetCount || novelSessionCanFetchMore(session)
-        )
-    }
-
-    private func searchIllustsByPseudoPopularTags(
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        samplePageCount: Int
-    ) async throws -> SearchBatch<Illusts> {
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: bookmarkFilter,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: true
-        )
-        let sessionID = illustPseudoPopularSessionID
-
-        prepareIllustPseudoPopularSessionIfNeeded(for: sessionKey)
-        if var session = illustPseudoPopularSession {
-            session.allowedPagesPerSource = max(session.allowedPagesPerSource, max(1, samplePageCount))
-            illustPseudoPopularSession = session
-        }
-
-        try await populateIllustPseudoPopularSession(targetCount: targetCount, sessionID: sessionID)
-        try validateIllustPseudoPopularSession(sessionID)
-
-        guard let session = illustPseudoPopularSession else {
-            return SearchBatch(items: [], nextOffset: 0, hasMore: false)
-        }
-
-        let sorted = sortResultsByBookmarkCount(session.items)
-        let limited = Array(sorted.prefix(targetCount))
-
-        return SearchBatch(
-            items: limited,
-            nextOffset: limited.count,
-            hasMore: sorted.count > targetCount || illustSessionCanFetchMore(session)
-        )
-    }
-
-    private func searchNovelsByPseudoPopularTags(
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        samplePageCount: Int
-    ) async throws -> SearchBatch<Novel> {
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: bookmarkFilter,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: true
-        )
-        let sessionID = novelPseudoPopularSessionID
-
-        prepareNovelPseudoPopularSessionIfNeeded(for: sessionKey)
-        if var session = novelPseudoPopularSession {
-            session.allowedPagesPerSource = max(session.allowedPagesPerSource, max(1, samplePageCount))
-            novelPseudoPopularSession = session
-        }
-
-        try await populateNovelPseudoPopularSession(targetCount: targetCount, sessionID: sessionID)
-        try validateNovelPseudoPopularSession(sessionID)
-
-        guard let session = novelPseudoPopularSession else {
-            return SearchBatch(items: [], nextOffset: 0, hasMore: false)
-        }
-
-        let sorted = sortResultsByBookmarkCount(session.items)
-        let limited = Array(sorted.prefix(targetCount))
-
-        return SearchBatch(
-            items: limited,
-            nextOffset: limited.count,
-            hasMore: sorted.count > targetCount || novelSessionCanFetchMore(session)
-        )
-    }
-
-    private func prepareIllustPseudoPopularSessionIfNeeded(for key: PseudoPopularSessionKey) {
-        guard illustPseudoPopularSession?.key != key else { return }
-        illustPseudoPopularSession = IllustPseudoPopularSessionState(
-            key: key,
-            bucketStates: makePseudoPopularBucketStates(for: key)
-        )
-    }
-
-    private func prepareNovelPseudoPopularSessionIfNeeded(for key: PseudoPopularSessionKey) {
-        guard novelPseudoPopularSession?.key != key else { return }
-        novelPseudoPopularSession = NovelPseudoPopularSessionState(
-            key: key,
-            bucketStates: makePseudoPopularBucketStates(for: key)
-        )
-    }
-
-    private func populateIllustPseudoPopularSession(targetCount: Int, sessionID: UUID) async throws {
-        guard var session = illustPseudoPopularSession else { return }
-        let desiredCount = max(1, targetCount)
-        var madeProgress = true
-
-        while session.items.count < desiredCount && madeProgress {
-            try validateIllustPseudoPopularSession(sessionID)
-            let previousCount = session.items.count
-
-            if session.key.usesUsersTagBuckets {
-                for index in session.bucketStates.indices {
-                    try await fetchIllustBucketPages(
-                        into: &session,
-                        bucketIndex: index,
-                        desiredCount: desiredCount,
-                        sessionID: sessionID
-                    )
-                    if session.items.count >= desiredCount {
-                        break
-                    }
-                }
-            }
-
-            if session.items.count < desiredCount {
-                try await fetchIllustFallbackPages(
-                    into: &session,
-                    desiredCount: desiredCount,
-                    sessionID: sessionID
-                )
-            }
-
-            madeProgress = session.items.count > previousCount || illustSessionCanFetchMore(session)
-            if session.items.count == previousCount {
-                break
-            }
-        }
-
-        try validateIllustPseudoPopularSession(sessionID)
-        illustPseudoPopularSession = session
-    }
-
-    private func populateNovelPseudoPopularSession(targetCount: Int, sessionID: UUID) async throws {
-        guard var session = novelPseudoPopularSession else { return }
-        let desiredCount = max(1, targetCount)
-        var madeProgress = true
-
-        while session.items.count < desiredCount && madeProgress {
-            try validateNovelPseudoPopularSession(sessionID)
-            let previousCount = session.items.count
-
-            if session.key.usesUsersTagBuckets {
-                for index in session.bucketStates.indices {
-                    try await fetchNovelBucketPages(
-                        into: &session,
-                        bucketIndex: index,
-                        desiredCount: desiredCount,
-                        sessionID: sessionID
-                    )
-                    if session.items.count >= desiredCount {
-                        break
-                    }
-                }
-            }
-
-            if session.items.count < desiredCount {
-                try await fetchNovelFallbackPages(
-                    into: &session,
-                    desiredCount: desiredCount,
-                    sessionID: sessionID
-                )
-            }
-
-            madeProgress = session.items.count > previousCount || novelSessionCanFetchMore(session)
-            if session.items.count == previousCount {
-                break
-            }
-        }
-
-        try validateNovelPseudoPopularSession(sessionID)
-        novelPseudoPopularSession = session
-    }
-
-    private func fetchIllustBucketPages(
-        into session: inout IllustPseudoPopularSessionState,
-        bucketIndex: Int,
-        desiredCount: Int,
-        sessionID: UUID
-    ) async throws {
-        guard session.key.usesUsersTagBuckets else { return }
-
-        var bucketState = session.bucketStates[bucketIndex]
-
-        for queryIndex in bucketState.queryStates.indices {
-            while session.items.count < desiredCount {
-                let queryState = bucketState.queryStates[queryIndex]
-                guard !queryState.isExhausted,
-                      queryState.fetchedPageCount < session.allowedPagesPerSource else {
-                    break
-                }
-                try validateIllustPseudoPopularSession(sessionID)
-
-                let page = try await api.searchIllusts(
-                    word: queryState.query.word,
-                    searchTarget: queryState.query.searchTarget.rawValue,
-                    sort: SearchSortOption.dateDesc.rawValue,
-                    searchAIType: searchAITypeParameter(for: session.key.showsAIGenerated),
-                    startDate: parseDateKey(session.key.startDate),
-                    endDate: parseDateKey(session.key.endDate),
-                    offset: queryState.nextOffset,
-                    limit: illustLimit
-                )
-                try validateIllustPseudoPopularSession(sessionID)
-
-                let filteredPage = page.filter { $0.totalBookmarks >= bucketState.threshold.rawValue }
-                session.items = mergeUniqueResults(session.items, with: filteredPage)
-                bucketState.queryStates[queryIndex].fetchedPageCount += 1
-
-                if page.count < illustLimit {
-                    bucketState.queryStates[queryIndex].isExhausted = true
-                } else {
-                    bucketState.queryStates[queryIndex].nextOffset += page.count
-                }
-
-                await Task.yield()
-            }
-
-            if session.items.count >= desiredCount {
-                break
-            }
-        }
-
-        session.bucketStates[bucketIndex] = bucketState
-    }
-
-    private func fetchNovelBucketPages(
-        into session: inout NovelPseudoPopularSessionState,
-        bucketIndex: Int,
-        desiredCount: Int,
-        sessionID: UUID
-    ) async throws {
-        guard session.key.usesUsersTagBuckets else { return }
-
-        var bucketState = session.bucketStates[bucketIndex]
-
-        for queryIndex in bucketState.queryStates.indices {
-            while session.items.count < desiredCount {
-                let queryState = bucketState.queryStates[queryIndex]
-                guard !queryState.isExhausted,
-                      queryState.fetchedPageCount < session.allowedPagesPerSource else {
-                    break
-                }
-                try validateNovelPseudoPopularSession(sessionID)
-
-                let page = try await api.searchNovels(
-                    word: queryState.query.word,
-                    searchTarget: queryState.query.searchTarget.rawValue,
-                    sort: SearchSortOption.dateDesc.rawValue,
-                    searchAIType: searchAITypeParameter(for: session.key.showsAIGenerated),
-                    startDate: parseDateKey(session.key.startDate),
-                    endDate: parseDateKey(session.key.endDate),
-                    offset: queryState.nextOffset,
-                    limit: novelLimit
-                )
-                try validateNovelPseudoPopularSession(sessionID)
-
-                let filteredPage = page.filter { $0.totalBookmarks >= bucketState.threshold.rawValue }
-                session.items = mergeUniqueResults(session.items, with: filteredPage)
-                bucketState.queryStates[queryIndex].fetchedPageCount += 1
-
-                if page.count < novelLimit {
-                    bucketState.queryStates[queryIndex].isExhausted = true
-                } else {
-                    bucketState.queryStates[queryIndex].nextOffset += page.count
-                }
-
-                await Task.yield()
-            }
-
-            if session.items.count >= desiredCount {
-                break
-            }
-        }
-
-        session.bucketStates[bucketIndex] = bucketState
-    }
-
-    private func fetchIllustFallbackPages(
-        into session: inout IllustPseudoPopularSessionState,
-        desiredCount: Int,
-        sessionID: UUID
-    ) async throws {
-        while session.items.count < desiredCount {
-            guard !session.fallbackState.isExhausted,
-                  session.fallbackState.fetchedPageCount < session.allowedPagesPerSource else {
-                break
-            }
-            try validateIllustPseudoPopularSession(sessionID)
-
-            let page = try await api.searchIllusts(
-                word: session.key.word,
-                searchTarget: session.key.searchTarget.rawValue,
-                sort: SearchSortOption.dateDesc.rawValue,
-                searchAIType: searchAITypeParameter(for: session.key.showsAIGenerated),
-                startDate: parseDateKey(session.key.startDate),
-                endDate: parseDateKey(session.key.endDate),
-                offset: session.fallbackState.nextOffset,
-                limit: illustLimit
-            )
-            try validateIllustPseudoPopularSession(sessionID)
-
-            let filteredPage = session.key.minimumBookmarkCount > 0
-                ? page.filter { $0.totalBookmarks >= session.key.minimumBookmarkCount }
-                : page
-            session.items = mergeUniqueResults(session.items, with: filteredPage)
-            session.fallbackState.fetchedPageCount += 1
-
-            if page.count < illustLimit {
-                session.fallbackState.isExhausted = true
-            } else {
-                session.fallbackState.nextOffset += page.count
-            }
-
-            await Task.yield()
-        }
-    }
-
-    private func fetchNovelFallbackPages(
-        into session: inout NovelPseudoPopularSessionState,
-        desiredCount: Int,
-        sessionID: UUID
-    ) async throws {
-        while session.items.count < desiredCount {
-            guard !session.fallbackState.isExhausted,
-                  session.fallbackState.fetchedPageCount < session.allowedPagesPerSource else {
-                break
-            }
-            try validateNovelPseudoPopularSession(sessionID)
-
-            let page = try await api.searchNovels(
-                word: session.key.word,
-                searchTarget: session.key.searchTarget.rawValue,
-                sort: SearchSortOption.dateDesc.rawValue,
-                searchAIType: searchAITypeParameter(for: session.key.showsAIGenerated),
-                startDate: parseDateKey(session.key.startDate),
-                endDate: parseDateKey(session.key.endDate),
-                offset: session.fallbackState.nextOffset,
-                limit: novelLimit
-            )
-            try validateNovelPseudoPopularSession(sessionID)
-
-            let filteredPage = session.key.minimumBookmarkCount > 0
-                ? page.filter { $0.totalBookmarks >= session.key.minimumBookmarkCount }
-                : page
-            session.items = mergeUniqueResults(session.items, with: filteredPage)
-            session.fallbackState.fetchedPageCount += 1
-
-            if page.count < novelLimit {
-                session.fallbackState.isExhausted = true
-            } else {
-                session.fallbackState.nextOffset += page.count
-            }
-
-            await Task.yield()
-        }
-    }
-
-    private func makePseudoPopularBucketStates(for key: PseudoPopularSessionKey) -> [PseudoPopularBucketState] {
-        guard key.usesUsersTagBuckets else { return [] }
-
-        return pseudoPopularThresholds(minimumFilter: key.bookmarkFilter).map { threshold in
-            PseudoPopularBucketState(
-                threshold: threshold,
-                queryStates: pseudoPopularQueries(
-                    for: key.word,
-                    threshold: threshold,
-                    searchTarget: key.searchTarget
-                ).map { PseudoPopularQueryState(query: $0) }
-            )
-        }
-    }
-
-    private func pseudoPopularThresholds(minimumFilter: BookmarkFilterOption) -> [BookmarkFilterOption] {
-        BookmarkFilterOption.allCases
-            .filter { $0 != .none && $0.rawValue >= minimumFilter.rawValue }
-            .sorted { $0.rawValue > $1.rawValue }
-    }
-
-    private func pseudoPopularQueries(
-        for word: String,
-        threshold: BookmarkFilterOption,
-        searchTarget: SearchTargetOption
-    ) -> [PseudoPopularQuery] {
-        let trimmedWord = normalizeSearchWord(word)
-        guard !trimmedWord.isEmpty else { return [] }
-
-        let spacedTarget: SearchTargetOption = searchTarget == .exactMatchForTags ? .exactMatchForTags : .partialMatchForTags
-        var queries: [PseudoPopularQuery] = [
-            PseudoPopularQuery(
-                word: "\(trimmedWord) \(threshold.rawValue)users入り",
-                searchTarget: spacedTarget
-            )
-        ]
-
-        if !trimmedWord.contains(where: \.isWhitespace) {
-            queries.insert(
-                PseudoPopularQuery(
-                    word: "\(trimmedWord)\(threshold.rawValue)users入り",
-                    searchTarget: .exactMatchForTags
-                ),
-                at: 0
-            )
-        }
-
-        var deduplicated: [PseudoPopularQuery] = []
-        var seen = Set<PseudoPopularQuery>()
-        for query in queries where seen.insert(query).inserted {
-            deduplicated.append(query)
-        }
-        return deduplicated
-    }
-
-    private func makeSearchRequestSignature(
+    func makeSearchRequestSignature(
         word: String,
         sort: String,
         preferLocalPopularSort: Bool,
@@ -1433,36 +865,14 @@ final class SearchResultStore {
         )
     }
 
-    private func makePseudoPopularSessionKey(
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        usesUsersTagBuckets: Bool
-    ) -> PseudoPopularSessionKey {
-        PseudoPopularSessionKey(
-            word: normalizeSearchWord(word),
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: bookmarkFilter,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: dateKey(for: startDate),
-            endDate: dateKey(for: endDate),
-            usesUsersTagBuckets: usesUsersTagBuckets
-        )
-    }
-
-    private func normalizeSearchWord(_ word: String) -> String {
+    func normalizeSearchWord(_ word: String) -> String {
         word
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
 
-    private func effectivePseudoPopularMinimumBookmarkCount(
+    func effectivePseudoPopularMinimumBookmarkCount(
         for bookmarkFilter: BookmarkFilterOption,
         searchTarget: SearchTargetOption
     ) -> Int {
@@ -1472,14 +882,14 @@ final class SearchResultStore {
         return max(bookmarkFilter.rawValue, implicitMinimum)
     }
 
-    private func initialPseudoPopularTargetCount(existingCount: Int, limit: Int) -> Int {
+    func initialPseudoPopularTargetCount(existingCount: Int, limit: Int) -> Int {
         let baseline = existingCount > 0
             ? pseudoPopularFastEntryTargetCount
             : pseudoPopularColdStartTargetCount
         return min(limit, max(existingCount, baseline))
     }
 
-    private func existingIllustPseudoPopularItemCount(
+    func existingIllustPseudoPopularItemCount(
         word: String,
         showsAIGenerated: Bool,
         bookmarkFilter: BookmarkFilterOption,
@@ -1503,7 +913,7 @@ final class SearchResultStore {
         return illustPseudoPopularSession?.items.count ?? 0
     }
 
-    private func existingNovelPseudoPopularItemCount(
+    func existingNovelPseudoPopularItemCount(
         word: String,
         showsAIGenerated: Bool,
         bookmarkFilter: BookmarkFilterOption,
@@ -1527,11 +937,11 @@ final class SearchResultStore {
         return novelPseudoPopularSession?.items.count ?? 0
     }
 
-    private func searchAITypeParameter(for showsAIGenerated: Bool) -> Int {
+    func searchAITypeParameter(for showsAIGenerated: Bool) -> Int {
         showsAIGenerated ? 0 : 1
     }
 
-    private func dateKey(for date: Date?) -> String? {
+    func dateKey(for date: Date?) -> String? {
         guard let date else { return nil }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -1539,7 +949,7 @@ final class SearchResultStore {
         return formatter.string(from: date)
     }
 
-    private func parseDateKey(_ key: String?) -> Date? {
+    func parseDateKey(_ key: String?) -> Date? {
         guard let key else { return nil }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -1547,171 +957,22 @@ final class SearchResultStore {
         return formatter.date(from: key)
     }
 
-    private func cancelIllustPseudoPopularEnrichment() {
-        illustPseudoPopularEnrichmentTask?.cancel()
-        illustPseudoPopularEnrichmentTask = nil
-    }
+    func appendNewResultsPreservingOrder<Item: BookmarkSortableSearchResult>(
+        existing: [Item],
+        fetched: [Item]
+    ) -> [Item] {
+        var combined = existing
+        var existingIds = Set(existing.map(\.id))
 
-    private func cancelNovelPseudoPopularEnrichment() {
-        novelPseudoPopularEnrichmentTask?.cancel()
-        novelPseudoPopularEnrichmentTask = nil
-    }
-
-    private func cancelIllustPseudoPopularPreload() {
-        illustPseudoPopularPreloadTask?.cancel()
-        illustPseudoPopularPreloadTask = nil
-    }
-
-    private func cancelNovelPseudoPopularPreload() {
-        novelPseudoPopularPreloadTask?.cancel()
-        novelPseudoPopularPreloadTask = nil
-    }
-
-    private func cancelSupplementalSearch() {
-        supplementalSearchTask?.cancel()
-        supplementalSearchTask = nil
-    }
-
-    private func adoptSearchEntryPseudoPopularPreloadIfAvailable(
-        token: UUID?,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        usesUsersTagBuckets: Bool
-    ) async {
-        guard let token, Self.searchEntryPreloadToken == token else { return }
-
-        let key = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: usesUsersTagBuckets ? bookmarkFilter : .none,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: usesUsersTagBuckets
-        )
-
-        if absorbSearchEntryPseudoPopularSessionIfAvailable(for: key) {
-            return
+        for item in fetched where !existingIds.contains(item.id) {
+            combined.append(item)
+            existingIds.insert(item.id)
         }
 
-        guard let preloadTask = Self.searchEntryPreloadTask else { return }
-        let finishedInTime = await Self.waitForSearchEntryPreloadTask(
-            preloadTask,
-            timeoutMilliseconds: pseudoPopularSearchEntryAwaitMilliseconds
-        )
-        guard finishedInTime, Self.searchEntryPreloadToken == token else { return }
-
-        _ = absorbSearchEntryPseudoPopularSessionIfAvailable(for: key)
+        return combined
     }
 
-    private func absorbSearchEntryPseudoPopularSessionIfAvailable(for key: PseudoPopularSessionKey) -> Bool {
-        guard Self.searchEntryPreheater.illustPseudoPopularSession?.key == key,
-              let session = Self.searchEntryPreheater.illustPseudoPopularSession,
-              !session.items.isEmpty else {
-            return false
-        }
-
-        illustPseudoPopularSession = session
-        return true
-    }
-
-    private func seedIllustPseudoPopularSessionFromRegularResults(
-        items: [Illusts],
-        sourceSort: String,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard !items.isEmpty else { return }
-
-        let usesUsersTagBuckets = searchTarget != .titleAndCaption
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: usesUsersTagBuckets ? bookmarkFilter : .none,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: usesUsersTagBuckets
-        )
-        prepareIllustPseudoPopularSessionIfNeeded(for: sessionKey)
-
-        guard var session = illustPseudoPopularSession else { return }
-        let filteredItems = minimumBookmarkCount > 0
-            ? items.filter { $0.totalBookmarks >= minimumBookmarkCount }
-            : items
-        session.items = mergeUniqueResults(session.items, with: filteredItems)
-        if sourceSort == SearchSortOption.dateDesc.rawValue && bookmarkFilter == .none {
-            session.fallbackState.fetchedPageCount = max(session.fallbackState.fetchedPageCount, 1)
-            session.fallbackState.nextOffset = max(session.fallbackState.nextOffset, items.count)
-            session.fallbackState.isExhausted = session.fallbackState.isExhausted || items.count < illustLimit
-        }
-        illustPseudoPopularSession = session
-    }
-
-    private func seedNovelPseudoPopularSessionFromRegularResults(
-        items: [Novel],
-        sourceSort: String,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard !items.isEmpty else { return }
-
-        let usesUsersTagBuckets = searchTarget != .titleAndCaption
-        let sessionKey = makePseudoPopularSessionKey(
-            word: word,
-            showsAIGenerated: showsAIGenerated,
-            bookmarkFilter: usesUsersTagBuckets ? bookmarkFilter : .none,
-            searchTarget: searchTarget,
-            minimumBookmarkCount: minimumBookmarkCount,
-            startDate: startDate,
-            endDate: endDate,
-            usesUsersTagBuckets: usesUsersTagBuckets
-        )
-        prepareNovelPseudoPopularSessionIfNeeded(for: sessionKey)
-
-        guard var session = novelPseudoPopularSession else { return }
-        let filteredItems = minimumBookmarkCount > 0
-            ? items.filter { $0.totalBookmarks >= minimumBookmarkCount }
-            : items
-        session.items = mergeUniqueResults(session.items, with: filteredItems)
-        if sourceSort == SearchSortOption.dateDesc.rawValue && bookmarkFilter == .none {
-            session.fallbackState.fetchedPageCount = max(session.fallbackState.fetchedPageCount, 1)
-            session.fallbackState.nextOffset = max(session.fallbackState.nextOffset, items.count)
-            session.fallbackState.isExhausted = session.fallbackState.isExhausted || items.count < novelLimit
-        }
-        novelPseudoPopularSession = session
-    }
-
-    private func validateIllustPseudoPopularSession(_ sessionID: UUID) throws {
-        guard !Task.isCancelled, sessionID == illustPseudoPopularSessionID else {
-            throw CancellationError()
-        }
-    }
-
-    private func validateNovelPseudoPopularSession(_ sessionID: UUID) throws {
-        guard !Task.isCancelled, sessionID == novelPseudoPopularSessionID else {
-            throw CancellationError()
-        }
-    }
-
-    private func scheduleSupplementalSearch(
+    func scheduleSupplementalSearch(
         sessionID: UUID,
         context: SearchExecutionContext,
         prefetchNovelSignature: SearchRequestSignature
@@ -1743,459 +1004,4 @@ final class SearchResultStore {
             }
         }
     }
-
-    private func scheduleIllustPseudoPopularPreload(
-        searchSessionID: UUID,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard !word.isEmpty else { return }
-
-        let usesUsersTagPseudoPopularSort = searchTarget != .titleAndCaption
-        cancelIllustPseudoPopularPreload()
-        illustPseudoPopularPreloadTask = Task(priority: .utility) { [weak self] in
-            guard let self else { return }
-
-            do {
-                try await Task.sleep(for: .milliseconds(self.pseudoPopularPreloadWarmupDelayMilliseconds))
-                guard !Task.isCancelled, searchSessionID == self.activeSearchSessionID else { return }
-
-                try await self.preloadIllustPseudoPopularSession(
-                    word: word,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: bookmarkFilter,
-                    searchTarget: searchTarget,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: startDate,
-                    endDate: endDate,
-                    targetCount: self.pseudoPopularFastEntryTargetCount,
-                    samplePageCount: self.pseudoPopularInitialSamplePageCount,
-                    usesUsersTagPseudoPopularSort: usesUsersTagPseudoPopularSort
-                )
-
-                try await Task.sleep(for: .milliseconds(self.pseudoPopularDeferredPreloadDelayMilliseconds))
-                guard !Task.isCancelled, searchSessionID == self.activeSearchSessionID else { return }
-
-                try await self.preloadIllustPseudoPopularSession(
-                    word: word,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: bookmarkFilter,
-                    searchTarget: searchTarget,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: startDate,
-                    endDate: endDate,
-                    targetCount: self.illustLimit,
-                    samplePageCount: self.pseudoPopularBackgroundSamplePageCount,
-                    usesUsersTagPseudoPopularSort: usesUsersTagPseudoPopularSort
-                )
-            } catch is CancellationError {
-            } catch {
-                print("Failed to preload pseudo-popular illusts: \(error)")
-            }
-        }
-    }
-
-    private func scheduleNovelPseudoPopularPreload(
-        searchSessionID: UUID,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard !word.isEmpty else { return }
-
-        let usesUsersTagPseudoPopularSort = searchTarget != .titleAndCaption
-        cancelNovelPseudoPopularPreload()
-        novelPseudoPopularPreloadTask = Task(priority: .utility) { [weak self] in
-            guard let self else { return }
-
-            do {
-                try await Task.sleep(for: .milliseconds(self.pseudoPopularPreloadWarmupDelayMilliseconds))
-                guard !Task.isCancelled, searchSessionID == self.activeSearchSessionID else { return }
-
-                try await self.preloadNovelPseudoPopularSession(
-                    word: word,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: bookmarkFilter,
-                    searchTarget: searchTarget,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: startDate,
-                    endDate: endDate,
-                    targetCount: self.pseudoPopularFastEntryTargetCount,
-                    samplePageCount: self.pseudoPopularInitialSamplePageCount,
-                    usesUsersTagPseudoPopularSort: usesUsersTagPseudoPopularSort
-                )
-
-                try await Task.sleep(for: .milliseconds(self.pseudoPopularDeferredPreloadDelayMilliseconds))
-                guard !Task.isCancelled, searchSessionID == self.activeSearchSessionID else { return }
-
-                try await self.preloadNovelPseudoPopularSession(
-                    word: word,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: bookmarkFilter,
-                    searchTarget: searchTarget,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: startDate,
-                    endDate: endDate,
-                    targetCount: self.novelLimit,
-                    samplePageCount: self.pseudoPopularBackgroundSamplePageCount,
-                    usesUsersTagPseudoPopularSort: usesUsersTagPseudoPopularSort
-                )
-            } catch is CancellationError {
-            } catch {
-                print("Failed to preload pseudo-popular novels: \(error)")
-            }
-        }
-    }
-
-    private func preloadIllustPseudoPopularSession(
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        samplePageCount: Int,
-        usesUsersTagPseudoPopularSort: Bool
-    ) async throws {
-        if usesUsersTagPseudoPopularSort {
-            _ = try await searchIllustsByPseudoPopularTags(
-                word: word,
-                showsAIGenerated: showsAIGenerated,
-                bookmarkFilter: bookmarkFilter,
-                searchTarget: searchTarget,
-                minimumBookmarkCount: minimumBookmarkCount,
-                startDate: startDate,
-                endDate: endDate,
-                targetCount: targetCount,
-                samplePageCount: samplePageCount
-            )
-        } else {
-            _ = try await searchIllustsByBookmarkCount(
-                word: word,
-                showsAIGenerated: showsAIGenerated,
-                searchTarget: searchTarget,
-                startDate: startDate,
-                endDate: endDate,
-                targetCount: targetCount,
-                minimumBookmarkCount: minimumBookmarkCount,
-                samplePageCount: samplePageCount
-            )
-        }
-    }
-
-    private func preloadNovelPseudoPopularSession(
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?,
-        targetCount: Int,
-        samplePageCount: Int,
-        usesUsersTagPseudoPopularSort: Bool
-    ) async throws {
-        if usesUsersTagPseudoPopularSort {
-            _ = try await searchNovelsByPseudoPopularTags(
-                word: word,
-                showsAIGenerated: showsAIGenerated,
-                bookmarkFilter: bookmarkFilter,
-                searchTarget: searchTarget,
-                minimumBookmarkCount: minimumBookmarkCount,
-                startDate: startDate,
-                endDate: endDate,
-                targetCount: targetCount,
-                samplePageCount: samplePageCount
-            )
-        } else {
-            _ = try await searchNovelsByBookmarkCount(
-                word: word,
-                showsAIGenerated: showsAIGenerated,
-                searchTarget: searchTarget,
-                startDate: startDate,
-                endDate: endDate,
-                targetCount: targetCount,
-                minimumBookmarkCount: minimumBookmarkCount,
-                samplePageCount: samplePageCount
-            )
-        }
-    }
-
-    static func scheduleSearchEntryPseudoPopularPreload(
-        word: String,
-        token: UUID,
-        isPremium: Bool,
-        defaultSort: SearchSortOption,
-        showsAIGenerated: Bool = true
-    ) {
-        let normalizedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedWord.isEmpty, !isPremium, defaultSort == .popularDesc else { return }
-
-        searchEntryPreloadToken = token
-        searchEntryPreloadTask?.cancel()
-        searchEntryPreloadTask = Task(priority: .utility) { @MainActor in
-            do {
-                let preheater = Self.searchEntryPreheater
-                let minimumBookmarkCount = preheater.effectivePseudoPopularMinimumBookmarkCount(
-                    for: .none,
-                    searchTarget: .partialMatchForTags
-                )
-                let key = preheater.makePseudoPopularSessionKey(
-                    word: normalizedWord,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: .none,
-                    searchTarget: .partialMatchForTags,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: nil,
-                    endDate: nil,
-                    usesUsersTagBuckets: true
-                )
-
-                if preheater.illustPseudoPopularSession?.key != key {
-                    preheater.illustPseudoPopularSession = nil
-                }
-                preheater.illustPseudoPopularSessionID = UUID()
-
-                _ = try await preheater.searchIllustsByPseudoPopularTags(
-                    word: normalizedWord,
-                    showsAIGenerated: showsAIGenerated,
-                    bookmarkFilter: .none,
-                    searchTarget: .partialMatchForTags,
-                    minimumBookmarkCount: minimumBookmarkCount,
-                    startDate: nil,
-                    endDate: nil,
-                    targetCount: preheater.pseudoPopularSearchEntryPreloadTargetCount,
-                    samplePageCount: preheater.pseudoPopularInitialSamplePageCount
-                )
-            } catch is CancellationError {
-            } catch {
-                print("Failed to preload search entry pseudo-popular results: \(error)")
-            }
-        }
-    }
-
-    private static func waitForSearchEntryPreloadTask(
-        _ task: Task<Void, Never>,
-        timeoutMilliseconds: Int
-    ) async -> Bool {
-        await withTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                await task.value
-                return true
-            }
-            group.addTask {
-                try? await Task.sleep(for: .milliseconds(timeoutMilliseconds))
-                return false
-            }
-
-            let result = await group.next() ?? false
-            group.cancelAll()
-            return result
-        }
-    }
-
-    private func scheduleIllustPseudoPopularEnrichment(
-        sessionID: UUID,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard illustHasMore else { return }
-
-        let nextTargetCount = max(illustPseudoPopularTargetCount, illustResults.count) + illustLimit
-        let nextSamplePageCount = max(
-            illustPseudoPopularSamplePageCount + 1,
-            pseudoPopularBackgroundSamplePageCount
-        )
-        let usesUsersTagPseudoPopularSort = searchTarget != .titleAndCaption
-
-        cancelIllustPseudoPopularEnrichment()
-        illustPseudoPopularEnrichmentTask = Task(priority: .utility) { [weak self] in
-            guard let self else { return }
-
-            do {
-                let batch: SearchBatch<Illusts>
-                if usesUsersTagPseudoPopularSort {
-                    batch = try await self.searchIllustsByPseudoPopularTags(
-                        word: word,
-                        showsAIGenerated: showsAIGenerated,
-                        bookmarkFilter: bookmarkFilter,
-                        searchTarget: searchTarget,
-                        minimumBookmarkCount: minimumBookmarkCount,
-                        startDate: startDate,
-                        endDate: endDate,
-                        targetCount: nextTargetCount,
-                        samplePageCount: nextSamplePageCount
-                    )
-                } else {
-                    batch = try await self.searchIllustsByBookmarkCount(
-                        word: word,
-                        showsAIGenerated: showsAIGenerated,
-                        searchTarget: searchTarget,
-                        startDate: startDate,
-                        endDate: endDate,
-                        targetCount: nextTargetCount,
-                        minimumBookmarkCount: minimumBookmarkCount,
-                        samplePageCount: nextSamplePageCount
-                    )
-                }
-
-                guard !Task.isCancelled, sessionID == self.illustPseudoPopularSessionID else { return }
-
-                self.illustResults = appendNewResultsPreservingOrder(
-                    existing: self.illustResults,
-                    fetched: batch.items
-                )
-                self.illustPseudoPopularTargetCount = nextTargetCount
-                self.illustPseudoPopularSamplePageCount = nextSamplePageCount
-                self.illustOffset = batch.nextOffset
-                self.illustHasMore = batch.hasMore
-            } catch is CancellationError {
-            } catch {
-                print("Failed to enrich pseudo-popular illusts: \(error)")
-            }
-        }
-    }
-
-    private func scheduleNovelPseudoPopularEnrichment(
-        sessionID: UUID,
-        word: String,
-        showsAIGenerated: Bool,
-        bookmarkFilter: BookmarkFilterOption,
-        searchTarget: SearchTargetOption,
-        minimumBookmarkCount: Int,
-        startDate: Date?,
-        endDate: Date?
-    ) {
-        guard novelHasMore else { return }
-
-        let nextTargetCount = max(novelPseudoPopularTargetCount, novelResults.count) + novelLimit
-        let nextSamplePageCount = max(
-            novelPseudoPopularSamplePageCount + 1,
-            pseudoPopularBackgroundSamplePageCount
-        )
-        let usesUsersTagPseudoPopularSort = searchTarget != .titleAndCaption
-
-        cancelNovelPseudoPopularEnrichment()
-        novelPseudoPopularEnrichmentTask = Task(priority: .utility) { [weak self] in
-            guard let self else { return }
-
-            do {
-                let batch: SearchBatch<Novel>
-                if usesUsersTagPseudoPopularSort {
-                    batch = try await self.searchNovelsByPseudoPopularTags(
-                        word: word,
-                        showsAIGenerated: showsAIGenerated,
-                        bookmarkFilter: bookmarkFilter,
-                        searchTarget: searchTarget,
-                        minimumBookmarkCount: minimumBookmarkCount,
-                        startDate: startDate,
-                        endDate: endDate,
-                        targetCount: nextTargetCount,
-                        samplePageCount: nextSamplePageCount
-                    )
-                } else {
-                    batch = try await self.searchNovelsByBookmarkCount(
-                        word: word,
-                        showsAIGenerated: showsAIGenerated,
-                        searchTarget: searchTarget,
-                        startDate: startDate,
-                        endDate: endDate,
-                        targetCount: nextTargetCount,
-                        minimumBookmarkCount: minimumBookmarkCount,
-                        samplePageCount: nextSamplePageCount
-                    )
-                }
-
-                guard !Task.isCancelled, sessionID == self.novelPseudoPopularSessionID else { return }
-
-                self.novelResults = appendNewResultsPreservingOrder(
-                    existing: self.novelResults,
-                    fetched: batch.items
-                )
-                self.novelPseudoPopularTargetCount = nextTargetCount
-                self.novelPseudoPopularSamplePageCount = nextSamplePageCount
-                self.novelOffset = batch.nextOffset
-                self.novelHasMore = batch.hasMore
-            } catch is CancellationError {
-            } catch {
-                print("Failed to enrich pseudo-popular novels: \(error)")
-            }
-        }
-    }
-
-    private func illustSessionCanFetchMore(_ session: IllustPseudoPopularSessionState) -> Bool {
-        if session.key.usesUsersTagBuckets {
-            for bucketState in session.bucketStates where bucketState.queryStates.contains(where: { !$0.isExhausted }) {
-                return true
-            }
-        }
-
-        return !session.fallbackState.isExhausted
-    }
-
-    private func novelSessionCanFetchMore(_ session: NovelPseudoPopularSessionState) -> Bool {
-        if session.key.usesUsersTagBuckets {
-            for bucketState in session.bucketStates where bucketState.queryStates.contains(where: { !$0.isExhausted }) {
-                return true
-            }
-        }
-
-        return !session.fallbackState.isExhausted
-    }
-
-    private func appendNewResultsPreservingOrder<Item: BookmarkSortableSearchResult>(
-        existing: [Item],
-        fetched: [Item]
-    ) -> [Item] {
-        var combined = existing
-        var existingIds = Set(existing.map(\.id))
-
-        for item in fetched where !existingIds.contains(item.id) {
-            combined.append(item)
-            existingIds.insert(item.id)
-        }
-
-        return combined
-    }
-
-    private func mergeUniqueResults<Item: BookmarkSortableSearchResult>(
-        _ existing: [Item],
-        with incoming: [Item]
-    ) -> [Item] {
-        var merged = existing
-        var existingIds = Set(existing.map(\.id))
-
-        for item in incoming where !existingIds.contains(item.id) {
-            merged.append(item)
-            existingIds.insert(item.id)
-        }
-
-        return merged
-    }
-
-    private func sortResultsByBookmarkCount<Item: BookmarkSortableSearchResult>(_ items: [Item]) -> [Item] {
-        items.sorted { lhs, rhs in
-            if lhs.totalBookmarks == rhs.totalBookmarks {
-                return lhs.createDate > rhs.createDate
-            }
-            return lhs.totalBookmarks > rhs.totalBookmarks
-        }
-    }
 }
-// swiftlint:enable file_length
