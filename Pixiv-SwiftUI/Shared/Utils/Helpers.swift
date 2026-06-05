@@ -14,7 +14,14 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
 private typealias KFImage = Kingfisher.KFImage
 private typealias KFSource = Kingfisher.Source
 
-/// 使用 Kingfisher 加载图片的异步图片组件（支持 Referer 请求头和缓存）
+/// 使用 KingfisherManager 加载图片的异步图片组件（轻量版，无 KFImage 包装器）
+///
+/// 与旧版 KFImage 方案相比：
+/// - 无 @StateObject ImageBinder 观察者
+/// - 无内置 ZStack identity 工作区
+/// - 无复杂的占位→加载→完成状态机
+/// - 使用 .task(priority: .low) 在后台队列加载
+/// - 直接将 UIImage 存储在 @State 中，避免 KFImage 的视图树开销
 public struct CachedAsyncImage: View {
     public let urlString: String?
     public let placeholder: AnyView?
@@ -23,6 +30,8 @@ public struct CachedAsyncImage: View {
     public var idealWidth: CGFloat?
     public var expiration: CacheExpiration
     public var targetCache: ImageCache?
+
+    @State private var loadedImage: KFCrossPlatformImage?
 
     public init(
         urlString: String?,
@@ -45,30 +54,61 @@ public struct CachedAsyncImage: View {
     public var body: some View {
         Group {
             if let urlString = urlString, let url = URL(string: urlString), !urlString.isEmpty {
-                let image = buildKFImage(url: url)
-                let processedImage: KFImage = {
-                    if let processor = downsamplingProcessor {
-                        return image.setProcessor(processor)
-                    }
-                    return image
-                }()
-                // KFImage 内部已有 ZStack 包裹（Kingfisher identity 工作区）。
-                // 不使用外层 ZStack：KFImage 直接使用 placeholderView 作为占位，
-                // 图片加载完成后自动替换，无需淡入动画。
-                processedImage
-                    .placeholder { placeholderView }
-                    .cacheOriginalImage()
-                    .cancelOnDisappear(true)
-                    .requestModifier(PixivImageLoader.shared)
-                    .diskCacheExpiration(expiration.kingfisherExpiration)
-                    .memoryCacheExpiration(expiration.kingfisherExpiration)
-                    .resizable()
+                if let image = loadedImage {
+                    #if canImport(UIKit)
+                    Image(uiImage: image)
+                        .resizable()
+                    #elseif canImport(AppKit)
+                    Image(nsImage: image)
+                        .resizable()
+                    #endif
+                } else {
+                    placeholderView
+                }
             } else {
                 placeholderView
             }
         }
         .aspectRatio(aspectRatio, contentMode: contentMode)
         .clipped()
+        .task(priority: .low) {
+            await loadImage()
+        }
+    }
+
+    private func loadImage() async {
+        guard let urlString = urlString, let url = URL(string: urlString), !urlString.isEmpty else { return }
+
+        var options: KingfisherOptionsInfo = [
+            .requestModifier(PixivImageLoader.shared),
+            .cacheOriginalImage,
+            .diskCacheExpiration(expiration.kingfisherExpiration),
+            .memoryCacheExpiration(expiration.kingfisherExpiration),
+            .asyncCacheTypeCheck
+        ]
+
+        if let processor = downsamplingProcessor {
+            options.append(.processor(processor))
+        }
+        if let targetCache = targetCache {
+            options.append(.targetCache(targetCache))
+        }
+
+        let source: Source
+        if shouldUseDirectConnection(url: url) {
+            source = .provider(DirectImageDataProvider(url: url))
+        } else {
+            source = .network(url)
+        }
+
+        if let result = try? await KingfisherManager.shared.retrieveImage(
+            with: source,
+            options: options
+        ) {
+            await MainActor.run {
+                loadedImage = result.image
+            }
+        }
     }
 
     /// 降采样处理器：根据 idealWidth 和卡片的屏幕像素尺寸生成缩略图，大幅降低内存占用
@@ -95,24 +135,6 @@ public struct CachedAsyncImage: View {
         // 仅当目标尺寸合理时才降采样（避免对极小/无效尺寸的图片产生副作用）
         guard size.width >= 50 && size.height >= 50 else { return nil }
         return DownsamplingImageProcessor(size: size)
-    }
-
-    private func buildKFImage(url: URL) -> KFImage {
-        var image: KFImage
-        if shouldUseDirectConnection(url: url) {
-            image = KFImage.source(.directNetwork(url))
-        } else {
-            image = KFImage.source(.network(url))
-        }
-        if let targetCache = targetCache {
-            image = image.targetCache(targetCache)
-        }
-        // 启用异步缓存类型检查：将同步 disk stat() 移至 I/O 队列，
-        // 避免在滚动创建新 cell 时阻塞主线程（Kingfisher 8.9.0+）
-        var opts = image.options
-        opts.asyncCacheTypeCheck = true
-        image.options = opts
-        return image
     }
 
     private func shouldUseDirectConnection(url: URL) -> Bool {
