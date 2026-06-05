@@ -265,8 +265,8 @@ struct ZoomableAsyncImage: View {
                     onDragEnded: onDragEnded
                 )
             } else {
-                // Nothing loaded yet — silent placeholder
-                Color.clear
+                // Nothing loaded yet — show black to avoid flash on black background
+                Color.black
             }
         }
         .task {

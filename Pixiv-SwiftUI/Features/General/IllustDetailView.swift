@@ -467,103 +467,7 @@ struct IllustDetailView: View {
             #endif
 
             #if os(iOS)
-            // Transition overlay — handles all phases of the fullscreen transition
-            Group {
-                // Persistent black background to prevent white flash during phase switches
-                if transitionPhase != .idle {
-                    Color.black
-                        .ignoresSafeArea()
-                }
-
-                switch transitionPhase {
-                case .idle:
-                    EmptyView()
-
-                case .entering(let sourceFrame, let imageURL, let aspectRatio):
-                    GeometryReader { overlayGeo in
-                        let origin = overlayGeo.frame(in: .global).origin
-                        let localSource = CGRect(
-                            origin: CGPoint(x: sourceFrame.origin.x - origin.x,
-                                           y: sourceFrame.origin.y - origin.y),
-                            size: sourceFrame.size
-                        )
-                        let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
-                        ZStack {
-                            Color.black
-                                .ignoresSafeArea()
-                                .opacity(transitionProgress)
-
-                            KingfisherGhostImage(
-                                urlString: imageURL,
-                                aspectRatio: aspectRatio
-                            )
-                            .frame(
-                                width: interpolatedWidth(from: localSource, to: localTarget),
-                                height: interpolatedHeight(from: localSource, to: localTarget)
-                            )
-                            .position(
-                                x: interpolatedX(from: localSource, to: localTarget),
-                                y: interpolatedY(from: localSource, to: localTarget)
-                            )
-                            .allowsHitTesting(false)
-                        }
-                    }
-                    .ignoresSafeArea()
-                    .zIndex(1)
-
-                case .fullscreen:
-                    FullscreenImageView(
-                        imageURLs: zoomImageURLs,
-                        fallbackImageURLs: detailImageURLs,
-                        aspectRatios: zoomImageAspectRatios,
-                        initialPage: $currentPage,
-                        isPresented: $isFullscreen,
-                        exitDragProgress: $exitDragProgress,
-                        animation: animation
-                    )
-                    .zIndex(1)
-
-                case .exiting(let sourceFrame, let imageURL, let aspectRatio):
-                    GeometryReader { overlayGeo in
-                        let origin = overlayGeo.frame(in: .global).origin
-                        let localSource = CGRect(
-                            origin: CGPoint(x: sourceFrame.origin.x - origin.x,
-                                           y: sourceFrame.origin.y - origin.y),
-                            size: sourceFrame.size
-                        )
-                        let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
-                        // 调整起始 frame 以匹配用户拖拽关闭时的位置和缩放
-                        let adjustedStart = CGRect(
-                            x: localTarget.origin.x,
-                            y: localTarget.origin.y + exitDragProgress * overlayGeo.size.height,
-                            width: localTarget.width * (1.0 - exitDragProgress * 0.3),
-                            height: localTarget.height * (1.0 - exitDragProgress * 0.3)
-                        )
-                        ZStack {
-                            Color.black
-                                .ignoresSafeArea()
-                                .opacity(1.0 - transitionProgress)
-
-                            KingfisherGhostImage(
-                                urlString: imageURL,
-                                fallbackURLString: enteringTransitionImageURL,
-                                aspectRatio: aspectRatio
-                            )
-                            .frame(
-                                width: interpolatedWidth(from: adjustedStart, to: localSource),
-                                height: interpolatedHeight(from: adjustedStart, to: localSource)
-                            )
-                            .position(
-                                x: interpolatedX(from: adjustedStart, to: localSource),
-                                y: interpolatedY(from: adjustedStart, to: localSource)
-                            )
-                            .allowsHitTesting(false)
-                        }
-                    }
-                    .ignoresSafeArea()
-                    .zIndex(1)
-                }
-            }
+            transitionOverlay()
             #endif
         }
         .navigationDestination(item: $navigateToUserId) { userId in
@@ -1098,6 +1002,128 @@ struct IllustDetailView: View {
 
     private func interpolatedHeight(from source: CGRect, to target: CGRect) -> CGFloat {
         source.height + (target.height - source.height) * transitionProgress
+    }
+
+    // MARK: - Transition Overlay
+
+    /// The iOS-only fullscreen transition overlay (ghost + pre-warmed FullscreenImageView).
+    /// Extracted as a function to help the Swift compiler type-check the body.
+    @ViewBuilder
+    private func transitionOverlay() -> some View {
+        ZStack {
+            // Persistent black background to prevent white flash during phase switches
+            if transitionPhase != .idle {
+                Color.black
+                    .ignoresSafeArea()
+            }
+
+            // Ghost image for entering/exiting phases
+            switch transitionPhase {
+            case .entering(let sourceFrame, let imageURL, let aspectRatio):
+                enteringGhostView(sourceFrame: sourceFrame, imageURL: imageURL, aspectRatio: aspectRatio)
+                    .zIndex(2)
+
+            case .exiting(let sourceFrame, let imageURL, let aspectRatio):
+                exitingGhostView(sourceFrame: sourceFrame, imageURL: imageURL, aspectRatio: aspectRatio)
+                    .zIndex(2)
+
+            case .fullscreen, .idle:
+                EmptyView()
+            }
+
+            // Pre-warmed FullscreenImageView — mounted during .entering to give
+            // glassEffect and image loading a head start.
+            // 始终保持 opacity 1，使玻璃效果从挂载起就正常捕获背景。
+            // 幽灵图（zIndex 2）的纯黑背景会完全遮盖它，用户不会看到。
+            if transitionPhase.isEnteringOrFullscreen {
+                FullscreenImageView(
+                    imageURLs: zoomImageURLs,
+                    fallbackImageURLs: detailImageURLs,
+                    aspectRatios: zoomImageAspectRatios,
+                    initialPage: $currentPage,
+                    isPresented: $isFullscreen,
+                    exitDragProgress: $exitDragProgress,
+                    animation: animation
+                )
+                .zIndex(1)
+            }        }
+    }
+
+    // MARK: - Ghost View Builders
+
+    @ViewBuilder
+    private func enteringGhostView(sourceFrame: CGRect, imageURL: String, aspectRatio: CGFloat) -> some View {
+        GeometryReader { overlayGeo in
+            let origin = overlayGeo.frame(in: .global).origin
+            let localSource = CGRect(
+                origin: CGPoint(x: sourceFrame.origin.x - origin.x,
+                               y: sourceFrame.origin.y - origin.y),
+                size: sourceFrame.size
+            )
+            let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
+            ZStack {
+                // 始终不透明，遮盖下方的 FullscreenImageView（含玻璃按钮）
+                // 使玻璃效果有充足时间捕获背景并完成初始化。
+                Color.black
+                    .ignoresSafeArea()
+
+                KingfisherGhostImage(
+                    urlString: imageURL,
+                    aspectRatio: aspectRatio
+                )
+                .frame(
+                    width: interpolatedWidth(from: localSource, to: localTarget),
+                    height: interpolatedHeight(from: localSource, to: localTarget)
+                )
+                .position(
+                    x: interpolatedX(from: localSource, to: localTarget),
+                    y: interpolatedY(from: localSource, to: localTarget)
+                )
+                .allowsHitTesting(false)
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
+    private func exitingGhostView(sourceFrame: CGRect, imageURL: String, aspectRatio: CGFloat) -> some View {
+        GeometryReader { overlayGeo in
+            let origin = overlayGeo.frame(in: .global).origin
+            let localSource = CGRect(
+                origin: CGPoint(x: sourceFrame.origin.x - origin.x,
+                               y: sourceFrame.origin.y - origin.y),
+                size: sourceFrame.size
+            )
+            let localTarget = targetFrame(in: overlayGeo.size, aspectRatio: aspectRatio)
+            // 调整起始 frame 以匹配用户拖拽关闭时的位置和缩放
+            let adjustedStart = CGRect(
+                x: localTarget.origin.x,
+                y: localTarget.origin.y + exitDragProgress * overlayGeo.size.height,
+                width: localTarget.width * (1.0 - exitDragProgress * 0.3),
+                height: localTarget.height * (1.0 - exitDragProgress * 0.3)
+            )
+            ZStack {
+                // 始终不透明，遮盖 FullscreenImageView
+                Color.black
+                    .ignoresSafeArea()
+
+                KingfisherGhostImage(
+                    urlString: imageURL,
+                    fallbackURLString: enteringTransitionImageURL,
+                    aspectRatio: aspectRatio
+                )
+                .frame(
+                    width: interpolatedWidth(from: adjustedStart, to: localSource),
+                    height: interpolatedHeight(from: adjustedStart, to: localSource)
+                )
+                .position(
+                    x: interpolatedX(from: adjustedStart, to: localSource),
+                    y: interpolatedY(from: adjustedStart, to: localSource)
+                )
+                .allowsHitTesting(false)
+            }
+        }
+        .ignoresSafeArea()
     }
 
     private func syncBookmarkCacheUpdate(restrict: String) async {

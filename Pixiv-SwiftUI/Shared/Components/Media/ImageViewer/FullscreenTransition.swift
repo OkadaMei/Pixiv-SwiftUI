@@ -22,6 +22,14 @@ enum TransitionPhase: Equatable {
     var isFullscreen: Bool {
         self == .fullscreen
     }
+
+    /// Whether the pre-warmed FullscreenImageView should be mounted.
+    var isEnteringOrFullscreen: Bool {
+        switch self {
+        case .entering, .fullscreen: return true
+        default: return false
+        }
+    }
 }
 
 // MARK: - Preference Key for Image Frame Capture
