@@ -30,6 +30,11 @@ enum TransitionPhase: Equatable {
         default: return false
         }
     }
+
+    var isExiting: Bool {
+        if case .exiting = self { return true }
+        return false
+    }
 }
 
 // MARK: - Preference Key for Image Frame Capture

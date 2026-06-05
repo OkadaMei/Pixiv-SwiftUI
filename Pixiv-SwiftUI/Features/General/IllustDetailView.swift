@@ -892,6 +892,8 @@ struct IllustDetailView: View {
                     transitionPhase = .fullscreen
                     return
                 }
+                // Retry succeeded — update savedSourceFrame for correct exit animation
+                savedSourceFrame = retryFrame
                 startEnteringTransitionWithFrame(retryFrame)
             }
             return
@@ -971,6 +973,10 @@ struct IllustDetailView: View {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Only transition to .idle if we're still in the exiting phase.
+            // This prevents a stale timer from overriding a new entering transition
+            // if the user re-taps before the exit animation completes.
+            guard case .exiting = transitionPhase else { return }
             transitionPhase = .idle
         }
     }
