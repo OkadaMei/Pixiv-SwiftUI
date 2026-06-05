@@ -110,36 +110,15 @@ struct IllustCard: View, Equatable {
 
                 HStack(spacing: 4) {
                     if isManga {
-                        Text("漫画")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.black.opacity(0.25))
-                            .cornerRadius(8)
+                        Text("漫画").badgeStyle()
                     }
 
                     if isUgoira {
-                        Text("动图")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.black.opacity(0.25))
-                            .cornerRadius(8)
+                        Text("动图").badgeStyle()
                     }
 
                     if isAI {
-                        Text("AI")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.black.opacity(0.25))
-                            .cornerRadius(8)
+                        Text("AI").badgeStyle()
                     }
                 }
                 .padding(6)
@@ -147,13 +126,7 @@ struct IllustCard: View, Equatable {
 
                 if illust.pageCount > 1 {
                     Text("\(illust.pageCount)")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(.black.opacity(0.25))
-                        .cornerRadius(8)
+                        .badgeStyle()
                         .padding(6)
                 }
 
@@ -162,14 +135,8 @@ struct IllustCard: View, Equatable {
                         Image(systemName: "heart.fill")
                             .font(.caption2)
                         Text(NumberFormatter.formatCount(illust.totalBookmarks))
-                            .font(.caption2)
-                            .fontWeight(.bold)
                     }
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.black.opacity(0.25))
-                    .cornerRadius(8)
+                    .badgeStyle()
                     .padding(6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 }
@@ -479,4 +446,20 @@ struct IllustCard: View, Equatable {
     IllustCard(illust: illust, columnCount: 2, showsBookmarkCount: true)
         .padding()
         .frame(width: 390)
+}
+
+// MARK: - Badge Style
+
+extension View {
+    /// 卡片标签样式：圆角矩形背景 + caption2 粗体字
+    ///
+    /// 使用 `.background(style:in:)` 替代 `.background() + .cornerRadius()` 组合，
+    /// 直接绘制圆角矩形填充，避免 cornerRadius 产生的 offscreen mask pass。
+    fileprivate func badgeStyle() -> some View {
+        font(.caption2.weight(.bold))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+    }
 }
