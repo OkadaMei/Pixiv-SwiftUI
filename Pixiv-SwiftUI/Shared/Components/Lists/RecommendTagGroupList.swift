@@ -17,6 +17,7 @@ struct RecommendTagGroupList: View {
 
                 if isLoading && tagGroups.isEmpty {
                     SkeletonRecommendTagGroupList()
+                        .transition(.opacity)
                 } else if !tagGroups.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
@@ -29,9 +30,11 @@ struct RecommendTagGroupList: View {
                         }
                         .padding(.horizontal)
                     }
+                    .transition(.opacity)
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoading)
     }
 }
 

@@ -35,6 +35,7 @@ struct NovelRankingPreview: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             } else if novels.isEmpty {
                 HStack {
                     Spacer()
@@ -55,8 +56,10 @@ struct NovelRankingPreview: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoadingRanking)
         .task {
             await store.loadDailyRanking()
         }

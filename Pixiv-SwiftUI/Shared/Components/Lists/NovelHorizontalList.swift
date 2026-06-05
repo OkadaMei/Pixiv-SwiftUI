@@ -39,6 +39,7 @@ struct NovelHorizontalList: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             } else if novels.isEmpty {
                 HStack {
                     Spacer()
@@ -59,8 +60,10 @@ struct NovelHorizontalList: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoading)
         .onAppear {
             hasAppeared = true
         }

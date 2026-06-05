@@ -78,6 +78,7 @@ struct UserDetailView: View {
                                     itemCount: skeletonItemCount
                                 )
                                 .padding(.horizontal, 12)
+                                .transition(.opacity)
                             } else if store.illusts.isEmpty {
                                 VStack(spacing: 12) {
                                     Image(systemName: "paintbrush")
@@ -112,6 +113,7 @@ struct UserDetailView: View {
                                     itemCount: skeletonItemCount
                                 )
                                 .padding(.horizontal, 12)
+                                .transition(.opacity)
                             } else if store.mangas.isEmpty {
                                 VStack(spacing: 12) {
                                     Image(systemName: "book.pages")
@@ -143,6 +145,7 @@ struct UserDetailView: View {
                         if store.isLoadingNovels && store.novels.isEmpty {
                                 SkeletonNovelWaterfallGrid(columnCount: 2, itemCount: 4)
                                     .padding(.horizontal, 12)
+                                    .transition(.opacity)
                         } else if store.novels.isEmpty {
  VStack(spacing: 12) {
                                     Image(systemName: "book.closed")
@@ -176,6 +179,7 @@ struct UserDetailView: View {
                                     itemCount: skeletonItemCount
                                 )
                                 .padding(.horizontal, 12)
+                                .transition(.opacity)
                             } else if store.bookmarks.isEmpty {
                                 VStack(spacing: 12) {
                                     Image(systemName: "heart.slash")

@@ -119,6 +119,7 @@ struct RecommendView: View {
                     )
                     .padding(.horizontal, 12)
                     .frame(minHeight: 400)
+                    .transition(.opacity)
                 } else if filteredIllusts.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "photo.badge.exclamationmark")
@@ -153,6 +154,7 @@ struct RecommendView: View {
                         }
                     }
                     .padding(.horizontal, 12)
+                    .transition(.opacity)
 
                     if hasMoreData && !isLoading {
                         LazyVStack {
@@ -175,6 +177,7 @@ struct RecommendView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoading)
         .refreshable {
             await refreshAll()
         }

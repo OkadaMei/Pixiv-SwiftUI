@@ -76,6 +76,7 @@ struct UpdatesPage: View {
                                     )
                                     .padding(.horizontal, 12)
                                     .frame(minHeight: 400)
+                                    .transition(.opacity)
                                 } else if store.updates.isEmpty {
                                     VStack(spacing: 16) {
                                         Image(systemName: "photo.on.rectangle.angled")
@@ -106,6 +107,7 @@ struct UpdatesPage: View {
                                         }
                                     }
                                     .padding(.horizontal, 12)
+                                    .transition(.opacity)
 
                                     if store.nextUrlUpdates != nil {
                                         LazyVStack {
@@ -130,6 +132,7 @@ struct UpdatesPage: View {
                                 }
                             }
                         }
+                        .animation(.easeInOut(duration: 0.25), value: store.isLoadingUpdates)
                         .refreshable {
                             let userId = accountStore.currentAccount?.userId ?? ""
                             await store.refreshFollowing(userId: userId)

@@ -371,6 +371,7 @@ struct SearchResultView: View {
                 width: waterfallWidth
             )
             .padding(.horizontal, 12)
+            .transition(.opacity)
         } else if let error = store.errorMessage, store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
             ContentUnavailableView("出错了", systemImage: "exclamationmark.triangle", description: Text(error))
         } else if selectedTab == 0 {
@@ -623,6 +624,7 @@ struct SearchResultView: View {
                     resultContent(columnCount: dynamicColumnCount, waterfallWidth: waterfallWidth, userColumnCount: userColumnCount)
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: store.isLoading)
             .navigationTitle(word)
             .toolbar { searchToolbar }
             .onChange(of: sortOption) { _, _ in

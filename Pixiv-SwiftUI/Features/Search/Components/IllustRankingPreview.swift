@@ -72,6 +72,7 @@ struct IllustRankingPreview: View {
                     }
                     .padding(.horizontal, 2)
                 }
+                .transition(.opacity)
             } else if illusts.isEmpty {
                 HStack {
                     Spacer()
@@ -92,8 +93,10 @@ struct IllustRankingPreview: View {
                     }
                     .padding(.horizontal, 2)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoadingRanking)
         .padding(.top, 16)
         .task {
             await store.loadRanking(mode: preferredMode)

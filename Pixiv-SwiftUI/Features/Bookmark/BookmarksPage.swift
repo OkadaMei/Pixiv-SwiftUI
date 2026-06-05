@@ -141,6 +141,7 @@ ScrollView {
                             )
                             .padding(.horizontal, 12)
                             .frame(minHeight: 400)
+                            .transition(.opacity)
                         } else if store.bookmarks.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "bookmark.slash")
@@ -157,6 +158,7 @@ ScrollView {
                                     bookmarkItemView(item: item, columnWidth: columnWidth, columnCount: dynamicColumnCount)
                                 }
                                 .padding(.horizontal, 12)
+                                .transition(.opacity)
                             } else {
                                 WaterfallGrid(data: filteredBookmarks, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                                     NavigationLink(value: illust) {
@@ -168,6 +170,7 @@ ScrollView {
                                     }
                                 }
                                 .padding(.horizontal, 12)
+                                .transition(.opacity)
                             }
 
                             if store.nextUrlBookmarks != nil {
@@ -189,6 +192,7 @@ ScrollView {
                             }
                         }
                     }
+                    .animation(.easeInOut(duration: 0.25), value: store.isLoadingBookmarks)
                     .background(
                         GeometryReader { proxy in
                             Color.clear.preference(

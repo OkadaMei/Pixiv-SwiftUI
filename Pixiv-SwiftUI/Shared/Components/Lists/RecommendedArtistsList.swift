@@ -17,6 +17,7 @@ struct RecommendedArtistsList: View {
 
             if isLoadingRecommended && recommendedUsers.isEmpty {
                 SkeletonUserHorizontalList(itemCount: 6)
+                    .transition(.opacity)
             } else if recommendedUsers.isEmpty {
                 HStack {
                     Spacer()
@@ -49,8 +50,10 @@ struct RecommendedArtistsList: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoadingRecommended)
     }
 }
 

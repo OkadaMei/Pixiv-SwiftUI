@@ -17,12 +17,15 @@ struct IllustSeriesView: View {
             Group {
                 if store.isLoading && store.seriesDetail == nil {
                     loadingView
+                        .transition(.opacity)
                 } else if let error = store.errorMessage {
                     errorView(error)
                 } else if let detail = store.seriesDetail {
                     content(detail)
+                        .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: store.isLoading)
         }
         .navigationTitle(store.seriesDetail?.title ?? String(localized: "系列详情"))
         .onAppear {
@@ -43,6 +46,7 @@ struct IllustSeriesView: View {
                 itemCount: 12
             )
             .padding(.horizontal, 12)
+            .transition(.opacity)
         }
     }
 

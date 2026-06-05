@@ -50,6 +50,7 @@ struct NovelListPage: View {
                         }
                     }
                     .padding(.horizontal, 12)
+                    .transition(.opacity)
                 } else if novels.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "book.closed")
@@ -61,19 +62,22 @@ struct NovelListPage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.top, 50)
                 } else {
-                    ForEach(filteredNovels) { novel in
-                        NavigationLink(value: novel) {
-                            NovelListCard(novel: novel)
-                        }
-                        .buttonStyle(.plain)
-                        .onAppear {
-                            if novel.id == filteredNovels.last?.id {
-                                Task {
-                                    await loadMore()
+                    Group {
+                        ForEach(filteredNovels) { novel in
+                            NavigationLink(value: novel) {
+                                NovelListCard(novel: novel)
+                            }
+                            .buttonStyle(.plain)
+                            .onAppear {
+                                if novel.id == filteredNovels.last?.id {
+                                    Task {
+                                        await loadMore()
+                                    }
                                 }
                             }
                         }
                     }
+                    .transition(.opacity)
                 }
 
                 if nextUrl != nil {
@@ -95,6 +99,7 @@ struct NovelListPage: View {
                         .padding()
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: isLoading)
         }
         .refreshable {
             await refresh(forceRefresh: true)

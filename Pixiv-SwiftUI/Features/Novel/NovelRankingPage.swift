@@ -82,6 +82,7 @@ struct NovelRankingList: View {
                         SkeletonNovelListCard()
                     }
                 }
+                .transition(.opacity)
             } else if novels.isEmpty {
                 if hasMoreData {
                     ProgressView()
@@ -104,34 +105,38 @@ struct NovelRankingList: View {
                     .frame(height: 200)
                 }
             } else {
-                ForEach(novels) { novel in
-                    NavigationLink(value: novel) {
-                        NovelRankingListRow(novel: novel)
-                    }
-                    .buttonStyle(.plain)
-                    .onAppear {
-                        if novel.id == novels.last?.id && hasMoreData {
-                            Task {
-                                await store.loadMoreRanking(mode: mode)
+                Group {
+                    ForEach(novels) { novel in
+                        NavigationLink(value: novel) {
+                            NovelRankingListRow(novel: novel)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            if novel.id == novels.last?.id && hasMoreData {
+                                Task {
+                                    await store.loadMoreRanking(mode: mode)
+                                }
                             }
                         }
                     }
-                }
 
-                if store.isLoadingRanking && !novels.isEmpty {
-                    ProgressView()
-                        #if os(macOS)
-                        .controlSize(.small)
-                        #endif
-                        .padding()
-                } else if !hasMoreData && !novels.isEmpty {
-                    Text(String(localized: "已经到底了"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding()
+                    if store.isLoadingRanking && !novels.isEmpty {
+                        ProgressView()
+                            #if os(macOS)
+                            .controlSize(.small)
+                            #endif
+                            .padding()
+                    } else if !hasMoreData && !novels.isEmpty {
+                        Text(String(localized: "已经到底了"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding()
+                    }
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoadingRanking)
     }
 }
 

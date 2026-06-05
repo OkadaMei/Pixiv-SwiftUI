@@ -525,31 +525,38 @@ struct SearchView: View {
                 }
 
                 if accountStore.isWebLoggedIn {
-                    if store.isLoadingRecommendedTags {
-                        SkeletonRecommendedSearchTagsList()
-                    } else if !store.recommendedSearchTags.isEmpty {
-                        Text("推荐标签")
-                            .font(.headline)
-                            .padding(.horizontal)
-                            .padding(.top)
+                    Group {
+                        if store.isLoadingRecommendedTags {
+                            SkeletonRecommendedSearchTagsList()
+                                .transition(.opacity)
+                        } else if !store.recommendedSearchTags.isEmpty {
+                            VStack(spacing: 0) {
+                                Text("推荐标签")
+                                    .font(.headline)
+                                    .padding(.horizontal)
+                                    .padding(.top)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(store.recommendedSearchTags) { tag in
-                                    Button(action: {
-                                        performSearch(word: tag.tag, translatedName: tag.translatedName)
-                                    }) {
-                                        trendTagContent(tag)
-                                            .frame(width: 140, height: 140)
-                                            .contentShape(Rectangle())
-                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 12) {
+                                        ForEach(store.recommendedSearchTags) { tag in
+                                            Button(action: {
+                                                performSearch(word: tag.tag, translatedName: tag.translatedName)
+                                            }) {
+                                                trendTagContent(tag)
+                                                    .frame(width: 140, height: 140)
+                                                    .contentShape(Rectangle())
+                                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
                                     }
-                                    .buttonStyle(.plain)
+                                    .padding(.horizontal)
                                 }
                             }
-                            .padding(.horizontal)
+                            .transition(.opacity)
                         }
                     }
+                    .animation(.easeInOut(duration: 0.25), value: store.isLoadingRecommendedTags)
                 }
 
                 SpotlightPreview()
@@ -561,73 +568,78 @@ struct SearchView: View {
                     .padding(.horizontal)
                     .padding(.top)
 
-                if store.isLoadingTrendTags && store.trendTags.isEmpty {
-                    HStack(alignment: .top, spacing: 10) {
-                        ForEach(0..<columnCount, id: \.self) { _ in
-                            LazyVStack(spacing: 10) {
-                                ForEach(0..<3, id: \.self) { _ in
-                                    SkeletonTrendTag()
+                Group {
+                    if store.isLoadingTrendTags && store.trendTags.isEmpty {
+                        HStack(alignment: .top, spacing: 10) {
+                            ForEach(0..<columnCount, id: \.self) { _ in
+                                LazyVStack(spacing: 10) {
+                                    ForEach(0..<3, id: \.self) { _ in
+                                        SkeletonTrendTag()
+                                    }
                                 }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
                         }
-                    }
-                    .padding(.horizontal)
-                } else if !accountStore.isLoggedIn && store.trendTags.isEmpty {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            Image(systemName: "person.crop.circle.badge.questionmark")
-                                .font(.system(size: 32))
-                                .foregroundColor(.secondary)
-                            Text("登录后查看热门标签")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                        .transition(.opacity)
+                    } else if !accountStore.isLoggedIn && store.trendTags.isEmpty {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle.badge.questionmark")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.secondary)
+                                Text("登录后查看热门标签")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
                         }
-                        Spacer()
-                    }
-                    .frame(height: 120)
-                } else if !store.trendTags.isEmpty {
-                    HStack(alignment: .top, spacing: 10) {
-                        ForEach(0..<columnCount, id: \.self) { columnIndex in
-                            LazyVStack(spacing: 10) {
-                                ForEach(trendTagColumns[columnIndex]) { tag in
-                                    Group {
-                                        if accountStore.isLoggedIn {
-                                            Button(action: {
-                                                performSearch(word: tag.tag, translatedName: tag.translatedName)
-                                            }) {
+                        .frame(height: 120)
+                    } else if !store.trendTags.isEmpty {
+                        HStack(alignment: .top, spacing: 10) {
+                            ForEach(0..<columnCount, id: \.self) { columnIndex in
+                                LazyVStack(spacing: 10) {
+                                    ForEach(trendTagColumns[columnIndex]) { tag in
+                                        Group {
+                                            if accountStore.isLoggedIn {
+                                                Button(action: {
+                                                    performSearch(word: tag.tag, translatedName: tag.translatedName)
+                                                }) {
+                                                    trendTagContent(tag)
+                                                }
+                                                .buttonStyle(.plain)
+                                            } else {
                                                 trendTagContent(tag)
                                             }
-                                            .buttonStyle(.plain)
-                                        } else {
-                                            trendTagContent(tag)
                                         }
-                                    }
-                                    .contextMenu {
-                                        Button(action: {
-                                            copyToClipboard(tag.tag)
-                                        }) {
-                                            Label(String(localized: "复制 tag"), systemImage: "doc.on.doc")
-                                        }
-
-                                        if accountStore.isLoggedIn {
+                                        .contextMenu {
                                             Button(action: {
-                                                triggerHaptic()
-                                                try? userSettingStore.addBlockedTagWithInfo(tag.tag, translatedName: tag.translatedName)
-                                                showBlockToast = true
+                                                copyToClipboard(tag.tag)
                                             }) {
-                                                Label(String(localized: "屏蔽 tag"), systemImage: "eye.slash")
+                                                Label(String(localized: "复制 tag"), systemImage: "doc.on.doc")
+                                            }
+
+                                            if accountStore.isLoggedIn {
+                                                Button(action: {
+                                                    triggerHaptic()
+                                                    try? userSettingStore.addBlockedTagWithInfo(tag.tag, translatedName: tag.translatedName)
+                                                    showBlockToast = true
+                                                }) {
+                                                    Label(String(localized: "屏蔽 tag"), systemImage: "eye.slash")
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
                         }
+                        .padding(.horizontal)
+                        .transition(.opacity)
                     }
-                    .padding(.horizontal)
                 }
+                .animation(.easeInOut(duration: 0.25), value: store.isLoadingTrendTags)
             }
         }
     }

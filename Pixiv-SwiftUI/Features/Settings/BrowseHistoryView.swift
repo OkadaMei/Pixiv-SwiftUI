@@ -104,10 +104,10 @@ struct BrowseHistoryView: View {
                     }
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: isLoading)
         }
     }
-
-    @ViewBuilder
+        @ViewBuilder
     private func errorContent(_ error: Error) -> some View {
         VStack(spacing: 12) {
             Spacer()
@@ -159,6 +159,7 @@ struct BrowseHistoryView: View {
             width: waterfallWidth
         )
         .padding(.horizontal, 12)
+        .transition(.opacity)
     }
 
     private var novelLoadingContent: some View {
@@ -215,6 +216,7 @@ struct BrowseHistoryView: View {
                     .padding()
             }
         }
+        .transition(.opacity)
     }
 
     private var novelList: some View {

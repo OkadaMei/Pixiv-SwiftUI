@@ -40,6 +40,7 @@ struct SpotlightPreview: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             } else if store.articles.isEmpty {
                 HStack {
                     Spacer()
@@ -62,8 +63,10 @@ struct SpotlightPreview: View {
                     }
                     .padding(.horizontal)
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoading)
         .padding(.top, 16)
         .task {
             if store.articles.isEmpty {
