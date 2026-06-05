@@ -110,7 +110,7 @@ struct IllustCard: View, Equatable {
                             .foregroundStyle(.primary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(.ultraThinMaterial)
+                            .background(.black.opacity(0.25))
                             .cornerRadius(8)
                     }
 
@@ -121,7 +121,7 @@ struct IllustCard: View, Equatable {
                             .foregroundStyle(.primary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(.ultraThinMaterial)
+                            .background(.black.opacity(0.25))
                             .cornerRadius(8)
                     }
 
@@ -132,7 +132,7 @@ struct IllustCard: View, Equatable {
                             .foregroundStyle(.primary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(.ultraThinMaterial)
+                            .background(.black.opacity(0.25))
                             .cornerRadius(8)
                     }
                 }
@@ -146,7 +146,7 @@ struct IllustCard: View, Equatable {
                         .foregroundStyle(.primary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(.ultraThinMaterial)
+                        .background(.black.opacity(0.25))
                         .cornerRadius(8)
                         .padding(6)
                 }
@@ -162,7 +162,7 @@ struct IllustCard: View, Equatable {
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(.ultraThinMaterial)
+                    .background(.black.opacity(0.25))
                     .cornerRadius(8)
                     .padding(6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
