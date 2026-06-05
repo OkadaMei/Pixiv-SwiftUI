@@ -52,16 +52,19 @@ public struct CachedAsyncImage: View {
                     }
                     return image
                 }()
-                processedImage
-                    .placeholder {
-                        placeholderView
-                    }
-                    .fade(duration: 0.5)
-                    .cacheOriginalImage()
-                    .requestModifier(PixivImageLoader.shared)
-                    .diskCacheExpiration(expiration.kingfisherExpiration)
-                    .memoryCacheExpiration(expiration.kingfisherExpiration)
-                    .resizable()
+                // ZStack: placeholderView (灰色) 始终在底层，KFImage 在上面淡入。
+                // 防止 Kingfisher 的 .fade() 移除 placeholder 后露出白色卡片背景。
+                ZStack {
+                    placeholderView
+                    processedImage
+                        .placeholder { Color.clear }
+                        .fade(duration: 0.5)
+                        .cacheOriginalImage()
+                        .requestModifier(PixivImageLoader.shared)
+                        .diskCacheExpiration(expiration.kingfisherExpiration)
+                        .memoryCacheExpiration(expiration.kingfisherExpiration)
+                        .resizable()
+                }
             } else {
                 placeholderView
             }
