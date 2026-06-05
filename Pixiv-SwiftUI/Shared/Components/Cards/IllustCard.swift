@@ -83,12 +83,18 @@ struct IllustCard: View, Equatable {
     /// 条件化 blur：仅需要模糊时附加 blur 修饰符，避免 radius=0 时的无效渲染开销
     @ViewBuilder
     private var thumbnailImage: some View {
+        // 给予显式 frame，确保 KFImage 在占位态和图片加载完成态之间
+        // 容器尺寸完全一致，避免 LazyVStack 因内容尺寸变化而抖动
+        let imageHeight = columnWidth.map { $0 / illust.safeAspectRatio }
         let image = CachedAsyncImage(
             urlString: ImageURLHelper.getImageURL(from: illust, quality: feedPreviewQuality),
             aspectRatio: illust.safeAspectRatio,
             idealWidth: columnWidth,
             expiration: expiration
         )
+        .frame(width: columnWidth, height: imageHeight)
+        .clipped()
+        
         if shouldBlur {
             image.blur(radius: 20)
         } else {
