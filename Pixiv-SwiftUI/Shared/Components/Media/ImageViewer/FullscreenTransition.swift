@@ -50,4 +50,18 @@ extension View {
             }
         )
     }
+
+    /// Conditionally reports the frame only when `condition` is true.
+    /// Useful when multiple views in a `ForEach` could otherwise race to set the same key.
+    func reportImageFrame(when condition: Bool) -> some View {
+        background(
+            GeometryReader { geometry in
+                Color.clear
+                    .preference(
+                        key: ImageFramePreferenceKey.self,
+                        value: condition ? geometry.frame(in: .global) : .zero
+                    )
+            }
+        )
+    }
 }

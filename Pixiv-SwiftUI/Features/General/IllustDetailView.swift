@@ -71,7 +71,6 @@ struct IllustDetailView: View {
     @State private var capturedImageFrame: CGRect = .zero
     @State private var transitionPhase: TransitionPhase = .idle
     @State private var transitionProgress: CGFloat = 0
-    @State private var isTransitioning: Bool = false
     @State private var transitionScreenSize: CGSize = .zero
     /// Frame saved at entering start — preserved for correct exit animation
     @State private var savedSourceFrame: CGRect = .zero
@@ -995,10 +994,12 @@ struct IllustDetailView: View {
             return
         }
 
+        // Reset exit drag state from any previous dismissal
+        exitDragProgress = 0
+
         let aspectRatio = transitionAspectRatio
         transitionProgress = 0
         transitionPhase = .entering(sourceFrame: frame, imageURL: url, aspectRatio: aspectRatio)
-        isTransitioning = true
 
         // Capture screen size for stable target frame calculation
         #if os(iOS)
@@ -1007,28 +1008,29 @@ struct IllustDetailView: View {
         transitionScreenSize = windowSize
         #endif
 
-        // Preload the zoom-quality images for FullscreenImageView and the exit transition
+        // Preload the zoom-quality images for FullscreenImageView and the exit transition.
+        // 注意：这是进入全屏后的后台预加载，不需要优先任何页面。
         for zoomURL in zoomImageURLs {
             Task { await preloadImage(urlString: zoomURL) }
         }
 
+        // Animate the ghost image and switch to .fullscreen when the spring settles.
+        // 必须在下一个 runloop 执行动画，让 SwiftUI 先渲染 .entering 的初始状态。
         DispatchQueue.main.async {
             withAnimation(.spring(response: 0.35, dampingFraction: 1.0)) {
                 transitionProgress = 1.0
             }
         }
-
-        // Time-based phase switch — withAnimation sets @State immediately,
-        // so onChange won't work. Use delay matching spring duration.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [isFullscreen] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [isFullscreen] in
             guard isFullscreen else { return }
             transitionPhase = .fullscreen
-            isTransitioning = false
         }
     }
 
     /// Begin the exiting (fullscreen → detail) transition.
     private func startExitingTransition() {
+        // 使用进入时保存的 frame（toolbar 可见时的布局），而不是全屏期间的 capturedImageFrame
+        //（toolbar 隐藏时的布局），确保退场幽灵图片直接飞向详情页图片的最终位置。
         let exitFrame = savedSourceFrame
 
         guard exitFrame != .zero else {
@@ -1041,7 +1043,6 @@ struct IllustDetailView: View {
 
         transitionProgress = 0
         transitionPhase = .exiting(sourceFrame: exitFrame, imageURL: url, aspectRatio: aspectRatio)
-        isTransitioning = true
 
         // Capture screen size for stable target frame calculation
         #if os(iOS)
@@ -1050,15 +1051,14 @@ struct IllustDetailView: View {
         transitionScreenSize = windowSize
         #endif
 
+        // Animate the ghost back and switch to .idle when the spring settles.
         DispatchQueue.main.async {
             withAnimation(.spring(response: 0.35, dampingFraction: 1.0)) {
                 transitionProgress = 1.0
             }
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             transitionPhase = .idle
-            isTransitioning = false
         }
     }
 

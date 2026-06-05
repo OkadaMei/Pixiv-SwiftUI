@@ -134,6 +134,8 @@ struct IllustDetailImageSection: View {
                     ZStack {
                         if abs(index - currentPage) <= 2 {
                             pageImage(page: index, containerHeight: nil)
+                                // 只在当前页上报告 frame，避免多页同时上报导致 PreferenceKey 取到错误的值
+                                .reportImageFrame(when: index == currentPage)
                         } else {
                             Color.clear
                         }
@@ -191,7 +193,6 @@ struct IllustDetailImageSection: View {
             }
         )
         .frame(height: containerHeight)
-        .reportImageFrame()
         .onTapGesture {
             #if os(macOS)
             openImageViewerWindow(initialPage: page)

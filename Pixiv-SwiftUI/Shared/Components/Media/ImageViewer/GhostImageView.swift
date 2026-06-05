@@ -52,6 +52,11 @@ struct KingfisherGhostImage: View {
                 return
             }
         }
+
+        // 3. 最后手段：从网络加载主 URL（同时写入缓存）
+        if let image = await loadFromNetwork(url: url) {
+            uiImage = image
+        }
     }
 
     @MainActor
@@ -77,6 +82,20 @@ struct KingfisherGhostImage: View {
             }
         }
 
+        return nil
+    }
+
+    @MainActor
+    private func loadFromNetwork(url: URL) async -> UIImage? {
+        let shouldDirect = NetworkModeStore.shared.useDirectConnection &&
+            (url.host?.contains("i.pximg.net") == true || url.host?.contains("img-master.pixiv.net") == true)
+        let source: Source = shouldDirect ? .directNetwork(url) : .network(url)
+        let options: KingfisherOptionsInfo = [
+            .requestModifier(PixivImageLoader.shared)
+        ]
+        if let result = try? await KingfisherManager.shared.retrieveImage(with: source, options: options) {
+            return result.image
+        }
         return nil
     }
 }

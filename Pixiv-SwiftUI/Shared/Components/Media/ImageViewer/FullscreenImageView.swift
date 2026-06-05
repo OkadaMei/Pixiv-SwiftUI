@@ -9,15 +9,9 @@ struct FullscreenImageView: View {
     @Binding var exitDragProgress: CGFloat
     var animation: Namespace.ID
     @State private var currentPage: Int = 0
-    @State private var dragOffset: CGFloat = 0
+    @State private var dismissProgress: CGFloat = 0
     @State private var isZoomed: Bool = false
-    @State private var screenHeight: CGFloat = 0
     @State private var currentScrollPosition: Int?
-
-    private var dismissProgress: CGFloat {
-        guard screenHeight > 0 else { return 0 }
-        return min(dragOffset / screenHeight, 1.0)
-    }
 
     private var scale: CGFloat {
         1.0 - dismissProgress * 0.3
@@ -46,7 +40,7 @@ struct FullscreenImageView: View {
                                 },
                                 isZoomed: $isZoomed,
                                 onDragProgress: { progress in
-                                    dragOffset = progress * screenHeight
+                                    dismissProgress = progress
                                 },
                                 onDragEnded: { shouldDismiss in
                                     if shouldDismiss {
@@ -54,7 +48,7 @@ struct FullscreenImageView: View {
                                         isPresented = false
                                     } else {
                                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                            dragOffset = 0
+                                            dismissProgress = 0
                                         }
                                     }
                                 }
@@ -69,7 +63,7 @@ struct FullscreenImageView: View {
                 .scrollPosition(id: $currentScrollPosition)
                 .ignoresSafeArea()
                 .scaleEffect(scale)
-                .offset(y: dragOffset)
+                .offset(y: dismissProgress * geometry.size.height)
 
                 VStack {
                     HStack {
@@ -110,11 +104,7 @@ struct FullscreenImageView: View {
                 .opacity(Double(1 - dismissProgress * 2))
             }
             .onAppear {
-                screenHeight = geometry.size.height
                 currentScrollPosition = initialPage
-            }
-            .onChange(of: geometry.size.height) { _, newValue in
-                screenHeight = newValue
             }
             .onChange(of: currentScrollPosition) { _, newId in
                 if let page = newId, page != currentPage {
