@@ -747,9 +747,8 @@ final class UserSettingStore {
         return result
     }
 
-    // swiftlint:disable cyclomatic_complexity
-    /// 过滤插画列表，根据屏蔽��置（异步版本，在后台线程执行）
-    func filterIllustsAsync(_ illusts: [Illusts]) async -> [Illusts] {
+    /// 过滤插画列表，根据屏蔽配置（异步版本，在后台线程执行）
+    func filterIllustsAsync(_ illusts: [Illusts]) async -> [Illusts] { // swiftlint:disable:this cyclomatic_complexity
         let r18Mode = userSetting.r18DisplayMode
         let r18gMode = userSetting.r18gDisplayMode
         let spoilerMode = userSetting.spoilerDisplayMode
@@ -938,9 +937,8 @@ final class UserSettingStore {
         return result
     }
 
-    // swiftlint:disable cyclomatic_complexity
     /// 过滤小说列表，根据屏蔽设置（异步版本，在后台线程执行）
-    func filterNovelsAsync(_ novels: [Novel]) async -> [Novel] {
+    func filterNovelsAsync(_ novels: [Novel]) async -> [Novel] { // swiftlint:disable:this cyclomatic_complexity
         let r18Mode = userSetting.r18DisplayMode
         let r18gMode = userSetting.r18gDisplayMode
         let spoilerMode = userSetting.spoilerDisplayMode

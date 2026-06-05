@@ -179,9 +179,9 @@ final class NetworkClient {
                     let chunkProgress = OSAllocatedUnfairLock(initialState: Int64(0))
                     let (downloadedURL, _) = try await self.downloadWithByteProgress(from: url, headers: chunkHeaders, destinationURL: chunkTempURL) { receivedInChunk, _ in
                         let delta = chunkProgress.withLock {
-                            let d = receivedInChunk - $0
+                            let delta = receivedInChunk - $0
                             $0 = receivedInChunk
-                            return d
+                            return delta
                         }
                         sharedProgress.withLock {
                             $0 += delta

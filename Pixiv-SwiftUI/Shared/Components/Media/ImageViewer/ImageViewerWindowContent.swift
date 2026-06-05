@@ -136,113 +136,120 @@ struct ImageViewerWindowContent: View {
             if eventMonitor == nil { return event }
 
             if event.type == .scrollWheel {
-                let hasModifier = event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option)
-
-                // Only zoom if modifier is held.
-                // This avoids conflict with ScrollView panning and prevents accidental zoom leaks.
-                if hasModifier {
-                    let delta = event.scrollingDeltaY
-                    if abs(delta) > 0 {
-                        let isTrackpad = event.hasPreciseScrollingDeltas
-                        let multiplier: CGFloat = isTrackpad ? 0.02 : 0.05
-                        let zoomFactor = 1.0 + (delta * multiplier)
-                        let newScale = min(max(scale * zoomFactor, 1.0), 5.0)
-
-                        if newScale == 1.0 {
-                            resetZoom()
-                        } else {
-                            scale = newScale
-                        }
-                        return nil
-                    }
-                } else if scale > 1.0 {
-                    // Panning logic for trackpad/mouse wheel without modifier
-                    let deltaX = event.scrollingDeltaX
-                    let deltaY = event.scrollingDeltaY
-
-                    if abs(deltaX) > 0 || abs(deltaY) > 0 {
-                        // Use the same constraint logic as DragGesture
-                        // We need the geometry size, but since this is a global monitor, 
-                        // we'll approximate or use a simplified constraint if geometry.size is unavailable here.
-                        // Actually, to be accurate, we should move the offset calculation 
-                        // to somewhere that knows the view size.
-                        // For now, let's update simple offset and let the UI constrain it if possible,
-                        // but here we deal with the State directly.
-
-                        let currentWindow = event.window
-                        let windowSize = currentWindow?.contentView?.frame.size ?? .zero
-
-                        let newOffset = CGSize(
-                            width: offset.width + deltaX,
-                            height: offset.height + deltaY
-                        )
-
-                        // We use the window size as a proxy for the ImageContent size
-                        let zoomedWidth = windowSize.width * scale
-                        let zoomedHeight = windowSize.height * scale
-                        let maxW = max(0, (zoomedWidth - windowSize.width) / 2)
-                        let maxH = max(0, (zoomedHeight - windowSize.height) / 2)
-
-                        offset = CGSize(
-                            width: min(max(newOffset.width, -maxW), maxW),
-                            height: min(max(newOffset.height, -maxH), maxH)
-                        )
-                        lastOffset = offset
-                        return nil
-                    }
-                }
-                return event
+                return handleScrollWheel(event)
             }
+            return handleKeyEvent(event)
+        }
+    }
 
-            switch event.keyCode {
-            case 123: // Left arrow
-                if isMultiPage && currentPage > 0 {
-                    withAnimation {
-                        currentPage -= 1
-                    }
+    private func handleScrollWheel(_ event: NSEvent) -> NSEvent? {
+        let hasModifier = event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option)
+
+        // Only zoom if modifier is held.
+        // This avoids conflict with ScrollView panning and prevents accidental zoom leaks.
+        if hasModifier {
+            let delta = event.scrollingDeltaY
+            if abs(delta) > 0 {
+                let isTrackpad = event.hasPreciseScrollingDeltas
+                let multiplier: CGFloat = isTrackpad ? 0.02 : 0.05
+                let zoomFactor = 1.0 + (delta * multiplier)
+                let newScale = min(max(scale * zoomFactor, 1.0), 5.0)
+
+                if newScale == 1.0 {
                     resetZoom()
+                } else {
+                    scale = newScale
                 }
                 return nil
-            case 124: // Right arrow
-                if isMultiPage && currentPage < imageURLs.count - 1 {
-                    withAnimation {
-                        currentPage += 1
-                    }
-                    resetZoom()
-                }
+            }
+        } else if scale > 1.0 {
+            // Panning logic for trackpad/mouse wheel without modifier
+            let deltaX = event.scrollingDeltaX
+            let deltaY = event.scrollingDeltaY
+
+            if abs(deltaX) > 0 || abs(deltaY) > 0 {
+                // Use the same constraint logic as DragGesture
+                // We need the geometry size, but since this is a global monitor, 
+                // we'll approximate or use a simplified constraint if geometry.size is unavailable here.
+                // Actually, to be accurate, we should move the offset calculation 
+                // to somewhere that knows the view size.
+                // For now, let's update simple offset and let the UI constrain it if possible,
+                // but here we deal with the State directly.
+
+                let currentWindow = event.window
+                let windowSize = currentWindow?.contentView?.frame.size ?? .zero
+
+                let newOffset = CGSize(
+                    width: offset.width + deltaX,
+                    height: offset.height + deltaY
+                )
+
+                // We use the window size as a proxy for the ImageContent size
+                let zoomedWidth = windowSize.width * scale
+                let zoomedHeight = windowSize.height * scale
+                let maxW = max(0, (zoomedWidth - windowSize.width) / 2)
+                let maxH = max(0, (zoomedHeight - windowSize.height) / 2)
+
+                offset = CGSize(
+                    width: min(max(newOffset.width, -maxW), maxW),
+                    height: min(max(newOffset.height, -maxH), maxH)
+                )
+                lastOffset = offset
                 return nil
-            case 53: // Escape
+            }
+        }
+        return event
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
+        switch event.keyCode {
+        case 123: // Left arrow
+            if isMultiPage && currentPage > 0 {
+                withAnimation {
+                    currentPage -= 1
+                }
+                resetZoom()
+            }
+            return nil
+        case 124: // Right arrow
+            if isMultiPage && currentPage < imageURLs.count - 1 {
+                withAnimation {
+                    currentPage += 1
+                }
+                resetZoom()
+            }
+            return nil
+        case 53: // Escape
+            onClose()
+            return nil
+        case 13: // W (Command+W handled by system)
+            if event.modifierFlags.contains(.command) {
                 onClose()
                 return nil
-            case 13: // W (Command+W handled by system)
-                if event.modifierFlags.contains(.command) {
-                    onClose()
-                    return nil
-                }
-                return event
-            case 1: // S
-                if event.modifierFlags.contains(.command) {
-                    saveCurrentImage()
-                    return nil
-                }
-                return event
-            case 8: // C
-                if event.modifierFlags.contains(.command) {
-                    copyCurrentImage()
-                    return nil
-                }
-                return event
-            case 29: // 0
-                if event.modifierFlags.contains(.command) {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        scale = 1.0
-                    }
-                    return nil
-                }
-                return event
-            default:
-                return event
             }
+            return event
+        case 1: // S
+            if event.modifierFlags.contains(.command) {
+                saveCurrentImage()
+                return nil
+            }
+            return event
+        case 8: // C
+            if event.modifierFlags.contains(.command) {
+                copyCurrentImage()
+                return nil
+            }
+            return event
+        case 29: // 0
+            if event.modifierFlags.contains(.command) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    scale = 1.0
+                }
+                return nil
+            }
+            return event
+        default:
+            return event
         }
     }
 
