@@ -5,8 +5,9 @@ struct RecommendView: View {
     @State private var illusts: [Illusts] = []
     /// 缓存过滤结果，避免每次 body 重求值时全量重跑 O(n) filterIllusts()
     @State private var filteredIllusts: [Illusts] = []
-    /// 预计算 shouldBlur，避免在 body 求值路径中读取 settingStore
-    @State private var shouldBlurFlags: [Bool] = []
+    /// 预计算 shouldBlur 字典（key: illust.id），避免在 body 求值路径中
+    /// 反复 O(n) 搜索 filteredIllusts
+    @State private var shouldBlurMap: [Int: Bool] = [:]
     @State private var isLoading = true
     @State private var nextUrl: String?
     @State private var hasMoreData = true
@@ -35,7 +36,7 @@ struct RecommendView: View {
     private let expiration: CacheExpiration = .minutes(5)
     private let usersCacheKey = "recommend_users_0"
 
-    /// 重新计算 filteredIllusts + shouldBlurFlags 缓存
+    /// 重新计算 filteredIllusts + shouldBlurMap 缓存
     private func recalculateFilteredIllusts() {
         let base = settingStore.filterIllusts(illusts)
         switch contentType {
@@ -44,7 +45,12 @@ struct RecommendView: View {
         case .illust:
             filteredIllusts = base.filter { $0.type != "manga" }
         }
-        shouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
+        // Dictionary 提供 O(1) 查询，比数组线性搜索快得多
+        shouldBlurMap = Dictionary(
+            uniqueKeysWithValues: filteredIllusts.map {
+                ($0.id, settingStore.userSetting.shouldBlurIllust($0))
+            }
+        )
     }
 
     private var isLoggedIn: Bool {
@@ -136,19 +142,19 @@ struct RecommendView: View {
                     .padding(.top, 32)
                 } else {
                     WaterfallGrid(data: filteredIllusts, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
-                        NavigationLink(value: illust) {
-                            IllustCard(
-                                illust: illust,
-                                columnCount: dynamicColumnCount,
-                                columnWidth: columnWidth,
-                                expiration: DefaultCacheExpiration.recommend,
-                                feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                                shouldBlur: shouldBlur(for: illust),
-                                accentColor: themeManager.currentColor
-                            )
-                            .equatable()
+                        IllustCard(
+                            illust: illust,
+                            columnCount: dynamicColumnCount,
+                            columnWidth: columnWidth,
+                            expiration: DefaultCacheExpiration.recommend,
+                            feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                            shouldBlur: shouldBlur(for: illust),
+                            accentColor: themeManager.currentColor
+                        )
+                        .equatable()
+                        .onTapGesture {
+                            path.append(illust)
                         }
-                        .buttonStyle(.plain)
                         .onAppear {
                             prefetchIfNeeded(from: illust)
                         }
@@ -344,12 +350,9 @@ struct RecommendView: View {
         }
     }
 
-    /// 从预计算的 shouldBlurFlags 中查找对应 illust 的模糊标志
+    /// 从预计算的 shouldBlurMap 中查找对应 illust 的模糊标志（O(1) 查询）
     private func shouldBlur(for illust: Illusts) -> Bool {
-        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
-              index < shouldBlurFlags.count
-        else { return false }
-        return shouldBlurFlags[index]
+        shouldBlurMap[illust.id] ?? false
     }
 
     /// 卡片出现时预取后续图片，保持始终领先视口约 6 张

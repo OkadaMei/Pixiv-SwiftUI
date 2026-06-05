@@ -12,7 +12,7 @@ struct UpdatesPage: View {
     var accountStore: AccountStore = AccountStore.shared
     @State private var prefetchTracker = PrefetchTracker()
     @State private var filteredUpdates: [Illusts] = []
-    @State private var shouldBlurFlags: [Bool] = []
+    @State private var shouldBlurMap: [Int: Bool] = [:]
 
     private var restrictString: String {
         selectedRestrict == .privateAccess ? "private" : "public"
@@ -28,14 +28,15 @@ struct UpdatesPage: View {
         case .manga:
             filteredUpdates = base.filter { $0.type == "manga" }
         }
-        shouldBlurFlags = filteredUpdates.map { settingStore.userSetting.shouldBlurIllust($0) }
+        shouldBlurMap = Dictionary(
+            uniqueKeysWithValues: filteredUpdates.map {
+                ($0.id, settingStore.userSetting.shouldBlurIllust($0))
+            }
+        )
     }
 
     private func shouldBlurFromCache(for illust: Illusts) -> Bool {
-        guard let index = filteredUpdates.firstIndex(where: { $0.id == illust.id }),
-              index < shouldBlurFlags.count
-        else { return false }
-        return shouldBlurFlags[index]
+        shouldBlurMap[illust.id] ?? false
     }
 
     private var isLoggedIn: Bool {        accountStore.isLoggedIn
@@ -89,19 +90,19 @@ struct UpdatesPage: View {
                                     .padding(.top, 50)
                                 } else {
                                     WaterfallGrid(data: filteredUpdates, columnCount: dynamicColumnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
-                                        NavigationLink(value: illust) {
-                                            IllustCard(
-                                                illust: illust,
-                                                columnCount: dynamicColumnCount,
-                                                columnWidth: columnWidth,
-                                                expiration: DefaultCacheExpiration.updates,
-                                                feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                                                shouldBlur: shouldBlurFromCache(for: illust),
-                                                accentColor: themeManager.currentColor
-                                            )
-                                            .equatable()
+                                        IllustCard(
+                                            illust: illust,
+                                            columnCount: dynamicColumnCount,
+                                            columnWidth: columnWidth,
+                                            expiration: DefaultCacheExpiration.updates,
+                                            feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
+                                            shouldBlur: shouldBlurFromCache(for: illust),
+                                            accentColor: themeManager.currentColor
+                                        )
+                                        .equatable()
+                                        .onTapGesture {
+                                            path.append(illust)
                                         }
-                                        .buttonStyle(.plain)
                                         .onAppear {
                                             prefetchIllustsIfNeeded(from: illust, in: filteredUpdates, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                                         }
