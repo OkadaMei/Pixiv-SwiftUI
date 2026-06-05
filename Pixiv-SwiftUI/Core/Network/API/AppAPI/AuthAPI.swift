@@ -18,12 +18,15 @@ final class AuthAPI {
     private var baseHeaders: [String: String] {
         var headers = [String: String]()
         let time = getIsoDate()
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let acceptLanguage = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh-CN" : "en-US"
+        
         headers["X-Client-Time"] = time
         headers["X-Client-Hash"] = getHash(time + hashSalt)
         headers["App-OS"] = "ios"
         headers["App-OS-Version"] = "14.6"
         headers["App-Version"] = "7.13.3"
-        headers["Accept-Language"] = "zh-CN"
+        headers["Accept-Language"] = acceptLanguage
         return headers
     }
 

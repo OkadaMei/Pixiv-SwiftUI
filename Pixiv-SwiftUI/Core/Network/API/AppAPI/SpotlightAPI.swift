@@ -61,10 +61,12 @@ final class SpotlightAPI {
             throw NetworkError.invalidResponse
         }
         let urlString: String
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let langPath = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh" : "en"
         if page == 1 {
-            urlString = "\(baseUrl)/zh/s/?q=\(encodedQuery)"
+            urlString = "\(baseUrl)/\(langPath)/s/?q=\(encodedQuery)"
         } else {
-            urlString = "\(baseUrl)/zh/s/?q=\(encodedQuery)&p=\(page)"
+            urlString = "\(baseUrl)/\(langPath)/s/?q=\(encodedQuery)&p=\(page)"
         }
         let html = try await fetchHTML(url: urlString)
         return try parseArticleListHTML(html, page: page)
@@ -192,10 +194,15 @@ final class SpotlightAPI {
             throw NetworkError.invalidResponse
         }
 
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let isChinese = (langCode == "zh" || langCode.hasPrefix("zh-"))
+        let acceptLanguage = isChinese ? "zh-CN,zh;q=0.9,en;q=0.8" : "en-US,en;q=0.9"
+        let referer = isChinese ? "https://www.pixivision.net/zh/" : "https://www.pixivision.net/en/"
+
         let headers: [String: String] = [
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Accept-Language": acceptLanguage,
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.26 Safari/537.36",
-            "Referer": "https://www.pixivision.net/zh/"
+            "Referer": referer
         ]
 
         return try await client.getRaw(url: requestURL, headers: headers)

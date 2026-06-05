@@ -12,9 +12,11 @@ final class NetworkClient {
 
     private init() {
         let config = URLSessionConfiguration.default
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let acceptLanguage = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh-CN" : "en-US"
         config.httpAdditionalHeaders = [
             "User-Agent": "PixivIOSApp/6.7.1 (iOS 14.6; iPhone10,3) AppleWebKit/605.1.15",
-            "Accept-Language": "zh-CN",
+            "Accept-Language": acceptLanguage,
             "Accept-Encoding": "gzip, deflate",
         ]
         config.timeoutIntervalForRequest = 30

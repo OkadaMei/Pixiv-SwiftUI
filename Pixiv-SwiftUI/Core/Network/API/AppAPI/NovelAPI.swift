@@ -239,7 +239,9 @@ final class NovelAPI {
 
         var headers = authHeaders
         headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        headers["Accept-Language"] = "zh-CN,zh;q=0.9,ja;q=0.8,en;q=0.7"
+        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
+        let isChinese = (langCode == "zh" || langCode.hasPrefix("zh-"))
+        headers["Accept-Language"] = isChinese ? "zh-CN,zh;q=0.9,ja;q=0.8,en;q=0.7" : "en-US,en;q=0.9,ja;q=0.8"
 
         print("[NovelAPI] 开始请求: \(url.absoluteString)")
         let responseText = try await client.getRaw(url: url, headers: headers)
