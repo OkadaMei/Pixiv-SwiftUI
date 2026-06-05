@@ -1,5 +1,5 @@
 {
-  "originHash" : "fb13ec786aa4551b2b2b0ef9f14be70e7fb155129884d2ae3b7127f29290fb22",
+  "originHash" : "eadc925245e02b7633511f1d22c812bde874698a0c905eaa5075b3eab794bd6d",
   "pins" : [
     {
       "identity" : "gzipswift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher.git",
       "state" : {
-        "revision" : "d30a5fad881137e2267f96a8e3fc35c58999bb94",
-        "version" : "8.6.2"
+        "revision" : "cf8be20d07654570554c8a8a4952bc8a5766a8b0",
+        "version" : "8.9.0"
       }
     },
     {

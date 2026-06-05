@@ -52,20 +52,17 @@ public struct CachedAsyncImage: View {
                     }
                     return image
                 }()
-                // ZStack: placeholderView (灰色) 始终在底层，KFImage 在上面。
-                // 不使用 .fade() 以避免滚动时额外的 CA 事务开销。
-                // .cancelOnDisappear() 取消离屏单元格的下载任务。
-                ZStack {
-                    placeholderView
-                    processedImage
-                        .placeholder { Color.clear }
-                        .cacheOriginalImage()
-                        .cancelOnDisappear(true)
-                        .requestModifier(PixivImageLoader.shared)
-                        .diskCacheExpiration(expiration.kingfisherExpiration)
-                        .memoryCacheExpiration(expiration.kingfisherExpiration)
-                        .resizable()
-                }
+                // KFImage 内部已有 ZStack 包裹（Kingfisher identity 工作区）。
+                // 不使用外层 ZStack：KFImage 直接使用 placeholderView 作为占位，
+                // 图片加载完成后自动替换，无需淡入动画。
+                processedImage
+                    .placeholder { placeholderView }
+                    .cacheOriginalImage()
+                    .cancelOnDisappear(true)
+                    .requestModifier(PixivImageLoader.shared)
+                    .diskCacheExpiration(expiration.kingfisherExpiration)
+                    .memoryCacheExpiration(expiration.kingfisherExpiration)
+                    .resizable()
             } else {
                 placeholderView
             }
@@ -110,6 +107,11 @@ public struct CachedAsyncImage: View {
         if let targetCache = targetCache {
             image = image.targetCache(targetCache)
         }
+        // 启用异步缓存类型检查：将同步 disk stat() 移至 I/O 队列，
+        // 避免在滚动创建新 cell 时阻塞主线程（Kingfisher 8.9.0+）
+        var opts = image.options
+        opts.asyncCacheTypeCheck = true
+        image.options = opts
         return image
     }
 
@@ -197,11 +199,16 @@ public struct DynamicSizeCachedAsyncImage: View {
     }
 
     private func buildKFImage(url: URL) -> KFImage {
+        var image: KFImage
         if shouldUseDirectConnection(url: url) {
-            return KFImage.source(.directNetwork(url))
+            image = KFImage.source(.directNetwork(url))
         } else {
-            return KFImage.source(.network(url))
+            image = KFImage.source(.network(url))
         }
+        var opts = image.options
+        opts.asyncCacheTypeCheck = true
+        image.options = opts
+        return image
     }
 
     private func shouldUseDirectConnection(url: URL) -> Bool {
