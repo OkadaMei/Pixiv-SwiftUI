@@ -17,6 +17,7 @@ struct IllustDetailImageSection: View {
     var currentAspectRatio: Binding<CGFloat>?
     var disableAspectRatioAnimation: Bool = false
     var onImageFrameChange: ((CGRect) -> Void)?
+    var ugoiraStore: UgoiraStore?
     @State private var pageSizes: [Int: CGSize] = [:]
     @State private var currentAspectRatioValue: CGFloat = 0
 
@@ -69,8 +70,8 @@ struct IllustDetailImageSection: View {
 
     private var singlePageImageSection: some View {
         Group {
-            if isUgoira {
-                UgoiraLoader(illust: illust)
+            if isUgoira, let store = ugoiraStore {
+                UgoiraLoader(illust: illust, store: store, isFullscreen: $isFullscreen)
                     .reportImageFrame()
             } else {
                 standardImageSection

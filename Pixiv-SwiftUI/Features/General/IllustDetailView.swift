@@ -51,6 +51,7 @@ struct IllustDetailView: View {
     @State private var showDeleteSuccessToast = false
     @State private var showDeleteErrorToast = false
     @State private var detailFetched = false
+    @State private var ugoiraStore: UgoiraStore?
 
     private var screenWidth: CGFloat {
         #if os(iOS)
@@ -185,7 +186,8 @@ struct IllustDetailView: View {
                                 containerWidth: currentLeftWidth,
                                 minContainerHeight: proxy.size.height * 0.6,
                                 currentAspectRatio: $currentImageAspectRatio,
-                                disableAspectRatioAnimation: true
+                                disableAspectRatioAnimation: true,
+                                ugoiraStore: ugoiraStore
                             )
 
                             IllustDetailRelatedSection(
@@ -281,7 +283,8 @@ struct IllustDetailView: View {
                             userSettingStore: userSettingStore,
                             isFullscreen: $isFullscreen,
                             animation: animation,
-                            currentPage: $currentPage
+                            currentPage: $currentPage,
+                            ugoiraStore: ugoiraStore
                         )
                         .frame(maxWidth: proxy.size.width)
 
@@ -447,6 +450,12 @@ struct IllustDetailView: View {
                 Task {
                     try? illustStore.recordGlance(illust.id, illust: illust)
                 }
+                if isUgoira && ugoiraStore == nil {
+                    ugoiraStore = UgoiraStore(illustId: illust.id, expiration: .hours(1))
+                }
+            }
+            .task {
+                await ugoiraStore?.loadIfNeeded()
             }
             .onPreferenceChange(ImageFramePreferenceKey.self) { frame in
                 if frame != .zero {
@@ -1043,7 +1052,8 @@ struct IllustDetailView: View {
                     initialPage: $currentPage,
                     isPresented: $isFullscreen,
                     exitDragProgress: $exitDragProgress,
-                    animation: animation
+                    animation: animation,
+                    ugoiraStore: isUgoira ? ugoiraStore : nil
                 )
                 .zIndex(1)
             }        }

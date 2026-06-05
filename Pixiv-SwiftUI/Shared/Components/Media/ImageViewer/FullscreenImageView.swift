@@ -8,6 +8,7 @@ struct FullscreenImageView: View {
     @Binding var isPresented: Bool
     @Binding var exitDragProgress: CGFloat
     var animation: Namespace.ID
+    var ugoiraStore: UgoiraStore?       // When set, page 0 shows animated ugoira instead of static image
     @State private var currentPage: Int = 0
     @State private var dismissProgress: CGFloat = 0
     @State private var isZoomed: Bool = false
@@ -21,6 +22,10 @@ struct FullscreenImageView: View {
         1.0 - Double(dismissProgress)
     }
 
+    private var isUgoiraPage: Bool {
+        ugoiraStore?.isReady == true
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -31,29 +36,58 @@ struct FullscreenImageView: View {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 0) {
                         ForEach(0..<imageURLs.count, id: \.self) { index in
-                            ZoomableAsyncImage(
-                                urlString: imageURLs[index],
-                                fallbackURL: index < fallbackImageURLs.count ? fallbackImageURLs[index] : nil,
-                                aspectRatio: index < aspectRatios.count ? aspectRatios[index] : nil,
-                                onDismiss: {
-                                    isPresented = false
-                                },
-                                isZoomed: $isZoomed,
-                                onDragProgress: { progress in
-                                    dismissProgress = progress
-                                },
-                                onDragEnded: { shouldDismiss in
-                                    if shouldDismiss {
-                                        exitDragProgress = dismissProgress
+                            if index == 0, isUgoiraPage, let store = ugoiraStore {
+                                // Ugoira page — zoomable animated content
+                                ZoomableUgoiraContent(
+                                    frameURLs: store.frameURLs,
+                                    frameDelays: store.frameDelays,
+                                    aspectRatio: index < aspectRatios.count ? aspectRatios[index] : 1,
+                                    expiration: store.expiration,
+                                    onDismiss: {
                                         isPresented = false
-                                    } else {
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                            dismissProgress = 0
+                                    },
+                                    isZoomed: $isZoomed,
+                                    onDragProgress: { progress in
+                                        dismissProgress = progress
+                                    },
+                                    onDragEnded: { shouldDismiss in
+                                        if shouldDismiss {
+                                            exitDragProgress = dismissProgress
+                                            isPresented = false
+                                        } else {
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                dismissProgress = 0
+                                            }
                                         }
                                     }
-                                }
-                            )
-                            .containerRelativeFrame(.horizontal)
+                                )
+                                .containerRelativeFrame(.horizontal)
+                            } else {
+                                // Static image page
+                                ZoomableAsyncImage(
+                                    urlString: imageURLs[index],
+                                    fallbackURL: index < fallbackImageURLs.count ? fallbackImageURLs[index] : nil,
+                                    aspectRatio: index < aspectRatios.count ? aspectRatios[index] : nil,
+                                    onDismiss: {
+                                        isPresented = false
+                                    },
+                                    isZoomed: $isZoomed,
+                                    onDragProgress: { progress in
+                                        dismissProgress = progress
+                                    },
+                                    onDragEnded: { shouldDismiss in
+                                        if shouldDismiss {
+                                            exitDragProgress = dismissProgress
+                                            isPresented = false
+                                        } else {
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                dismissProgress = 0
+                                            }
+                                        }
+                                    }
+                                )
+                                .containerRelativeFrame(.horizontal)
+                            }
                         }
                     }
                     .scrollTargetLayout()

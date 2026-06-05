@@ -3,19 +3,20 @@ import Kingfisher
 
 struct UgoiraLoader: View {
     let illust: Illusts
+    let store: UgoiraStore
     let expiration: CacheExpiration
+    @Binding var isFullscreen: Bool
 
-    @State private var store: UgoiraStore
     @Environment(UserSettingStore.self) private var userSettingStore
-    @State private var showFullscreen = false
     @State private var showPlayer = false
     @State private var isInlinePlaying = false
     @State private var shouldAutoStartInlinePlayback = false
 
-    init(illust: Illusts, expiration: CacheExpiration = .hours(1)) {
+    init(illust: Illusts, store: UgoiraStore, isFullscreen: Binding<Bool>, expiration: CacheExpiration = .hours(1)) {
         self.illust = illust
+        self.store = store
         self.expiration = expiration
-        self._store = State(initialValue: UgoiraStore(illustId: illust.id, expiration: expiration))
+        self._isFullscreen = isFullscreen
     }
 
     private var aspectRatio: CGFloat {
@@ -29,7 +30,7 @@ struct UgoiraLoader: View {
                     #if os(macOS)
                     ImageViewerWindowManager.shared.showUgoira(illust: illust, store: store)
                     #else
-                    showFullscreen = true
+                    isFullscreen = true
                     #endif
                 }
             }) {
@@ -40,16 +41,6 @@ struct UgoiraLoader: View {
 
             statusOverlay
         }
-        #if os(iOS)
-        .fullScreenCover(isPresented: $showFullscreen) {
-            UgoiraFullscreenView(
-                store: store,
-                isPresented: $showFullscreen,
-                aspectRatio: aspectRatio,
-                expiration: expiration
-            )
-        }
-        #endif
         .task {
             await store.loadIfNeeded()
         }
@@ -189,173 +180,6 @@ struct UgoiraLoader: View {
     }
 }
 
-struct UgoiraFullscreenView: View {
-    var store: UgoiraStore
-    @Binding var isPresented: Bool
-    let aspectRatio: CGFloat
-    let expiration: CacheExpiration
-    @Environment(UserSettingStore.self) private var userSettingStore
-
-    @State private var isPlaying = false
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            if store.isReady, !store.frameURLs.isEmpty {
-                ZStack {
-                    UgoiraView(
-                        frameURLs: store.frameURLs,
-                        frameDelays: store.frameDelays,
-                        aspectRatio: aspectRatio,
-                        expiration: expiration,
-                        shouldAutoPlay: true,
-                        isPlaying: $isPlaying
-                    )
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        isPlaying.toggle()
-                    }
-
-                    if !isPlaying {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.white)
-                            .padding(20)
-                            .background(.black.opacity(0.5))
-                            .clipShape(Circle())
-                            .allowsHitTesting(false)
-                    }
-                }
-            } else {
-                Group {
-                    switch store.status {
-                    case .downloading(let receivedBytes, let totalBytes):
-                        UgoiraLoadingStatusCard(
-                            state: .downloading(receivedBytes: receivedBytes, totalBytes: totalBytes),
-                            onCancel: { store.cancelDownload() }
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
-
-                    case .unzipping:
-                        UgoiraLoadingStatusCard(state: .unzipping)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 24)
-
-                    case .error(let message):
-                        VStack(spacing: 12) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.largeTitle)
-                                .foregroundColor(.orange)
-                            Text(message)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-
-                    default:
-                        ProgressView()
-                            .tint(.white)
-                    }
-                }
-            }
-
-            VStack {
-                HStack {
-                    Button(action: { isPresented = false }) {
-                        Image(systemName: "xmark")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer()
-
-                    Menu {
-                        Button(action: exportGIF) {
-                            Label("导出 GIF", systemImage: "square.and.arrow.up")
-                        }
-
-                        if !store.frameURLs.isEmpty {
-                            Button(action: { isPlaying.toggle() }) {
-                                Label(
-                                    isPlaying ? "暂停播放" : "继续播放",
-                                    systemImage: isPlaying ? "pause.fill" : "play.fill"
-                                )
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .contentShape(Circle())
-                    }
-                    #if os(macOS)
-                    .menuStyle(.borderlessButton)
-                    #endif
-                }
-                .padding()
-
-                Spacer()
-            }
-        }
-    }
-
-    private func exportGIF() {
-        guard store.isReady, !store.frameURLs.isEmpty else {
-            print("[UgoiraLoader] 动图未准备好或无帧数据")
-            return
-        }
-
-        print("[UgoiraLoader] 开始导出 GIF，帧数: \(store.frameURLs.count)")
-
-        Task {
-            let outputURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(store.illustId)_ugoira.gif")
-
-            do {
-                try await GIFExporter.export(
-                    frameURLs: store.frameURLs,
-                    delays: store.frameDelays,
-                    outputURL: outputURL
-                )
-
-                print("[UgoiraLoader] GIF 导出成功: \(outputURL)")
-
-                await MainActor.run {
-                    showShareSheet(url: outputURL)
-                }
-            } catch {
-                print("[UgoiraLoader] GIF 导出失败: \(error)")
-                await MainActor.run {
-                    // 可以在这里添加错误提示
-                }
-            }
-        }
-    }
-
-    private func showShareSheet(url: URL) {
-        #if canImport(UIKit)
-        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
-        #endif
-    }
-}
-
 enum UgoiraLoadingVisualState {
     case downloading(receivedBytes: Int64, totalBytes: Int64?)
     case unzipping
@@ -466,40 +290,45 @@ struct UgoiraProgressIndicator: View {
 }
 
 #Preview {
-    UgoiraLoader(illust: Illusts(
-        id: 123,
-        title: "测试",
-        type: "ugoira",
-        imageUrls: ImageUrls(
-            squareMedium: "https://i.pximg.net/c/160x160_90_a2_g5.jpg/img-master/d/2023/12/15/12/34/56/999999_p0_square1200.jpg",
-            medium: "https://i.pximg.net/c/540x540_90/img-master/d/2023/12/15/12/34/56/999999_p0.jpg",
-            large: "https://i.pximg.net/img-master/d/2023/12/15/12/34/56/999999_p0_master1200.jpg"
+    let store = UgoiraStore(illustId: 123)
+    return UgoiraLoader(
+        illust: Illusts(
+            id: 123,
+            title: "测试",
+            type: "ugoira",
+            imageUrls: ImageUrls(
+                squareMedium: "https://i.pximg.net/c/160x160_90_a2_g5.jpg/img-master/d/2023/12/15/12/34/56/999999_p0_square1200.jpg",
+                medium: "https://i.pximg.net/c/540x540_90/img-master/d/2023/12/15/12/34/56/999999_p0.jpg",
+                large: "https://i.pximg.net/img-master/d/2023/12/15/12/34/56/999999_p0_master1200.jpg"
+            ),
+            caption: "",
+            restrict: 0,
+            user: User(
+                profileImageUrls: ProfileImageUrls(px16x16: "", px50x50: "", px170x170: ""),
+                id: .string("1"),
+                name: "测试",
+                account: "test"
+            ),
+            tags: [],
+            tools: [],
+            createDate: "2023-12-15T00:00:00+09:00",
+            pageCount: 1,
+            width: 1200,
+            height: 1600,
+            sanityLevel: 2,
+            xRestrict: 0,
+            metaSinglePage: nil,
+            metaPages: [],
+            totalView: 1000,
+            totalBookmarks: 500,
+            isBookmarked: false,
+            bookmarkRestrict: nil,
+            visible: true,
+            isMuted: false,
+            illustAIType: 0
         ),
-        caption: "",
-        restrict: 0,
-        user: User(
-            profileImageUrls: ProfileImageUrls(px16x16: "", px50x50: "", px170x170: ""),
-            id: .string("1"),
-            name: "测试",
-            account: "test"
-        ),
-        tags: [],
-        tools: [],
-        createDate: "2023-12-15T00:00:00+09:00",
-        pageCount: 1,
-        width: 1200,
-        height: 1600,
-        sanityLevel: 2,
-        xRestrict: 0,
-        metaSinglePage: nil,
-        metaPages: [],
-        totalView: 1000,
-        totalBookmarks: 500,
-        isBookmarked: false,
-        bookmarkRestrict: nil,
-        visible: true,
-        isMuted: false,
-        illustAIType: 0
-    ))
+        store: store,
+        isFullscreen: .constant(false)
+    )
     .frame(width: 390, height: 520)
 }

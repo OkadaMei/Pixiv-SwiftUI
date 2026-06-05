@@ -4426,6 +4426,7 @@
       }
     },
     "暂停播放" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6440,6 +6441,7 @@
       }
     },
     "继续播放" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
