@@ -339,6 +339,7 @@ struct ZoomableAsyncImage: View {
 #else
 struct ZoomableAsyncImage: View {
     let urlString: String
+    var fallbackURL: String?
     var aspectRatio: CGFloat?
     var onDismiss: () -> Void
     var isZoomed: Binding<Bool>
@@ -347,7 +348,7 @@ struct ZoomableAsyncImage: View {
 
     var body: some View {
         CachedAsyncImage(
-            urlString: urlString,
+            urlString: fallbackURL ?? urlString,
             aspectRatio: aspectRatio,
             contentMode: .fit
         )

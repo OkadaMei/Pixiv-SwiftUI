@@ -12,7 +12,6 @@ struct FullscreenImageView: View {
     @State private var currentPage: Int = 0
     @State private var dismissProgress: CGFloat = 0
     @State private var isZoomed: Bool = false
-    @State private var currentScrollPosition: Int?
 
     private var scale: CGFloat {
         1.0 - dismissProgress * 0.3
@@ -35,7 +34,7 @@ struct FullscreenImageView: View {
 
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 0) {
-                        ForEach(0..<imageURLs.count, id: \.self) { index in
+                        ForEach(0..<imageURLs.count, id: \.self) { (index: Int) in
                             if index == 0, isUgoiraPage, let store = ugoiraStore {
                                 // Ugoira page — zoomable animated content
                                 ZoomableUgoiraContent(
@@ -94,7 +93,6 @@ struct FullscreenImageView: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollIndicators(.hidden)
-                .scrollPosition(id: $currentScrollPosition)
                 .ignoresSafeArea()
                 .scaleEffect(scale)
                 .offset(y: dismissProgress * geometry.size.height)
@@ -138,14 +136,7 @@ struct FullscreenImageView: View {
                 .opacity(Double(1 - dismissProgress * 2))
             }
             .onAppear {
-                currentScrollPosition = initialPage
-            }
-            .onChange(of: currentScrollPosition) { _, newId in
-                if let page = newId, page != currentPage {
-                    currentPage = page
-                    initialPage = page
-                    isZoomed = false
-                }
+                currentPage = initialPage
             }
         }
     }

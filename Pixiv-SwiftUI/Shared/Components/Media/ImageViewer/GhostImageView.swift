@@ -16,10 +16,25 @@ struct KingfisherGhostImage: View {
         self.aspectRatio = aspectRatio
     }
 
+#if os(macOS)
+    @State private var nsImage: NSImage?
+#else
     @State private var uiImage: UIImage?
+#endif
 
     var body: some View {
         Group {
+#if os(macOS)
+            if let image = nsImage {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .aspectRatio(aspectRatio > 0 && aspectRatio.isFinite ? aspectRatio : 1, contentMode: .fit)
+            }
+#else
             if let image = uiImage {
                 Image(uiImage: image)
                     .resizable()
@@ -29,6 +44,7 @@ struct KingfisherGhostImage: View {
                     .fill(Color.gray.opacity(0.3))
                     .aspectRatio(aspectRatio > 0 && aspectRatio.isFinite ? aspectRatio : 1, contentMode: .fit)
             }
+#endif
         }
         .task {
             await loadCachedImage()
@@ -41,26 +57,35 @@ struct KingfisherGhostImage: View {
 
         // 1. 尝试主 URL（通常为 zoom-quality）
         if let image = await retrieveCachedImage(url: url) {
-            uiImage = image
+            setImage(image)
             return
         }
 
         // 2. 如果有 fallback URL（通常为 detail-quality），尝试它
         if let fallback = fallbackURLString, let fallbackURL = URL(string: fallback) {
             if let image = await retrieveCachedImage(url: fallbackURL) {
-                uiImage = image
+                setImage(image)
                 return
             }
         }
 
         // 3. 最后手段：从网络加载主 URL（同时写入缓存）
         if let image = await loadFromNetwork(url: url) {
-            uiImage = image
+            setImage(image)
         }
     }
 
     @MainActor
-    private func retrieveCachedImage(url: URL) async -> UIImage? {
+    private func setImage(_ image: Kingfisher.KFCrossPlatformImage) {
+#if os(macOS)
+        nsImage = image
+#else
+        uiImage = image
+#endif
+    }
+
+    @MainActor
+    private func retrieveCachedImage(url: URL) async -> Kingfisher.KFCrossPlatformImage? {
         let cacheKey = url.absoluteString
 
         // Try memory cache first (instant)
@@ -86,7 +111,7 @@ struct KingfisherGhostImage: View {
     }
 
     @MainActor
-    private func loadFromNetwork(url: URL) async -> UIImage? {
+    private func loadFromNetwork(url: URL) async -> Kingfisher.KFCrossPlatformImage? {
         let shouldDirect = NetworkModeStore.shared.useDirectConnection &&
             (url.host?.contains("i.pximg.net") == true || url.host?.contains("img-master.pixiv.net") == true)
         let source: Source = shouldDirect ? .directNetwork(url) : .network(url)
