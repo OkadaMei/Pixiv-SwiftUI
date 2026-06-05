@@ -43,7 +43,8 @@ enum UpdateCheckerError: LocalizedError {
     }
 }
 
-struct AppUpdateInfo {
+struct AppUpdateInfo: Identifiable {
+    let id = UUID()
     let version: String
     let releaseName: String
     let releaseNotes: String

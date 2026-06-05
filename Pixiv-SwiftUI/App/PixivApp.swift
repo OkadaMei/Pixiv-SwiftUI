@@ -21,7 +21,6 @@ struct PixivApp: App {
 
     @State private var initializer = AppInitializer.shared
     @State private var pendingUpdateInfo: AppUpdateInfo?
-    @State private var showUpdateSheet = false
 
     var body: some Scene {
         WindowGroup(id: "main") {
@@ -37,15 +36,15 @@ struct PixivApp: App {
                         .modelContainer(initializer.modelContainer ?? DataContainer.shared.modelContainer)
                 }
             }
-            .sheet(isPresented: $showUpdateSheet) {
-                if let info = pendingUpdateInfo {
-                    UpdateAvailableSheet(updateInfo: info, isPresented: $showUpdateSheet)
+            .sheet(item: $pendingUpdateInfo) { info in
+                    UpdateAvailableSheet(updateInfo: info, isPresented: Binding(
+                        get: { pendingUpdateInfo != nil },
+                        set: { if !$0 { pendingUpdateInfo = nil } }
+                    ))
                 }
-            }
             .onReceive(NotificationCenter.default.publisher(for: .init("ShowUpdateNotification"))) { notification in
                 if let info = notification.object as? AppUpdateInfo {
                     pendingUpdateInfo = info
-                    showUpdateSheet = true
                 }
             }
             .task {
