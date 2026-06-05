@@ -20,7 +20,7 @@ final class AuthAPI {
         let time = getIsoDate()
         let langCode = Locale.current.language.languageCode?.identifier ?? "en"
         let acceptLanguage = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh-CN" : "en-US"
-        
+
         headers["X-Client-Time"] = time
         headers["X-Client-Hash"] = getHash(time + hashSalt)
         headers["App-OS"] = "ios"

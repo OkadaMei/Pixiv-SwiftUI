@@ -945,7 +945,7 @@ struct IllustDetailView: View {
     /// Begin the exiting (fullscreen → detail) transition.
     private func startExitingTransition() {
         // 使用进入时保存的 frame（toolbar 可见时的布局），而不是全屏期间的 capturedImageFrame
-        //（toolbar 隐藏时的布局），确保退场幽灵图片直接飞向详情页图片的最终位置。
+        // （toolbar 隐藏时的布局），确保退场幽灵图片直接飞向详情页图片的最终位置。
         let exitFrame = savedSourceFrame
 
         guard exitFrame != .zero else {

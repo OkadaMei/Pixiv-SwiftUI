@@ -109,11 +109,11 @@ final class NetworkClient {
         onProgress: (@Sendable (Int64, Int64?) -> Void)? = nil
     ) async throws -> (URL, URLResponse) {
         let tempURL = destinationURL ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".tmp")
-        
+
         // 1. 获取文件大小
         var headHeaders = headers
         headHeaders["Range"] = "bytes=0-0" // 通过请求第一个字节获取 Content-Range
-        
+
         let (_, initialResponse): (Data, HTTPURLResponse)
         if shouldUseDirectConnection(for: url) {
             guard let host = url.host else { throw NetworkError.invalidResponse }
@@ -137,19 +137,19 @@ final class NetworkClient {
             guard let httpResponse = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
             (_, initialResponse) = (data, httpResponse)
         }
-        
+
         // 解析文件总长度
         var totalLength: Int64 = -1
         if let contentRange = initialResponse.value(forHTTPHeaderField: "Content-Range"),
            let totalStr = contentRange.split(separator: "/").last {
             totalLength = Int64(totalStr) ?? -1
         }
-        
+
         // 如果无法获取长度或长度过小，退化为普通下载
         guard totalLength > 1024 * 1024 else {
             return try await downloadWithByteProgress(from: url, headers: headers, destinationURL: tempURL, onProgress: onProgress)
         }
-        
+
         // 2. 准备基础文件
         if !FileManager.default.fileExists(atPath: tempURL.path(percentEncoded: false)) {
             FileManager.default.createFile(atPath: tempURL.path(percentEncoded: false), contents: nil)
@@ -157,25 +157,25 @@ final class NetworkClient {
         let fileHandle = try FileHandle(forWritingTo: tempURL)
         try fileHandle.truncate(atOffset: UInt64(totalLength))
         try fileHandle.close()
-        
+
         // 3. 分片下载
         let chunkSize = Int64(ceil(Double(totalLength) / Double(concurrency)))
         let finalTotalLength = totalLength
         let sharedProgress = OSAllocatedUnfairLock(initialState: Int64(0))
-        
+
         try await withThrowingTaskGroup(of: Void.self) { group in
             for i in 0..<concurrency {
                 let start = Int64(i) * chunkSize
                 let end = min(start + chunkSize - 1, finalTotalLength - 1)
                 guard start < finalTotalLength else { break }
-                
+
                 group.addTask {
                     var chunkHeaders = headers
                     chunkHeaders["Range"] = "bytes=\(start)-\(end)"
-                    
+
                     let chunkTempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".part")
                     defer { try? FileManager.default.removeItem(at: chunkTempURL) }
-                    
+
                     let chunkProgress = OSAllocatedUnfairLock(initialState: Int64(0))
                     let (downloadedURL, _) = try await self.downloadWithByteProgress(from: url, headers: chunkHeaders, destinationURL: chunkTempURL) { receivedInChunk, _ in
                         let delta = chunkProgress.withLock {
@@ -188,7 +188,7 @@ final class NetworkClient {
                             onProgress?($0, finalTotalLength)
                         }
                     }
-                    
+
                     let data = try Data(contentsOf: downloadedURL, options: .mappedIfSafe)
                     let handle = try FileHandle(forWritingTo: tempURL)
                     try handle.seek(toOffset: UInt64(start))
@@ -198,7 +198,7 @@ final class NetworkClient {
             }
             try await group.waitForAll()
         }
-        
+
         return (tempURL, initialResponse)
     }
 

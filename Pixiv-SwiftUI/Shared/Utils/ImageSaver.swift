@@ -112,7 +112,7 @@ struct ImageSaver {
 
     static func getCachedImageData(for urlString: String) async -> Data? {
         let cacheKey = urlString
-        
+
         // 1. 尝试从磁盘读取原始数据
         // Kingfisher 的 isCached(forKey:) 是同步的
         if ImageCache.default.isCached(forKey: cacheKey) {
@@ -143,7 +143,7 @@ struct ImageSaver {
                 }
             }
         }
-        
+
         return nil
     }
 

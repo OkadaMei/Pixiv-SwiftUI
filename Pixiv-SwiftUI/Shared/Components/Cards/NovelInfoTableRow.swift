@@ -15,8 +15,8 @@ struct NovelInfoTableRow: View {
     var titlePrefix: String?
     var detailStyle: NovelInfoDetailStyle = .author
     var showsBookmarkSummary = false
-    var isBookmarked: Bool? = nil
-    var bookmarkSummaryText: String? = nil
+    var isBookmarked: Bool?
+    var bookmarkSummaryText: String?
 
     private var resolvedIsBookmarked: Bool {
         isBookmarked ?? novel.isBookmarked

@@ -22,7 +22,7 @@ struct SkeletonRecommendedSearchTagsList: View {
                 .font(.headline)
                 .padding(.horizontal)
                 .padding(.top)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(0..<6, id: \.self) { _ in
