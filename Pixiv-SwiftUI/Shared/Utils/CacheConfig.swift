@@ -64,7 +64,9 @@ public enum DefaultCacheExpiration {
 /// 缓存配置工具
 public struct CacheConfig {
     /// 内存缓存上限 (字节)
-    public static let memoryCacheLimit: Int = 100 * 1024 * 1024
+    /// 瀑布流场景中大量图片需要保持在内存中以避免滚动时重新解码，
+    /// 提高上限可减少缓存驱逐导致的重复解码开销。
+    public static let memoryCacheLimit: Int = 200 * 1024 * 1024
 
     /// 磁盘缓存上限 (字节)
     public static let diskCacheLimit: Int = 500 * 1024 * 1024

@@ -52,14 +52,15 @@ public struct CachedAsyncImage: View {
                     }
                     return image
                 }()
-                // ZStack: placeholderView (灰色) 始终在底层，KFImage 在上面淡入。
-                // 防止 Kingfisher 的 .fade() 移除 placeholder 后露出白色卡片背景。
+                // ZStack: placeholderView (灰色) 始终在底层，KFImage 在上面。
+                // 不使用 .fade() 以避免滚动时额外的 CA 事务开销。
+                // .cancelOnDisappear() 取消离屏单元格的下载任务。
                 ZStack {
                     placeholderView
                     processedImage
                         .placeholder { Color.clear }
-                        .fade(duration: 0.5)
                         .cacheOriginalImage()
+                        .cancelOnDisappear(true)
                         .requestModifier(PixivImageLoader.shared)
                         .diskCacheExpiration(expiration.kingfisherExpiration)
                         .memoryCacheExpiration(expiration.kingfisherExpiration)
@@ -171,8 +172,8 @@ public struct DynamicSizeCachedAsyncImage: View {
                                 .aspectRatio(aspectRatio, contentMode: .fill)
                         }
                     }
-                    .fade(duration: 0.5)
                     .cacheOriginalImage()
+                    .cancelOnDisappear(true)
                     .requestModifier(PixivImageLoader.shared)
                     .diskCacheExpiration(expiration.kingfisherExpiration)
                     .memoryCacheExpiration(expiration.kingfisherExpiration)
