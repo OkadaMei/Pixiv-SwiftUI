@@ -21,6 +21,7 @@ struct TypeFilterButton: View {
     var showAll: Bool = true
     var showContentTypes: Bool = true
     @Binding var cacheFilter: BookmarkCacheFilter?
+    var showRestrict: Bool = true
 
     enum RestrictType: String, CaseIterable {
         case publicAccess = "公开"
@@ -63,7 +64,7 @@ struct TypeFilterButton: View {
                 }
             }
 
-            if restrict != nil {
+            if restrict != nil && showRestrict {
                 Section(String(localized: "可见性")) {
                     ForEach(RestrictType.allCases, id: \.self) { restrictType in
                         Button {

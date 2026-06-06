@@ -109,7 +109,8 @@ struct BookmarksPage: View {
                 cacheFilter: Binding<BookmarkCacheFilter?>(
                     get: { self.cacheFilter },
                     set: { self.cacheFilter = $0 ?? .all }
-                )
+                ),
+                showRestrict: false
             )
             .menuIndicator(.hidden)
         } else {
@@ -117,7 +118,8 @@ struct BookmarksPage: View {
                 selectedType: $contentType,
                 restrict: restrictType,
                 selectedRestrict: $selectedRestrict,
-                cacheFilter: .constant(nil)
+                cacheFilter: .constant(nil),
+                showRestrict: false
             )
             .menuIndicator(.hidden)
         }
@@ -267,6 +269,17 @@ ScrollView {
                 }
             }
             .toolbar {
+                ToolbarItem {
+                    BookmarkVisibilityToggle(
+                        selectedRestrict: $selectedRestrict,
+                        isAvailable: restrictType != nil
+                    )
+                }
+                #if os(iOS)
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed)
+                }
+                #endif
                 ToolbarItem {
                     filterButton
                 }
