@@ -7,41 +7,61 @@ struct SpotlightSearchBar: View {
     let onCancel: () -> Void
 
     @FocusState private var isFocused: Bool
+    @Namespace private var glassNamespace
 
     var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            glassBody
+        } else {
+            legacyBody
+        }
+    }
 
-                TextField(String(localized: "搜索特辑"), text: $text)
-                    .focused($isFocused)
-                    .textFieldStyle(.plain)
-                    .onSubmit {
-                        onSubmit(text)
-                        isFocused = false
-                    }
+    @available(iOS 26.0, macOS 26.0, *)
+    private var glassBody: some View {
+        GlassEffectContainer(spacing: 12) {
+            HStack(spacing: 12) {
+                searchFieldContent
+                    .frame(height: 44)
+                    .padding(.horizontal, 12)
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+                    .glassEffectID("searchField", in: glassNamespace)
 
-                if !text.isEmpty {
+                if isEditing {
                     Button {
-                        text = ""
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            text = ""
+                            isFocused = false
+                            isEditing = false
+                            onCancel()
+                        }
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.secondary)
                     }
-                    .buttonStyle(.plain)
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular, in: Circle())
+                    .glassEffectID("closeButton", in: glassNamespace)
                 }
             }
-            .background {
-                if #available(iOS 26.0, macOS 26.0, *) {
+        }
+        .onChange(of: isFocused) { _, newValue in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isEditing = newValue
+            }
+        }
+    }
+
+    private var legacyBody: some View {
+        HStack(spacing: 12) {
+            searchFieldContent
+                .padding(.vertical, 14)
+                .padding(.horizontal, 6)
+                .background {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(.clear)
-                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
-                } else {
-                    RoundedRectangle(cornerRadius: 10)
                         .fill(Color.secondary.opacity(0.1))
                 }
-            }
 
             if isEditing {
                 Button {
@@ -60,6 +80,31 @@ struct SpotlightSearchBar: View {
         .animation(.easeInOut(duration: 0.2), value: isEditing)
         .onChange(of: isFocused) { _, newValue in
             isEditing = newValue
+        }
+    }
+
+    private var searchFieldContent: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+
+            TextField(String(localized: "搜索特辑"), text: $text)
+                .focused($isFocused)
+                .textFieldStyle(.plain)
+                .onSubmit {
+                    onSubmit(text)
+                    isFocused = false
+                }
+
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
