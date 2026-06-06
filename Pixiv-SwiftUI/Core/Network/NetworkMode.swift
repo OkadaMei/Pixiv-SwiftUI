@@ -54,7 +54,7 @@ final class NetworkModeStore {
            let mode = NetworkMode(rawValue: rawValue) {
             self.currentMode = mode
         } else {
-            self.currentMode = .normal
+            self.currentMode = .direct
         }
     }
 
