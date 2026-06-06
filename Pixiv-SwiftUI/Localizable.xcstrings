@@ -3996,6 +3996,9 @@
         }
       }
     },
+    "排行模式" : {
+
+    },
     "排行类别" : {
       "localizations" : {
         "en" : {
@@ -4326,6 +4329,7 @@
       }
     },
     "日期" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

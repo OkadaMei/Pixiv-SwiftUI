@@ -63,28 +63,44 @@ struct IllustRankingPage: View {
         )
     }
 
-    private var dateFilterRow: some View {
-        HStack {
-            Text(String(localized: "日期"))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            Spacer()
-            Button(String(localized: "重置")) {
-                usesLatestDate = true
-                Task {
-                    await loadRankings(forceRefresh: true)
+    private var modeAndDateRow: some View {
+        HStack(spacing: 12) {
+            // Menu-style picker for ranking mode (auto-adopts Liquid Glass on iOS 26+)
+            Picker(String(localized: "排行模式"), selection: $selectedMode) {
+                ForEach(rankingModes) { mode in
+                    Text(verbatim: mode.title)
+                        .tag(mode)
                 }
             }
-            .buttonStyle(.plain)
-            .font(.subheadline)
-            .foregroundColor(usesLatestDate ? .secondary : .accentColor)
-            .disabled(usesLatestDate)
+            .pickerStyle(.menu)
 
-            DatePicker("", selection: dateSelection, in: ...Date(), displayedComponents: .date)
+            Spacer()
+
+            // Date controls
+            HStack(spacing: 6) {
+                if !usesLatestDate {
+                    Button(String(localized: "重置")) {
+                        usesLatestDate = true
+                        Task {
+                            await loadRankings(forceRefresh: true)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.subheadline)
+                    .foregroundColor(.accentColor)
+                }
+
+                DatePicker(
+                    "",
+                    selection: dateSelection,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
                 .labelsHidden()
                 #if os(macOS)
                 .controlSize(.small)
                 #endif
+            }
         }
     }
 
@@ -94,13 +110,6 @@ struct IllustRankingPage: View {
         #else
         12
         #endif
-    }
-
-    private func visibleItemCount(for width: CGFloat, spacing: CGFloat, containerPadding: CGFloat) -> Int {
-        let targetButtonWidth: CGFloat = 104
-        let availableWidth = max(0, width - containerPadding * 2)
-        let count = Int((availableWidth + spacing) / (targetButtonWidth + spacing))
-        return max(1, min(rankingModes.count, count))
     }
 
     private func syncSelectedModeIfNeeded() -> Bool {
@@ -114,65 +123,6 @@ struct IllustRankingPage: View {
 
         selectedMode = firstMode
         return true
-    }
-
-    private func rankingModePicker(width: CGFloat) -> some View {
-        let spacing: CGFloat = 6
-        let containerPadding: CGFloat = 4
-        let visibleItemCount = visibleItemCount(for: width, spacing: spacing, containerPadding: containerPadding)
-        let buttonWidth = max(
-            88,
-            (width - containerPadding * 2 - spacing * CGFloat(visibleItemCount - 1)) / CGFloat(visibleItemCount)
-        )
-
-        return ScrollViewReader { reader in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(rankingModes) { mode in
-                        let isSelected = selectedMode == mode
-
-                        Button {
-                            guard selectedMode != mode else { return }
-                            selectedMode = mode
-                        } label: {
-                            Text(verbatim: mode.title)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                                .frame(width: buttonWidth)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(isSelected ? Color.primary.opacity(0.1) : .clear)
-            }
-            .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredIllusts)
-        }                        .buttonStyle(.plain)
-                        .id(mode.id)
-                    }
-                }
-            }
-            .padding(4)
-            .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
-            }
-            .onAppear {
-                reader.scrollTo(selectedMode.id, anchor: .center)
-            }
-            .onChange(of: selectedMode) { _, newValue in
-                withAnimation(.snappy(duration: 0.2)) {
-                    reader.scrollTo(newValue.id, anchor: .center)
-                }
-            }
-            .onChange(of: rankingModes.map(\.rawValue)) { _, _ in
-                withAnimation(.snappy(duration: 0.2)) {
-                    reader.scrollTo(selectedMode.id, anchor: .center)
-                }
-            }
-        }
     }
 
     private func loadRankings(forceRefresh: Bool = false) async {
@@ -203,11 +153,9 @@ struct IllustRankingPage: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    VStack(spacing: 12) {
-                        rankingModePicker(width: max(proxy.size.width - 32, 0))
-                        dateFilterRow
-                    }
-                    .padding()
+                    modeAndDateRow
+                        .onFilterSettingsChange(from: settingStore, perform: recalculateFilteredIllusts)
+                        .padding()
 
                     if illusts.isEmpty && isLoading {
                         SkeletonIllustWaterfallGrid(
@@ -286,28 +234,19 @@ struct IllustRankingPage: View {
             .toolbar {
                 #if os(iOS)
                 ToolbarItem {
-                    Button {
-                        Task {
-                            await loadRankings(forceRefresh: true)
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(isLoading)
-                }
-                if #available(iOS 26.0, *) {
-                    ToolbarSpacer(.fixed)
-                }
-                ToolbarItem {
                     ProfileButton(accountStore: accountStore, isPresented: $showProfilePanel)
                 }
                 .hideSharedBackgroundIfAvailable()
                 #endif
-                #if os(macOS)
-                ToolbarItem {
-                    RefreshButton(refreshAction: { await loadRankings(forceRefresh: true) })
+            }
+            .background {
+                Button("") {
+                    Task {
+                        await loadRankings(forceRefresh: true)
+                    }
                 }
-                #endif
+                .keyboardShortcut("r", modifiers: .command)
+                .hidden()
             }
             #if os(iOS)
             .sheet(isPresented: $showProfilePanel) {
