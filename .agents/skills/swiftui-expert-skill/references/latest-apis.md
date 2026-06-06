@@ -30,6 +30,41 @@ These replacements have minimal API shape changes. Most are near-direct swaps; a
 - **`textInputAutocapitalization(_:)`** instead of `autocapitalization(_:)` (note: `.never` replaces `.none`)
 - **`animation(_:value:)`** instead of `animation(_:)` (adds required `value:` parameter; back-deploys to iOS 13+)
 
+### Lists and Forms
+
+**Use trailing-closure `Section` initializers instead of the positional header/footer View initializers.**
+
+The single-title form is still current and should not be treated as deprecated:
+
+```swift
+// Current - single-title LocalizedStringKey initializer
+Section("Settings") {
+    Toggle("Notifications", isOn: .constant(true))
+}
+
+// Replacement - content/header/footer trailing-closure initializer
+Section {
+    Toggle("Notifications", isOn: .constant(true))
+} header: {
+    Text("Settings")
+} footer: {
+    Text("Changes apply immediately.")
+}
+
+// Deprecated/renamed - positional header/footer View arguments
+Section(header: Text("Settings"), footer: Text("Changes apply immediately.")) {
+    Toggle("Notifications", isOn: .constant(true))
+}
+
+Section(header: Text("Settings")) {
+    Toggle("Notifications", isOn: .constant(true))
+}
+
+Section(footer: Text("Changes apply immediately.")) {
+    Toggle("Notifications", isOn: .constant(true))
+}
+```
+
 ### Presentation
 
 - **Always use `.confirmationDialog(_:isPresented:actions:message:)`** instead of `actionSheet(...)`.
@@ -135,6 +170,29 @@ The deprecated variant passes only the new value. The modern variants provide ei
 - **Old and new values**: `.onChange(of: value) { old, new in ... }`
 - **With initial trigger**: `.onChange(of: value, initial: true) { ... }`
 - **Deprecated**: `.onChange(of: value) { newValue in ... }` — single-parameter closure
+
+### Sensory Feedback
+
+**Prefer `sensoryFeedback(_:trigger:)` and related overloads instead of `UIImpactFeedbackGenerator`, `UISelectionFeedbackGenerator`, and `UINotificationFeedbackGenerator` in SwiftUI views.**
+
+Attach haptics declaratively to the view that owns the state change, rather than imperatively firing UIKit generators inside button actions.
+
+```swift
+@State private var isFavorite = false
+
+Button("Favorite", systemImage: isFavorite ? "heart.fill" : "heart") {
+    isFavorite.toggle()
+}
+.sensoryFeedback(.selection, trigger: isFavorite)
+```
+
+Use the conditional overload when feedback should fire only for specific transitions:
+
+```swift
+.sensoryFeedback(.selection, trigger: phase) { old, new in
+    old == .inactive || new == .expanded
+}
+```
 
 ### Gestures
 
@@ -448,12 +506,16 @@ PhotoGrid(photos: photos)
 | `accessibility(label:)` etc. | `accessibilityLabel()` etc. | iOS 15+ |
 | `TextField` `onCommit`/`onEditingChanged` | `onSubmit` + `focused` | iOS 15+ |
 | `animation(_:)` (no value) | `animation(_:value:)` | Back-deploys (iOS 13+) |
+| `Section(header:content:)` | `Section(content:header:)` | Future-deprecated |
+| `Section(footer:content:)` | `Section(content:footer:)` | Future-deprecated |
+| `Section(header:footer:content:)` | `Section(content:header:footer:)` | Future-deprecated |
 | Manual `EnvironmentKey` | `@Entry` macro | Back-deploys (Xcode 16+) |
 | `NavigationView` | `NavigationStack` / `NavigationSplitView` | iOS 16+ |
 | `accentColor(_:)` | `tint(_:)` | iOS 16+ |
 | `disableAutocorrection(_:)` | `autocorrectionDisabled(_:)` | iOS 16+ |
 | `UIPasteboard.general` | `PasteButton` | iOS 16+ |
 | `onChange(of:perform:)` | `onChange(of:) { }` or `onChange(of:) { old, new in }` | iOS 17+ |
+| `UIImpactFeedbackGenerator` / `UISelectionFeedbackGenerator` / `UINotificationFeedbackGenerator` | `sensoryFeedback(_:trigger:)` | iOS 17+ |
 | `MagnificationGesture` | `MagnifyGesture` | iOS 17+ |
 | `RotationGesture` | `RotateGesture` | iOS 17+ |
 | `coordinateSpace(name:)` | `coordinateSpace(.named(...))` | iOS 17+ |
