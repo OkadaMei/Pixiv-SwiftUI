@@ -510,6 +510,7 @@ struct ExportTokenSheet: View {
                 Spacer()
             }
             .padding()
+            .background(Color(.systemBackground))
             .navigationTitle("导出 Token")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
