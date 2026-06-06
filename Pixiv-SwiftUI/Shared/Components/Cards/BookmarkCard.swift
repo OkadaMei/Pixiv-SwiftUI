@@ -161,8 +161,16 @@ struct BookmarkCard: View, Equatable {
                         .foregroundStyle(.primary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
+                        .background {
+                            if #available(iOS 26.0, macOS 26.0, *) {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.clear)
+                                    .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                            } else {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.ultraThinMaterial)
+                            }
+                        }
                         .padding(6)
                 }
             }
@@ -307,8 +315,16 @@ struct BookmarkCard: View, Equatable {
             .foregroundStyle(.primary)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(.ultraThinMaterial)
-            .cornerRadius(8)
+            .background {
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                }
+            }
     }
 
     @ViewBuilder
@@ -322,16 +338,32 @@ struct BookmarkCard: View, Equatable {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(.ultraThinMaterial)
-                .cornerRadius(8)
+                .background {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.clear)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.ultraThinMaterial)
+                    }
+                }
         case .cached(let quality):
             Text(quality.displayName)
                 .font(.caption2)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(.ultraThinMaterial)
-                .cornerRadius(8)
+                .background {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.clear)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.ultraThinMaterial)
+                    }
+                }
         }
     }
 

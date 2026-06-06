@@ -55,8 +55,16 @@ struct WebView: View {
                         .padding()
                 }
                 .padding()
-                .background(.ultraThinMaterial)
-                .cornerRadius(12)
+                .background {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.clear)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                    }
+                }
             }
         }
     }

@@ -148,7 +148,7 @@ struct UgoiraLoader: View {
                     if #available(iOS 26.0, macOS 26.0, *) {
                         Circle()
                             .fill(.clear)
-                            .glassEffect(.regular, in: Circle())
+                            .glassEffect(.regular.interactive(), in: Circle())
                     } else {
                         Circle()
                             .fill(.ultraThinMaterial)

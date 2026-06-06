@@ -439,8 +439,16 @@ struct SearchView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(Color.secondary.opacity(0.12))
-                                .cornerRadius(12)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(.clear)
+                                            .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.secondary.opacity(0.12))
+                                    }
+                                }
                             }
                             .buttonStyle(.plain)
                             .confirmationDialog(

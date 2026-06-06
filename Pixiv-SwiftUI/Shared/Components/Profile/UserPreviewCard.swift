@@ -48,7 +48,7 @@ struct UserPreviewCard: View {
                                     if #available(iOS 26.0, macOS 26.0, *) {
                                         Circle()
                                             .fill(.clear)
-                                            .glassEffect(in: .circle)
+                                            .glassEffect(.regular.interactive(), in: .circle)
                                     } else {
                                         Circle()
                                             .fill(Color.primary.opacity(0.05))

@@ -47,9 +47,16 @@ struct MacOSPageNavigationOverlay: View {
                 .font(.title2.weight(.medium))
                 .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .background {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        Circle()
+                            .fill(.clear)
+                            .glassEffect(.regular.interactive(), in: .circle)
+                    } else {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .keyboardShortcut(.leftArrow, modifiers: [])
@@ -67,9 +74,16 @@ struct MacOSPageNavigationOverlay: View {
                 .font(.title2.weight(.medium))
                 .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .background {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        Circle()
+                            .fill(.clear)
+                            .glassEffect(.regular.interactive(), in: .circle)
+                    } else {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                    }
+                }
         }
         .buttonStyle(.plain)
         .keyboardShortcut(.rightArrow, modifiers: [])

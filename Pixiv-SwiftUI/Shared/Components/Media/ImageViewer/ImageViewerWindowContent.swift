@@ -449,8 +449,16 @@ struct PageNavigationOverlay: View {
                     .font(.title2)
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
+                    .background {
+                        if #available(iOS 26.0, macOS 26.0, *) {
+                            Circle()
+                                .fill(.clear)
+                                .glassEffect(.regular.interactive(), in: .circle)
+                        } else {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                        }
+                    }
                     .overlay(
                         Circle()
                             .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
@@ -472,8 +480,16 @@ struct PageNavigationOverlay: View {
                     .font(.title2)
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
+                    .background {
+                        if #available(iOS 26.0, macOS 26.0, *) {
+                            Circle()
+                                .fill(.clear)
+                                .glassEffect(.regular.interactive(), in: .circle)
+                        } else {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                        }
+                    }
                     .overlay(
                         Circle()
                             .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
@@ -495,8 +511,16 @@ struct MetadataTag: View {
             .foregroundStyle(.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(.ultraThinMaterial)
-            .cornerRadius(8)
+            .background {
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                }
+            }
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)

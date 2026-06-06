@@ -361,8 +361,16 @@ struct DeletedBookmarkDetailView: View {
             .font(.subheadline)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
-            .cornerRadius(20)
+            .background {
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                } else {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                }
+            }
             .padding(.bottom, 20)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(.easeInOut, value: showCopyToast || showSaveToast)

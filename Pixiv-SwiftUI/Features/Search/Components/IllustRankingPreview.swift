@@ -326,7 +326,16 @@ extension View {
             .foregroundStyle(.primary)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+            .background {
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                }
+            }
     }
 }
 

@@ -449,7 +449,16 @@ struct BrowseHistoryCard: View {
                             .foregroundColor(.black)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(.ultraThinMaterial)
+                            .background {
+                                if #available(iOS 26.0, macOS 26.0, *) {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.clear)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.ultraThinMaterial)
+                                }
+                            }
                             .cornerRadius(8)
                             .padding(4)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -463,7 +472,16 @@ struct BrowseHistoryCard: View {
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(.ultraThinMaterial)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(.clear)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(.ultraThinMaterial)
+                                    }
+                                }
                                 .cornerRadius(8)
                         }
 
@@ -474,7 +492,16 @@ struct BrowseHistoryCard: View {
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(.ultraThinMaterial)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(.clear)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(.ultraThinMaterial)
+                                    }
+                                }
                                 .cornerRadius(8)
                         }
                     }

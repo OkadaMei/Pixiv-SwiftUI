@@ -110,7 +110,7 @@ struct FullscreenImageView: View {
                                 .background {
                                     if #available(iOS 26.0, macOS 26.0, *) {
                                         Color.clear
-                                            .glassEffect(.regular, in: Circle())
+                                            .glassEffect(.regular.interactive(), in: Circle())
                                     } else {
                                         Circle()
                                             .fill(.ultraThinMaterial)
@@ -128,8 +128,16 @@ struct FullscreenImageView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(8)
+                            .background {
+                                if #available(iOS 26.0, macOS 26.0, *) {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.clear)
+                                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.ultraThinMaterial)
+                                }
+                            }
                             .padding(.bottom, 20)
                     }
                 }
