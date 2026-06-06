@@ -6,32 +6,30 @@ struct RecommendTagGroupList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if !tagGroups.isEmpty || isLoading {
-                HStack {
-                    Text(String(localized: "为你推荐的标签"))
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
-                }
-                .padding(.horizontal)
+            HStack {
+                Text(String(localized: "为你推荐的标签"))
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            .padding(.horizontal)
 
-                if isLoading && tagGroups.isEmpty {
-                    SkeletonRecommendTagGroupList()
-                        .transition(.opacity)
-                } else if !tagGroups.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(tagGroups, id: \.tag) { group in
-                                NavigationLink(value: RecommendByTagTarget(tag: group.tag, translatedName: group.translatedName, illustIds: group.illusts.map { $0.id })) {
-                                    RecommendTagGroupCard(group: group)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
+            if isLoading && tagGroups.isEmpty {
+                SkeletonRecommendTagGroupList()
                     .transition(.opacity)
+            } else if !tagGroups.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(tagGroups, id: \.tag) { group in
+                            NavigationLink(value: RecommendByTagTarget(tag: group.tag, translatedName: group.translatedName, illustIds: group.illusts.map { $0.id })) {
+                                RecommendTagGroupCard(group: group)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal)
                 }
+                .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: isLoading)

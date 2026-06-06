@@ -241,10 +241,10 @@ struct RecommendView: View {
                         defer { isInitialLoadInProgress = false }
 
                         if isLoggedIn {
-                            _ = await (loadRecommendedUsersAsync(), refreshIllusts(forceRefresh: false))
-                            if accountStore.isWebLoggedIn {
-                                await searchStore.fetchRecommendedTags()
-                            }
+                            async let usersTask = loadRecommendedUsersAsync()
+                            async let illustsTask = refreshIllusts(forceRefresh: false)
+                            async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags() : ()
+                            _ = await (usersTask, illustsTask, tagsTask)
                         } else {
                             await refreshIllusts(forceRefresh: false)
                         }
@@ -294,10 +294,10 @@ struct RecommendView: View {
                     hasCachedUsers = false
                     isLoadingRecommended = true
                     if accountStore.isLoggedIn {
-                        _ = await (refreshIllusts(), refreshRecommendedUsers())
-                        if accountStore.isWebLoggedIn {
-                            await searchStore.fetchRecommendedTags(forceRefresh: true)
-                        }
+                        async let illustsTask = refreshIllusts()
+                        async let usersTask = refreshRecommendedUsers()
+                        async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags(forceRefresh: true) : ()
+                        _ = await (illustsTask, usersTask, tagsTask)
                     } else {
                         await refreshIllusts()
                     }
@@ -601,10 +601,10 @@ struct RecommendView: View {
 
     private func refreshAll() async {
         if isLoggedIn {
-            _ = await (refreshIllusts(), refreshRecommendedUsers())
-            if accountStore.isWebLoggedIn {
-                await searchStore.fetchRecommendedTags(forceRefresh: true)
-            }
+            async let illustsTask = refreshIllusts()
+            async let usersTask = refreshRecommendedUsers()
+            async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags(forceRefresh: true) : ()
+            _ = await (illustsTask, usersTask, tagsTask)
         } else {
             _ = await refreshIllusts()
         }
