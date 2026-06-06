@@ -65,12 +65,12 @@ struct IllustRankingPreview: View {
                 .frame(height: 120)
             } else if store.isLoadingRanking && illusts.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 12) {
                         ForEach(0..<6, id: \.self) { _ in
-                            SkeletonIllustRankingCard(width: 120)
+                            SkeletonIllustRankingCard(width: 140)
                         }
                     }
-                    .padding(.horizontal, 2)
+                    .padding(.horizontal)
                 }
                 .transition(.opacity)
             } else if illusts.isEmpty {
@@ -83,7 +83,7 @@ struct IllustRankingPreview: View {
                 .frame(height: 100)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 12) {
                         ForEach(illusts.prefix(10)) { illust in
                             NavigationLink(value: illust) {
                                 IllustRankingCard(illust: illust)
@@ -91,7 +91,7 @@ struct IllustRankingPreview: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 2)
+                    .padding(.horizontal)
                 }
                 .transition(.opacity)
             }
@@ -141,57 +141,64 @@ struct IllustRankingCard: View {
         return hideR18 || hideR18G || hideSpoiler || hideAI
     }
 
+    private var imageHeight: CGFloat { 140 }
+
+    private var estimatedCardWidth: CGFloat {
+        min(max(imageHeight * illust.safeAspectRatio, 80), 260)
+    }
+
     var body: some View {
         if shouldHide {
-            Color.clear.frame(width: 120, height: 160)
+            Color.clear
+                .frame(width: estimatedCardWidth, height: imageHeight + 70)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                ZStack(alignment: .topTrailing) {
-                    CachedAsyncImage(
-                        urlString: illust.imageUrls.medium,
-                        aspectRatio: illust.safeAspectRatio
-                    )
-                    .frame(width: 100, height: 100)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .blur(radius: shouldBlur ? 20 : 0)
+                CachedAsyncImage(
+                    urlString: illust.imageUrls.medium,
+                    aspectRatio: illust.safeAspectRatio
+                )
+                .frame(height: imageHeight)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .blur(radius: shouldBlur ? 20 : 0)
+                .overlay(alignment: .topLeading) {
+                    HStack(spacing: 4) {
+                        if illust.type == "manga" {
+                            Text("漫画")
+                                .badgeStyle()
+                        }
 
-                    HStack(spacing: 2) {
                         if illust.type == "ugoira" {
                             Text("动图")
-                                .font(.system(size: 8))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                                .background(Color.black.opacity(0.5))
-                                .cornerRadius(4)
+                                .badgeStyle()
                         }
 
-                        if illust.pageCount > 1 {
-                            Text("\(illust.pageCount)")
-                                .font(.system(size: 8))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                                .background(Color.black.opacity(0.5))
-                                .cornerRadius(4)
+                        if illust.illustAIType == 2 {
+                            Text("AI")
+                                .badgeStyle()
                         }
                     }
-                    .padding(4)
+                    .padding(6)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if illust.pageCount > 1 {
+                        Text("\(illust.pageCount)")
+                            .badgeStyle()
+                            .padding(6)
+                    }
                 }
 
                 Text(illust.title)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(illust.user.name)
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                    .frame(width: 100, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 0) {
                     HStack(spacing: 1) {
@@ -212,9 +219,9 @@ struct IllustRankingCard: View {
                             .font(.caption2)
                     }
                 }
-                .frame(width: 100)
+                .frame(maxWidth: .infinity)
             }
-            .frame(width: 120)
+            .frame(maxWidth: 260)
         }
     }
     private func formatCount(_ count: Int) -> String {
@@ -310,6 +317,16 @@ enum IllustRankingType: Hashable, Identifiable {
         case .weekR18: return .weekR18
         case .weekR18G: return .weekR18G
         }
+    }
+}
+
+extension View {
+    fileprivate func badgeStyle() -> some View {
+        font(.caption2.weight(.bold))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

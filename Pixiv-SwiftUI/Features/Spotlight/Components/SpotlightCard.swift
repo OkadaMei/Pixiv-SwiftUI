@@ -31,7 +31,7 @@ struct SpotlightCard: View {
             .padding(8)
         }
         .frame(width: width, height: width * 0.525)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .contextMenu {
             Button {
                 openInBrowser(urlString: article.articleUrl)
@@ -100,7 +100,7 @@ struct SkeletonSpotlightCard: View {
         Rectangle()
             .fill(Color.gray.opacity(0.2))
             .frame(width: width, height: width * 0.525)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
             .skeleton()
     }
 }

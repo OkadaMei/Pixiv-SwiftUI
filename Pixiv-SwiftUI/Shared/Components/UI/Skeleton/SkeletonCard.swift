@@ -80,23 +80,23 @@ struct SkeletonNovelCard: View {
 struct SkeletonIllustRankingCard: View {
     let width: CGFloat
 
-    init(width: CGFloat = 120) {
+    init(width: CGFloat = 140) {
         self.width = width
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            SkeletonRoundedRectangle(width: 100, height: 100, cornerRadius: 8)
+            SkeletonRoundedRectangle(width: width, height: 140, cornerRadius: 16)
 
-            SkeletonView(height: 14, width: 100, cornerRadius: 2)
-            SkeletonView(height: 12, width: 80, cornerRadius: 2)
+            SkeletonView(height: 14, width: width, cornerRadius: 2)
+            SkeletonView(height: 12, width: width * 0.7, cornerRadius: 2)
 
             HStack(spacing: 0) {
                 SkeletonView(height: 10, width: 30, cornerRadius: 2)
                 Spacer()
                 SkeletonView(height: 10, width: 30, cornerRadius: 2)
             }
-            .frame(width: 100)
+            .frame(maxWidth: .infinity)
         }
         .frame(width: width)
     }

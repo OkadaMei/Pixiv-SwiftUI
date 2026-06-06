@@ -33,7 +33,7 @@ struct SpotlightPreview: View {
 
             if store.isLoading && store.articles.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 12) {
                         ForEach(0..<4, id: \.self) { _ in
                             SkeletonSpotlightCard(width: cardWidth)
                         }
@@ -51,7 +51,7 @@ struct SpotlightPreview: View {
                 .frame(height: 100)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 12) {
                         ForEach(store.articles.prefix(10)) { article in
                             Button {
                                 navigateToDetail = article
