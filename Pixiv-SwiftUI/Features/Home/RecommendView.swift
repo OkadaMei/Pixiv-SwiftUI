@@ -13,9 +13,7 @@ struct RecommendView: View {
     @State private var hasMoreData = true
     @State private var error: String?
 
-    @State private var recommendedUsers: [UserPreviews] = []
-    @State private var isLoadingRecommended = false
-    @State private var hasCachedUsers = false
+    @State private var recommendedUsersStore = RecommendedUsersStore()
     @State private var isInitialLoadInProgress = false
 
     @State private var contentType: TypeFilterButton.ContentType = .illust
@@ -34,7 +32,6 @@ struct RecommendView: View {
 
     private let cache = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
-    private let usersCacheKey = "recommend_users_0"
 
     /// 重新计算 filteredIllusts + shouldBlurMap 缓存
     private func recalculateFilteredIllusts() {
@@ -88,9 +85,10 @@ struct RecommendView: View {
 
                 if isLoggedIn {
                     RecommendedArtistsList(
-                        recommendedUsers: $recommendedUsers,
-                        isLoadingRecommended: $isLoadingRecommended,
-                        onRefresh: loadRecommendedUsers
+                        recommendedUsers: $recommendedUsersStore.users,
+                        isLoadingRecommended: $recommendedUsersStore.isLoading,
+                        path: $path,
+                        onRefresh: { await recommendedUsersStore.fetchUsers(forceRefresh: true) }
                     )
 
                     Spacer()
@@ -230,9 +228,13 @@ struct RecommendView: View {
                 #endif
             }
             .pixivNavigationDestinations()
+            .navigationDestination(for: String.self) { route in
+                if route == "recommendedArtists" {
+                    RecommendedUsersListView(store: recommendedUsersStore)
+                }
+            }
             .onAppear {
                 loadCachedData()
-                loadCachedUsers()
 
                 if illusts.isEmpty {
                     guard !isInitialLoadInProgress else { return }
@@ -241,7 +243,7 @@ struct RecommendView: View {
                         defer { isInitialLoadInProgress = false }
 
                         if isLoggedIn {
-                            async let usersTask = loadRecommendedUsersAsync()
+                            async let usersTask = recommendedUsersStore.fetchUsers()
                             async let illustsTask = refreshIllusts(forceRefresh: false)
                             async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags() : ()
                             _ = await (usersTask, illustsTask, tagsTask)
@@ -251,7 +253,9 @@ struct RecommendView: View {
                     }
                 } else {
                     if isLoggedIn {
-                        loadRecommendedUsers()
+                        Task {
+                            await recommendedUsersStore.fetchUsers()
+                        }
                         if accountStore.isWebLoggedIn, searchStore.recommendByTagGroups.isEmpty {
                             Task {
                                 await searchStore.fetchRecommendedTags()
@@ -290,12 +294,11 @@ struct RecommendView: View {
                     recalculateFilteredIllusts()
                     nextUrl = nil
                     hasMoreData = true
-                    recommendedUsers = []
-                    hasCachedUsers = false
-                    isLoadingRecommended = true
+                    recommendedUsersStore.users = []
+                    recommendedUsersStore.isLoading = true
                     if accountStore.isLoggedIn {
                         async let illustsTask = refreshIllusts()
-                        async let usersTask = refreshRecommendedUsers()
+                        async let usersTask = recommendedUsersStore.refreshUsers()
                         async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags(forceRefresh: true) : ()
                         _ = await (illustsTask, usersTask, tagsTask)
                     } else {
@@ -365,10 +368,14 @@ struct RecommendView: View {
         )
     }
 
-    private func loadCachedUsers() {
-        if let cached: [UserPreviews] = cache.get(forKey: usersCacheKey) {
-            recommendedUsers = cached
-            hasCachedUsers = true
+    private func refreshAll() async {
+        if isLoggedIn {
+            async let illustsTask = refreshIllusts()
+            async let usersTask = recommendedUsersStore.refreshUsers()
+            async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags(forceRefresh: true) : ()
+            _ = await (illustsTask, usersTask, tagsTask)
+        } else {
+            _ = await refreshIllusts()
         }
     }
 
@@ -537,76 +544,6 @@ struct RecommendView: View {
                 self.error = "刷新失败: \(error.localizedDescription)"
                 isLoading = false
             }
-        }
-    }
-
-    private func loadRecommendedUsers() {
-        guard !isLoadingRecommended, !hasCachedUsers else { return }
-
-        isLoadingRecommended = true
-
-        Task {
-            do {
-                let (users, _) = try await PixivAPI.shared.getRecommendedUsers()
-
-                await MainActor.run {
-                    recommendedUsers = users
-                    isLoadingRecommended = false
-                    hasCachedUsers = true
-
-                    cache.set(users, forKey: usersCacheKey, expiration: expiration)
-                }
-            } catch {
-                await MainActor.run {
-                    isLoadingRecommended = false
-                }
-            }
-        }
-    }
-
-    private func loadRecommendedUsersAsync() async {
-        guard !isLoadingRecommended, !hasCachedUsers else { return }
-
-        isLoadingRecommended = true
-
-        do {
-            let (users, _) = try await PixivAPI.shared.getRecommendedUsers()
-            recommendedUsers = users
-            isLoadingRecommended = false
-            hasCachedUsers = true
-            cache.set(users, forKey: usersCacheKey, expiration: expiration)
-        } catch {
-            isLoadingRecommended = false
-        }
-    }
-
-    private func refreshRecommendedUsers() async {
-        isLoadingRecommended = true
-
-        do {
-            let (users, _) = try await PixivAPI.shared.getRecommendedUsers()
-
-            await MainActor.run {
-                recommendedUsers = users
-                isLoadingRecommended = false
-
-                cache.set(users, forKey: usersCacheKey, expiration: expiration)
-            }
-} catch {
-                await MainActor.run {
-                    isLoadingRecommended = false
-                }
-            }
-    }
-
-    private func refreshAll() async {
-        if isLoggedIn {
-            async let illustsTask = refreshIllusts()
-            async let usersTask = refreshRecommendedUsers()
-            async let tagsTask: Void = accountStore.isWebLoggedIn ? searchStore.fetchRecommendedTags(forceRefresh: true) : ()
-            _ = await (illustsTask, usersTask, tagsTask)
-        } else {
-            _ = await refreshIllusts()
         }
     }
 }

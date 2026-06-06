@@ -3,14 +3,24 @@ import SwiftUI
 struct RecommendedArtistsList: View {
     @Binding var recommendedUsers: [UserPreviews]
     @Binding var isLoadingRecommended: Bool
+    @Binding var path: NavigationPath
     var onRefresh: (() async -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("画师")
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                Button {
+                    path.append("recommendedArtists")
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("画师")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
                 Spacer()
             }
             .padding(.horizontal)
@@ -47,6 +57,19 @@ struct RecommendedArtistsList: View {
                             }
                             .buttonStyle(.plain)
                         }
+
+                        NavigationLink(value: "recommendedArtists" as String) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "ellipsis")
+                                    .font(.title2)
+                                    .foregroundColor(.secondary)
+                                Text("查看全部")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(width: 60)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal)
                 }
@@ -73,7 +96,8 @@ struct RecommendedArtistsList: View {
                     isMuted: false
                 )
             ]),
-            isLoadingRecommended: .constant(false)
+            isLoadingRecommended: .constant(false),
+            path: .constant(NavigationPath())
         )
     }
 }
