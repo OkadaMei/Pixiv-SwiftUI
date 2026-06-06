@@ -6,7 +6,7 @@ struct TranslationSettingView: View {
     @Environment(ThemeManager.self) var themeManager
 
     @State private var primaryServiceId: String = "bing"
-    @State private var targetLanguage: String = "zh-CN"
+    @State private var targetLanguage: String = "system"
     @State private var tapToTranslate: Bool = false
     @State private var openAIApiKey: String = ""
     @State private var openAIBaseURL: String = ""
@@ -767,7 +767,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 
@@ -800,7 +800,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 
@@ -837,7 +837,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 
@@ -870,7 +870,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 
@@ -907,7 +907,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 
@@ -950,7 +950,7 @@ struct TranslationSettingView: View {
                 var task = TranslateTask(
                     raw: "Hello World",
                     sourceLanguage: "en",
-                    targetLanguage: targetLanguage.isEmpty ? "zh-CN" : targetLanguage
+                    targetLanguage: userSettingStore.resolveTargetLanguage(targetLanguage)
                 )
                 try await service.translate(&task)
 

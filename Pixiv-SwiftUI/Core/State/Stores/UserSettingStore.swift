@@ -1066,6 +1066,31 @@ final class UserSettingStore {
         try saveSetting()
     }
 
+    func resolveTargetLanguage(_ language: String) -> String {
+        if language == "system" || language.isEmpty {
+            return Self.systemLanguageCode
+        }
+        return language
+    }
+
+    static var systemLanguageCode: String {
+        guard let preferred = Locale.preferredLanguages.first else { return "en" }
+        let locale = Locale(identifier: preferred)
+        let langCode = locale.language.languageCode?.identifier ?? "en"
+
+        switch langCode {
+        case "zh":
+            let script = locale.language.script?.identifier ?? ""
+            let region = locale.language.region?.identifier ?? ""
+            if script == "Hant" || region == "TW" || region == "HK" || region == "MO" {
+                return "zh-TW"
+            }
+            return "zh-CN"
+        default:
+            return langCode
+        }
+    }
+
     func setTranslateOpenAIApiKey(_ key: String) throws {
         userSetting.translateOpenAIApiKey = key
         try saveSetting()
@@ -1226,6 +1251,7 @@ final class UserSettingStore {
 
     var availableLanguages: [(code: String, name: String)] {
         [
+            ("system", String(localized: "系统语言")),
             ("zh-CN", "简体中文"),
             ("zh-TW", "繁體中文"),
             ("en", "English"),

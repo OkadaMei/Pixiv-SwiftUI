@@ -195,7 +195,7 @@ final class UserSetting: Codable {
     var translateServiceId: String = "google"
 
     /// 目标翻译语言
-    var translateTargetLanguage: String = "zh-CN"
+    var translateTargetLanguage: String = "system"
 
     /// OpenAI 兼容服务的 API Key
     var translateOpenAIApiKey: String = ""
@@ -484,7 +484,7 @@ final class UserSetting: Codable {
             return info
         }
         self.translateServiceId = try container.decodeIfPresent(String.self, forKey: .translateServiceId) ?? "google"
-        self.translateTargetLanguage = try container.decodeIfPresent(String.self, forKey: .translateTargetLanguage) ?? "zh-CN"
+        self.translateTargetLanguage = try container.decodeIfPresent(String.self, forKey: .translateTargetLanguage) ?? "system"
         self.translateOpenAIApiKey = try container.decodeIfPresent(String.self, forKey: .translateOpenAIApiKey) ?? ""
         self.translateOpenAIBaseURL = try container.decodeIfPresent(String.self, forKey: .translateOpenAIBaseURL) ?? "https://api.openai.com/v1"
         self.translateOpenAIModel = try container.decodeIfPresent(String.self, forKey: .translateOpenAIModel) ?? "gpt-5.1-nano"

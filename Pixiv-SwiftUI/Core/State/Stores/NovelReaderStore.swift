@@ -319,9 +319,9 @@ final class NovelReaderStore {
         translatingIndices.insert(index)
 
         let serviceId = UserSettingStore.shared.userSetting.translatePrimaryServiceId
-        let targetLang = UserSettingStore.shared.userSetting.translateTargetLanguage.isEmpty
-            ? "zh-CN"
-            : UserSettingStore.shared.userSetting.translateTargetLanguage
+        let targetLang = UserSettingStore.shared.resolveTargetLanguage(
+            UserSettingStore.shared.userSetting.translateTargetLanguage
+        )
 
         if let cached = await cacheStore.get(
             novelId: novelId,
@@ -375,7 +375,7 @@ final class NovelReaderStore {
     private func startTranslationForVisibleParagraphs() async {
         let setting = UserSettingStore.shared.userSetting
         let serviceId = setting.translatePrimaryServiceId
-        let targetLanguage = setting.translateTargetLanguage.isEmpty ? "zh-CN" : setting.translateTargetLanguage
+        let targetLanguage = UserSettingStore.shared.resolveTargetLanguage(setting.translateTargetLanguage)
         let sortedIndices = visibleParagraphIndices.sorted()
         let pendingIndices = await collectPendingParagraphIndices(
             from: sortedIndices,

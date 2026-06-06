@@ -107,7 +107,7 @@ struct TranslatableCommentTextView: View {
 
         let primaryServiceId = userSettingStore.userSetting.translatePrimaryServiceId
         let targetLang = userSettingStore.userSetting.translateTargetLanguage
-        let resolvedTargetLang = targetLang.isEmpty ? "zh-CN" : targetLang
+        let resolvedTargetLang = userSettingStore.resolveTargetLanguage(targetLang)
 
         isTranslating = true
         translatedText = nil
