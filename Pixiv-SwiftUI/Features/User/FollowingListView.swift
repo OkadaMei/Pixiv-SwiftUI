@@ -15,40 +15,65 @@ struct FollowingListView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount), spacing: 16) {
-                ForEach(store.following) { preview in
-                    NavigationLink(value: preview.user) {
-                        UserPreviewCard(userPreview: preview, accentColor: themeManager.currentColor)
+            Group {
+                if store.isLoadingFollowing && store.following.isEmpty {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount), spacing: 16) {
+                        ForEach(0..<skeletonItemCount, id: \.self) { _ in
+                            SkeletonUserCard()
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .onAppear {
-                        if preview.id == store.following.last?.id && store.nextUrlFollowing != nil {
-                            Task {
-                                await store.loadMoreFollowing()
+                    .padding()
+                    .transition(.opacity)
+                } else if store.following.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.slash")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray)
+                        Text(String(localized: "暂无关注用户"))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 50)
+                    .transition(.opacity)
+                } else {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount), spacing: 16) {
+                        ForEach(store.following) { preview in
+                            NavigationLink(value: preview.user) {
+                                UserPreviewCard(userPreview: preview, accentColor: themeManager.currentColor)
+                            }
+                            .buttonStyle(.plain)
+                            .onAppear {
+                                if preview.id == store.following.last?.id && store.nextUrlFollowing != nil {
+                                    Task {
+                                        await store.loadMoreFollowing()
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-            .padding()
-
-            if store.nextUrlFollowing != nil {
-                ProgressView()
-                    #if os(macOS)
-                    .controlSize(.small)
-                    #endif
                     .padding()
-            } else if !store.following.isEmpty {
-                HStack {
-                    Spacer()
-                    Text(String(localized: "已经到底了"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
+                    .transition(.opacity)
+
+                    if store.nextUrlFollowing != nil {
+                        ProgressView()
+                            #if os(macOS)
+                            .controlSize(.small)
+                            #endif
+                            .padding()
+                    } else if !store.following.isEmpty {
+                        HStack {
+                            Spacer()
+                            Text(String(localized: "已经到底了"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                        .padding()
+                    }
                 }
-                .padding()
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoadingFollowing)
         .refreshable {
             isRefreshing = true
             await store.refreshFollowing(userId: userId, restrict: restrictString)
@@ -97,5 +122,13 @@ struct FollowingListView: View {
                 }
             }
         }
+    }
+
+    private var skeletonItemCount: Int {
+        #if os(macOS)
+        12
+        #else
+        6
+        #endif
     }
 }

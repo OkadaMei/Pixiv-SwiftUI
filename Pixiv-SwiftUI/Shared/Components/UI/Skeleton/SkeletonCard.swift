@@ -127,6 +127,41 @@ struct SkeletonTrendTag: View {
     }
 }
 
+/// 用户卡片骨架屏，与 UserPreviewCard 布局一致
+struct SkeletonUserCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 用户信息行
+            HStack(spacing: 12) {
+                SkeletonCircle(size: 44)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    SkeletonView(height: 14, width: 100, cornerRadius: 2)
+                    SkeletonView(height: 10, width: 60, cornerRadius: 2)
+                }
+
+                Spacer()
+
+                SkeletonCircle(size: 32)
+            }
+            .padding(.horizontal, 4)
+
+            // 作品预览行
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Color.gray.opacity(0.2)
+                        .aspectRatio(1, contentMode: .fit)
+                        .cornerRadius(8)
+                        .skeleton()
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.03))
+        .cornerRadius(16)
+    }
+}
+
 #Preview("Skeleton Card") {
     VStack(spacing: 12) {
         SkeletonCard(width: 170, aspectRatio: 1.0, showTitle: true, showSubtitle: true, cornerRadius: 16)

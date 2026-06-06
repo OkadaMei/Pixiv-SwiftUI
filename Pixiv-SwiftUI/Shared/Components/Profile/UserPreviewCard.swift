@@ -4,6 +4,9 @@ struct UserPreviewCard: View {
     let userPreview: UserPreviews
     let accentColor: Color
 
+    @State private var isFollowed: Bool?
+    @State private var isFollowLoading = false
+
     init(userPreview: UserPreviews, accentColor: Color = .accentColor) {
         self.userPreview = userPreview
         self.accentColor = accentColor
@@ -31,13 +34,50 @@ struct UserPreviewCard: View {
 
                 Spacer()
 
-                if let isFollowed = userPreview.user.isFollowed {
-                    Image(systemName: isFollowed ? "person.badge.minus" : "person.badge.plus")
-                        .font(.system(size: 14))
-                        .foregroundColor(isFollowed ? .secondary : accentColor)
-                        .padding(8)
-                        .background(Color.primary.opacity(0.05))
-                        .clipShape(Circle())
+                if let isFollowed {
+                    ZStack {
+                        // 正常状态：心形按钮
+                        Button {
+                            toggleFollow()
+                        } label: {
+                            Image(systemName: isFollowed ? "heart.fill" : "heart")
+                                .font(.system(size: 16))
+                                .foregroundColor(isFollowed ? accentColor : .secondary)
+                                .frame(width: 32, height: 32)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        Circle()
+                                            .fill(.clear)
+                                            .glassEffect(in: .circle)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.primary.opacity(0.05))
+                                    }
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .opacity(isFollowLoading ? 0 : 1)
+                        .sensoryFeedback(.impact(weight: .light), trigger: isFollowed)
+
+                        // 加载状态：ProgressView 覆盖，同时拦截 NavigationLink 点击
+                        if isFollowLoading {
+                            ProgressView()
+                                #if os(macOS)
+                                .controlSize(.small)
+                                #endif
+                                .frame(width: 32, height: 32)
+                                .background {
+                                    if #available(iOS 26.0, macOS 26.0, *) {
+                                        Circle()
+                                            .fill(.clear)
+                                            .glassEffect(in: .circle)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.primary.opacity(0.05))
+                                    }
+                                }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 4)
@@ -45,42 +85,84 @@ struct UserPreviewCard: View {
             // 作品预览行
             HStack(spacing: 6) {
                 if !userPreview.illusts.isEmpty {
-                    ForEach(userPreview.illusts.prefix(3)) { illust in
+                    ForEach(Array(userPreview.illusts.prefix(3).enumerated()), id: \.element.id) { index, illust in
                         CachedAsyncImage(urlString: illust.imageUrls.squareMedium)
                             .aspectRatio(1, contentMode: .fill)
                             .frame(minWidth: 0, maxWidth: .infinity)
                             .clipped()
-                            .cornerRadius(6)
+                            .cornerRadius(8)
+                            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
                     }
 
                     // 补充空白槽位，保持布局整齐
                     if userPreview.illusts.count < 3 {
                         ForEach(0..<(3 - userPreview.illusts.count), id: \.self) { _ in
-                            Color.secondary.opacity(0.1)
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(0.05))
                                 .aspectRatio(1, contentMode: .fill)
-                                .frame(minWidth: 0, maxWidth: .infinity)
-                                .cornerRadius(6)
                         }
                     }
                 } else {
                     // 无插画时的占位
                     ForEach(0..<3, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.05))
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.primary.opacity(0.03))
                             .aspectRatio(1, contentMode: .fill)
-                            .frame(minWidth: 0, maxWidth: .infinity)
-                            .cornerRadius(6)
                     }
                 }
             }
         }
         .padding(12)
-        .background(Color.primary.opacity(0.03))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.primary.opacity(0.05), lineWidth: 0.5)
-        )
+        .background {
+            if #available(iOS 26.0, macOS 26.0, *) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.clear)
+                    .glassEffect(in: .rect(cornerRadius: 16))
+            } else {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.primary.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.primary.opacity(0.05), lineWidth: 0.5)
+                    )
+            }
+        }
+        .onAppear {
+            if isFollowed == nil {
+                isFollowed = userPreview.user.isFollowed
+            }
+        }
+    }
+
+    private func toggleFollow() {
+        guard let isFollowed, !isFollowLoading else { return }
+
+        let previousState = isFollowed
+        let newState = !isFollowed
+        self.isFollowed = newState
+        isFollowLoading = true
+
+        Task {
+            defer { isFollowLoading = false }
+
+            do {
+                if newState {
+                    let isPrivate = UserSettingStore.shared.userSetting.defaultPrivateLike
+                    try await PixivAPI.shared.followUser(
+                        userId: userPreview.user.id.stringValue,
+                        restrict: isPrivate ? "private" : "public"
+                    )
+                } else {
+                    try await PixivAPI.shared.unfollowUser(userId: userPreview.user.id.stringValue)
+                }
+            } catch {
+                // 乐观更新失败，回滚到之前的状态
+                await MainActor.run {
+                    self.isFollowed = previousState
+                }
+                print("Failed to toggle follow: \(error)")
+            }
+        }
     }
 }
 
