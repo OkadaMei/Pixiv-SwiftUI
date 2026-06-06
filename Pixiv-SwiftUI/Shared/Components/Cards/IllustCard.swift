@@ -460,6 +460,6 @@ extension View {
             .foregroundStyle(.primary)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
