@@ -108,14 +108,10 @@ struct NovelListPage: View {
         .toolbar {
             if shouldShowRestrictFilter {
                 ToolbarItem {
-                    TypeFilterButton(
-                        selectedType: .constant(.all),
-                        restrict: .publicAccess,
+                    BookmarkVisibilityToggle(
                         selectedRestrict: $selectedRestrict,
-                        showContentTypes: false,
-                        cacheFilter: .constant(nil)
+                        isAvailable: shouldShowRestrictFilter
                     )
-                    .menuIndicator(.hidden)
                 }
             }
             #if os(macOS)

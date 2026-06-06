@@ -91,14 +91,10 @@ struct FollowingListView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: isRefreshing)
         .toolbar {
             ToolbarItem {
-                TypeFilterButton(
-                    selectedType: .constant(.all),
-                    restrict: .publicAccess,
+                BookmarkVisibilityToggle(
                     selectedRestrict: $selectedRestrict,
-                    showContentTypes: false,
-                    cacheFilter: .constant(nil)
+                    isAvailable: true
                 )
-                .menuIndicator(.hidden)
             }
             #if os(macOS)
             ToolbarItem {
