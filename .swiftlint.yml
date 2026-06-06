@@ -9,6 +9,7 @@ excluded:
   - pixiv-tags
   - Pixiv-SwiftUI.xcodeproj
   - "**/Generated/**"
+  - pixez-flutter
 
 # 启用的规则
 opt_in_rules:
