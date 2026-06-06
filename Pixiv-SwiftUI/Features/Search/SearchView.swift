@@ -530,7 +530,7 @@ struct SearchView: View {
                             SkeletonRecommendedSearchTagsList()
                                 .transition(.opacity)
                         } else if !store.recommendedSearchTags.isEmpty {
-                            VStack(spacing: 0) {
+                            VStack(alignment: .leading) {
                                 Text("推荐标签")
                                     .font(.headline)
                                     .padding(.horizontal)
