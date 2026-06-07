@@ -142,6 +142,7 @@ struct NovelSpanRenderer: View {
     private func novelImageView(imageURL: URL, logContext: String) -> some View {
         if shouldUseDirectConnection(url: imageURL) {
             KFImage.source(.directNetwork(imageURL))
+                .fade(duration: 0.3)
                 .onSuccess { result in
                     print(
                         "[NovelSpanRenderer] \(logContext) 加载成功: url=\(imageURL.absoluteString), cache=\(result.cacheType), size=\(Int(result.image.size.width))x\(Int(result.image.size.height))"
@@ -161,6 +162,7 @@ struct NovelSpanRenderer: View {
                 }
         } else {
             KFImage(imageURL)
+                .fade(duration: 0.3)
                 .requestModifier(PixivImageLoader.shared)
                 .onSuccess { result in
                     print(

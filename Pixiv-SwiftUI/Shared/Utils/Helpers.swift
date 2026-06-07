@@ -201,6 +201,7 @@ public struct DynamicSizeCachedAsyncImage: View {
                                 .aspectRatio(aspectRatio, contentMode: .fill)
                         }
                     }
+                    .fade(duration: 0.3)
                     .cacheOriginalImage()
                     .cancelOnDisappear(true)
                     .requestModifier(PixivImageLoader.shared)

@@ -171,6 +171,7 @@ struct DeletedBookmarkDetailView: View {
             .cacheOriginalImage()
             .targetCache(BookmarkCacheService.shared.getCache())
             .requestModifier(PixivImageRequestModifier())
+            .fade(duration: 0.3)
             .placeholder {
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
