@@ -48,6 +48,7 @@ struct SpotlightListView: View {
                     )
                 } else {
                     articleGrid
+                        .animation(.easeInOut(duration: 0.25), value: store.isLoading)
                 }
             }
         }
@@ -132,50 +133,67 @@ struct SpotlightListView: View {
         }
     }
 
+    @ViewBuilder
     private var articleGrid: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(store.articles) { article in
-                Button {
-                    navigateToDetail = article
-                } label: {
-                    SpotlightListCard(article: article)
+        if store.isLoading && store.articles.isEmpty {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(0..<(columnCount * 2), id: \.self) { _ in
+                    skeletonCard
                 }
-                .buttonStyle(.plain)
-                .onAppear {
-                    if article.id == store.articles.last?.id {
-                        Task {
-                            await store.loadMore()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .transition(.opacity)
+        } else {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(store.articles) { article in
+                    Button {
+                        navigateToDetail = article
+                    } label: {
+                        SpotlightListCard(article: article)
+                    }
+                    .buttonStyle(.plain)
+                    .onAppear {
+                        if article.id == store.articles.last?.id {
+                            Task {
+                                await store.loadMore()
+                            }
                         }
                     }
                 }
-            }
 
-            if store.isLoadingMore {
-                ForEach(0..<columnCount, id: \.self) { _ in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .aspectRatio(1.5, contentMode: .fill)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .skeleton()
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(height: 14)
-                                .skeleton()
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: 60, height: 10)
-                                .skeleton()
-                        }
-                        .padding(.horizontal, 4)
+                if store.isLoadingMore {
+                    ForEach(0..<columnCount, id: \.self) { _ in
+                        skeletonCard
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .transition(.opacity)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
+    }
+
+    private var skeletonCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .aspectRatio(1.9, contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .skeleton()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 14)
+                    .skeleton()
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 60, height: 10)
+                    .skeleton()
+            }
+            .padding(.horizontal, 4)
+        }
     }
 }
 

@@ -6,6 +6,7 @@ struct SpotlightDetailView: View {
     @State private var store = SpotlightDetailStore()
     @State private var navigateToIllustId: Int?
     @State private var navigateToRelatedArticle: SpotlightRelatedArticle?
+    @State private var navigateToReferencedArticle: SpotlightArticle?
 
     @Environment(UserSettingStore.self) var userSettingStore
     @Environment(AccountStore.self) var accountStore
@@ -15,29 +16,36 @@ struct SpotlightDetailView: View {
     #elseif os(iOS)
     @State private var columnCount: Int = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
     #endif
+    @State private var waterfallWidth: CGFloat = 0
+
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 headerView
 
-                if store.isLoading {
-                    loadingView
+                if store.isLoading && store.detail == nil {
+                    skeletonView
+                        .transition(.opacity)
                 } else if let detail = store.detail {
                     contentView(detail)
+                        .transition(.opacity)
                 } else if let error = store.error {
                     errorView(error)
+                        .transition(.opacity)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.easeInOut(duration: 0.25), value: store.isLoading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .ignoresSafeArea(edges: .top)
         #if os(macOS)
         .navigationTitle(article.displayTitle)
         #else
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -67,13 +75,16 @@ struct SpotlightDetailView: View {
             )
             SpotlightDetailView(article: spotlightArticle)
         }
+        .navigationDestination(item: $navigateToReferencedArticle) { article in
+            SpotlightDetailView(article: article)
+        }
     }
 
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 16) {
             CachedAsyncImage(
                 urlString: article.thumbnail,
-                aspectRatio: 16 / 9
+                aspectRatio: 1.9
             )
             .frame(maxWidth: .infinity)
             .clipped()
@@ -103,16 +114,67 @@ struct SpotlightDetailView: View {
         return formatter.string(from: date)
     }
 
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .padding(.top, 32)
+    private var skeletonView: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Description skeleton
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.3))
+                        .frame(width: 4, height: 18)
+                    SkeletonView(height: 18, width: 60)
+                }
 
-            Text(String(localized: "加载中..."))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonView(height: 12)
+                    SkeletonView(height: 12, width: 200)
+                    SkeletonView(height: 12, width: 150)
+                }
+                .padding()
+                .background(Color.secondary.opacity(0.05))
+                .cornerRadius(12)
+            }
+            .padding(.horizontal)
+            .padding(.top, 20)
+
+            // Works section skeleton
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.3))
+                        .frame(width: 4, height: 18)
+                    SkeletonView(height: 18, width: 80)
+                    Spacer()
+                }
+
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: columnCount), spacing: 8) {
+                    ForEach(0..<min(columnCount * 2, 6), id: \.self) { _ in
+                        SkeletonRoundedRectangle(height: 120)
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+
+            // Related sections skeleton
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.3))
+                        .frame(width: 4, height: 18)
+                    SkeletonView(height: 18, width: 100)
+                }
+                .padding(.horizontal)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(0..<4, id: \.self) { _ in
+                            SkeletonSpotlightCard(width: 140)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func contentView(_ detail: SpotlightArticleDetail) -> some View {
@@ -166,13 +228,65 @@ struct SpotlightDetailView: View {
                     WaterfallGrid(
                         data: detail.works,
                         columnCount: columnCount,
-                        spacing: 8
+                        spacing: 8,
+                        width: waterfallWidth > 0 ? waterfallWidth : nil
                     ) { work, columnWidth in
                         SpotlightWorkCard(work: work, columnWidth: columnWidth) {
                             navigateToIllustId = work.id
                         }
                     }
                     .padding(.horizontal, 8)
+                }
+                .background(GeometryReader { geometry in
+                    Color.clear
+                        .onAppear {
+                            waterfallWidth = max(geometry.size.width - 16, 0)
+                        }
+                        .onChange(of: geometry.size.width) { _, newWidth in
+                            waterfallWidth = max(newWidth - 16, 0)
+                        }
+                })
+            }
+
+            if !detail.referencedArticleSections.isEmpty {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack {
+                        Rectangle()
+                            .fill(Color.accentColor)
+                            .frame(width: 4, height: 18)
+                        Text(String(localized: "收录特辑"))
+                            .font(.headline)
+
+                        Spacer()
+
+                        let totalCount = detail.referencedArticleSections.reduce(0) { $0 + $1.articles.count }
+                        Text("\(totalCount) 项")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+
+                    ForEach(detail.referencedArticleSections) { section in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(section.heading)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 16)
+
+                            LazyVGrid(columns: columns, spacing: 16) {
+                                ForEach(section.articles) { article in
+                                    Button {
+                                        navigateToReferencedArticle = article
+                                    } label: {
+                                        SpotlightListCard(article: article)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+                    }
                 }
             }
 

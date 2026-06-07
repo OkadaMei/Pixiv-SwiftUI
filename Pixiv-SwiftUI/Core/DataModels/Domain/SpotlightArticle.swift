@@ -126,8 +126,15 @@ struct SpotlightWork: Identifiable, Hashable {
 struct SpotlightArticleDetail {
     let description: String
     let works: [SpotlightWork]
+    let referencedArticleSections: [SpotlightArticleSection]
     let rankingArticles: [SpotlightRelatedArticle]
     let recommendedArticles: [SpotlightRelatedArticle]
+}
+
+struct SpotlightArticleSection: Identifiable {
+    let id = UUID()
+    let heading: String
+    let articles: [SpotlightArticle]
 }
 
 struct SpotlightRelatedArticle: Identifiable, Hashable {

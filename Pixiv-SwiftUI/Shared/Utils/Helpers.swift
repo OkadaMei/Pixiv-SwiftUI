@@ -58,19 +58,24 @@ public struct CachedAsyncImage: View {
                     #if canImport(UIKit)
                     Image(uiImage: image)
                         .resizable()
+                        .transition(.opacity)
                     #elseif canImport(AppKit)
                     Image(nsImage: image)
                         .resizable()
+                        .transition(.opacity)
                     #endif
                 } else {
                     placeholderView
+                        .transition(.opacity)
                 }
             } else {
                 placeholderView
+                    .transition(.opacity)
             }
         }
         .aspectRatio(aspectRatio, contentMode: contentMode)
         .clipped()
+        .animation(.easeInOut(duration: 0.3), value: loadedImage != nil)
         .task(priority: .low) {
             await loadImage()
         }

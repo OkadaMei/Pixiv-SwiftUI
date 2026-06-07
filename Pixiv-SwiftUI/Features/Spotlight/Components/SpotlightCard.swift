@@ -49,7 +49,7 @@ struct SpotlightListCard: View {
         VStack(alignment: .leading, spacing: 8) {
             CachedAsyncImage(
                 urlString: article.thumbnail,
-                aspectRatio: 1.5
+                aspectRatio: 1.9
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
 

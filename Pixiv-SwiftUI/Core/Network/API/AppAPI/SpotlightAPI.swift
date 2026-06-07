@@ -213,7 +213,7 @@ final class SpotlightAPI {
 
         guard let article = try doc.getElementsByTag("article").first(),
               let amBody = try article.getElementsByClass("am__body").first() else {
-            return SpotlightArticleDetail(description: "", works: [], rankingArticles: [], recommendedArticles: [])
+            return SpotlightArticleDetail(description: "", works: [], referencedArticleSections: [], rankingArticles: [], recommendedArticles: [])
         }
 
         var nodes = amBody.children()
@@ -235,6 +235,7 @@ final class SpotlightAPI {
         }
 
         var works: [SpotlightWork] = []
+        let referencedArticleSections = extractReferencedArticleSections(from: nodes)
 
         for node in nodes {
             do {
@@ -296,9 +297,47 @@ final class SpotlightAPI {
         return SpotlightArticleDetail(
             description: description,
             works: works,
+            referencedArticleSections: referencedArticleSections,
             rankingArticles: rankingArticles,
             recommendedArticles: recommendedArticles
         )
+    }
+
+    private func extractReferencedArticleSections(from nodes: Elements) -> [SpotlightArticleSection] {
+        var sections: [SpotlightArticleSection] = []
+        var currentHeading = ""
+        var currentArticles: [SpotlightArticle] = []
+
+        for node in nodes {
+            guard let nodeClass = try? node.attr("class"), !nodeClass.isEmpty else { continue }
+
+            if nodeClass.contains("_feature-article-body__heading") {
+                if !currentArticles.isEmpty {
+                    sections.append(SpotlightArticleSection(
+                        heading: currentHeading,
+                        articles: currentArticles
+                    ))
+                    currentArticles = []
+                }
+                currentHeading = (try? node.text()) ?? ""
+                continue
+            }
+
+            if nodeClass.contains("_feature-article-body__article_card") {
+                guard let articleCard = try? node.getElementsByTag("article").first(),
+                      let article = try? parseArticleCard(articleCard) else { continue }
+                currentArticles.append(article)
+            }
+        }
+
+        if !currentArticles.isEmpty {
+            sections.append(SpotlightArticleSection(
+                heading: currentHeading,
+                articles: currentArticles
+            ))
+        }
+
+        return sections
     }
 
     private func extractRelatedArticles(doc: Document, category: String) throws -> [SpotlightRelatedArticle] {
