@@ -95,63 +95,15 @@ struct RelatedIllustCard: View, Equatable {
 
                     HStack(spacing: 4) {
                         if isManga {
-                            Text("漫画")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background {
-                                    if #available(iOS 26.0, macOS 26.0, *) {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.clear)
-                                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.ultraThinMaterial)
-                                    }
-                                }
-                                .cornerRadius(8)
+                            Text("漫画").badgeStyle()
                         }
 
                         if isUgoira {
-                            Text("动图")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background {
-                                    if #available(iOS 26.0, macOS 26.0, *) {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.clear)
-                                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.ultraThinMaterial)
-                                    }
-                                }
-                                .cornerRadius(8)
+                            Text("动图").badgeStyle()
                         }
 
                         if isAI {
-                            Text("AI")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background {
-                                    if #available(iOS 26.0, macOS 26.0, *) {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.clear)
-                                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.ultraThinMaterial)
-                                    }
-                                }
-                                .cornerRadius(8)
+                            Text("AI").badgeStyle()
                         }
                     }
                     .padding(6)
@@ -159,13 +111,7 @@ struct RelatedIllustCard: View, Equatable {
 
                     if illust.pageCount > 1 {
                         Text("\(illust.pageCount)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(8)
+                            .badgeStyle()
                             .padding(6)
                     }
                 }

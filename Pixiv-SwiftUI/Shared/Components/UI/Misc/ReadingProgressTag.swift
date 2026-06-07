@@ -13,7 +13,15 @@ struct ReadingProgressTag: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.15))
+        .background {
+            if #available(iOS 26.0, macOS 26.0, *) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
+            } else {
+                Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.15)
+            }
+        }
         .cornerRadius(12)
     }
 }
