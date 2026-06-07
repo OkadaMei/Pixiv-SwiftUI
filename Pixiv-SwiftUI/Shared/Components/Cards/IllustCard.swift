@@ -16,6 +16,7 @@ struct IllustCard: View, Equatable {
     let feedPreviewQuality: Int
     let shouldBlur: Bool
     let accentColor: Color
+    let seriesNumber: Int?
 
     /// Equatable：Illusts 是类，按 id 比较；expiration 非 Equatable，跳过（极少变化）。
     static func == (lhs: IllustCard, rhs: IllustCard) -> Bool {
@@ -25,7 +26,8 @@ struct IllustCard: View, Equatable {
         lhs.showsBookmarkCount == rhs.showsBookmarkCount &&
         lhs.feedPreviewQuality == rhs.feedPreviewQuality &&
         lhs.shouldBlur == rhs.shouldBlur &&
-        lhs.accentColor == rhs.accentColor
+        lhs.accentColor == rhs.accentColor &&
+        lhs.seriesNumber == rhs.seriesNumber
     }
 
     init(
@@ -36,7 +38,8 @@ struct IllustCard: View, Equatable {
         showsBookmarkCount: Bool = false,
         feedPreviewQuality: Int = 0,
         shouldBlur: Bool = false,
-        accentColor: Color = .accentColor
+        accentColor: Color = .accentColor,
+        seriesNumber: Int? = nil
     ) {
         self.illust = illust
         self.columnCount = columnCount
@@ -46,6 +49,7 @@ struct IllustCard: View, Equatable {
         self.feedPreviewQuality = feedPreviewQuality
         self.shouldBlur = shouldBlur
         self.accentColor = accentColor
+        self.seriesNumber = seriesNumber
     }
 
     private var isR18: Bool {
@@ -144,12 +148,21 @@ struct IllustCard: View, Equatable {
 
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(illust.title)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-                        .multilineTextAlignment(.leading)
-                        .foregroundColor(.primary)
+                    if let number = seriesNumber {
+                        Text("#\(number) \(illust.title)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(.primary)
+                    } else {
+                        Text(illust.title)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(.primary)
+                    }
 
                     Text(illust.user.name)
                         .font(.caption2)

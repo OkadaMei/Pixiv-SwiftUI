@@ -119,14 +119,29 @@ struct IllustDetailInfoSection: View {
                 NavigationLink(value: series) {
                     HStack(spacing: 8) {
                         Image(systemName: "rectangle.stack.fill")
-                        Text(series.title ?? String(localized: "系列"))
-                            .lineLimit(1)
+                            .foregroundColor(themeManager.currentColor)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("所属系列")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Text(series.title ?? String(localized: "系列"))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                        }
+
                         Spacer()
+
                         Image(systemName: "chevron.right")
+                            .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    .padding()
-                    .background(Color.secondary.opacity(0.1))
+                    .padding(12)
+                    .frame(maxWidth: .infinity)
+                    .background(themeManager.currentColor.opacity(0.1))
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)

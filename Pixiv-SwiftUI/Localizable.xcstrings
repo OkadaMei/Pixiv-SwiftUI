@@ -272,6 +272,7 @@
       }
     },
     "%lldP" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4785,6 +4786,9 @@
         }
       }
     },
+    "查看最新作品" : {
+
+    },
     "查看最新章节" : {
       "localizations" : {
         "en" : {
@@ -4978,6 +4982,7 @@
       }
     },
     "正在以图搜图..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
