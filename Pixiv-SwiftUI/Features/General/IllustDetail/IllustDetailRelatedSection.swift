@@ -94,8 +94,10 @@ struct IllustDetailRelatedSection: View {
                 .padding()
             } else {
                 illustsGridView
+                    .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoadingRelated)
         .frame(maxWidth: width)
         .padding(.bottom, 30)
         .onChange(of: relatedIllusts) { _, _ in
@@ -128,12 +130,15 @@ struct IllustDetailRelatedSection: View {
     }
 
     private var loadingView: some View {
-        HStack {
-            Spacer()
-            ProgressView()
-            Spacer()
-        }
+        SkeletonIllustWaterfallGrid(
+            columnCount: actualColumnCount,
+            itemCount: actualColumnCount * 2,
+            aspectRatio: 1.0,
+            width: width - 24
+        )
+        .padding(.horizontal, 12)
         .frame(minHeight: 300)
+        .transition(.opacity)
     }
 
     private var errorView: some View {

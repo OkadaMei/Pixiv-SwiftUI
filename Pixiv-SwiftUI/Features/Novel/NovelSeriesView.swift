@@ -28,14 +28,17 @@ struct NovelSeriesView: View {
         ScrollView {
             Group {
                 if store.isLoading && store.seriesDetail == nil {
-                    loadingView
+                    skeletonLoadingView
+                        .transition(.opacity)
                 } else if let error = store.errorMessage {
                     errorView(error)
                 } else if let detail = store.seriesDetail {
                     content(detail)
+                        .transition(.opacity)
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoading && store.seriesDetail == nil)
         .navigationTitle(store.seriesDetail?.title ?? String(localized: "系列详情"))
         .id("SeriesScrollView-\(seriesId)")  // 添加稳定的 ID
         .onAppear {
@@ -116,16 +119,40 @@ struct NovelSeriesView: View {
         }
     }
 
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                #if os(macOS)
-                .controlSize(.small)
-                #endif
-            Text("加载中...")
-                .foregroundColor(.secondary)
+    private var skeletonLoadingView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // 系列描述骨架
+            VStack(alignment: .leading, spacing: 8) {
+                SkeletonView(height: 12, width: nil, cornerRadius: 4)
+                SkeletonView(height: 12, width: 250, cornerRadius: 4)
+            }
+
+            // 系列状态标签骨架
+            HStack(spacing: 16) {
+                SkeletonCapsule(width: 60, height: 20)
+                SkeletonCapsule(width: 40, height: 20)
+                SkeletonCapsule(width: 80, height: 20)
+            }
+
+            // 查看最新章节按钮骨架
+            SkeletonRoundedRectangle(height: 44)
+
+            Divider()
+
+            // 小说列表标题骨架
+            SkeletonView(height: 18, width: 80, cornerRadius: 4)
+
+            // 小说列表骨架
+            VStack(spacing: 0) {
+                ForEach(0..<5, id: \.self) { index in
+                    SkeletonNovelListCard()
+                    if index < 4 {
+                        Divider()
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 
     private func errorView(_ error: String) -> some View {

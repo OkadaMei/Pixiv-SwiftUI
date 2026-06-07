@@ -37,12 +37,14 @@ struct SauceNaoResultListView: View {
                         description: Text(errorMessage)
                     )
                 } else if store.isLoading && filteredItems.isEmpty {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("正在以图搜图...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    SkeletonIllustWaterfallGrid(
+                        columnCount: dynamicColumnCount,
+                        itemCount: 12,
+                        width: waterfallWidth
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .transition(.opacity)
                 } else if allDetailLoadsFailed {
                     ContentUnavailableView(
                         "未能加载可显示的插画",
@@ -84,8 +86,10 @@ struct SauceNaoResultListView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 12)
                     }
+                    .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: store.isLoading)
         }
         .navigationTitle("以图搜图")
         #if os(iOS)

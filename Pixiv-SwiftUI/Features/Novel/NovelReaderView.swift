@@ -27,6 +27,7 @@ struct NovelReaderView: View {
             readerBackground
             contentView
         }
+        .animation(.easeInOut(duration: 0.25), value: store.isLoading)
         .navigationTitle(store.novel?.title ?? "加载中...")
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -172,8 +173,8 @@ struct NovelReaderView: View {
     @ViewBuilder
     private var contentView: some View {
         if store.isLoading {
-            ProgressView("加载中...")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            novelReaderSkeleton
+                .transition(.opacity)
         } else if let error = store.errorMessage {
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle")
@@ -255,6 +256,47 @@ struct NovelReaderView: View {
                     }
                 }
             }
+            .transition(.opacity)
+        }
+    }
+
+    private var novelReaderSkeleton: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // 标题骨架
+                SkeletonView(height: 22, width: 280, cornerRadius: 4)
+                    .padding(.top, 20)
+
+                // 模拟段落 - 每组 3-4 行文本
+                Group {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 200, cornerRadius: 2)
+                }
+
+                Group {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 160, cornerRadius: 2)
+                }
+
+                // 模拟插图
+                SkeletonRoundedRectangle(height: 200)
+
+                Group {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 180, cornerRadius: 2)
+                }
+
+                Group {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 220, cornerRadius: 2)
+                }
+            }
+            .padding(.horizontal, 16)
         }
     }
 

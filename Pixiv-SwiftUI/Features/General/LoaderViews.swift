@@ -18,8 +18,10 @@ struct IllustLoaderView: View {
         Group {
             if let illust = illust {
                 IllustDetailView(illust: illust)
+                    .transition(.opacity)
             } else if isLoading {
-                ProgressView()
+                illustDetailSkeleton
+                    .transition(.opacity)
                     .onAppear {
                         loadIllust()
                     }
@@ -37,10 +39,55 @@ struct IllustLoaderView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoading)
         .navigationTitle("")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private var illustDetailSkeleton: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                // 主图骨架
+                SkeletonRoundedRectangle(height: 400)
+
+                // 标题和作者
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonView(height: 22, width: 280, cornerRadius: 4)
+                    SkeletonView(height: 16, width: 160, cornerRadius: 4)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+                // 操作按钮行
+                HStack(spacing: 16) {
+                    SkeletonCapsule(width: 60, height: 32)
+                    SkeletonCapsule(width: 60, height: 32)
+                    SkeletonCapsule(width: 60, height: 32)
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                // 描述段落
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 180, cornerRadius: 2)
+                }
+                .padding(.horizontal)
+
+                // 信息行
+                HStack(spacing: 24) {
+                    SkeletonView(height: 12, width: 60, cornerRadius: 2)
+                    SkeletonView(height: 12, width: 80, cornerRadius: 2)
+                    SkeletonView(height: 12, width: 70, cornerRadius: 2)
+                    Spacer()
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical)
+        }
     }
 
     private func loadIllust() {
@@ -73,8 +120,10 @@ struct NovelLoaderView: View {
         Group {
             if let novel = novel {
                 NovelDetailView(novel: novel)
+                    .transition(.opacity)
             } else if isLoading {
-                ProgressView()
+                novelDetailSkeleton
+                    .transition(.opacity)
                     .onAppear {
                         loadNovel()
                     }
@@ -92,10 +141,63 @@ struct NovelLoaderView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isLoading)
         .navigationTitle("")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private var novelDetailSkeleton: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                // 封面图骨架
+                SkeletonRoundedRectangle(height: 250)
+
+                // 标题和作者
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonView(height: 22, width: 300, cornerRadius: 4)
+                    SkeletonView(height: 16, width: 140, cornerRadius: 4)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+                // 操作按钮行
+                HStack(spacing: 16) {
+                    SkeletonCapsule(width: 70, height: 32)
+                    SkeletonCapsule(width: 70, height: 32)
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                // 简介段落
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: nil, cornerRadius: 2)
+                    SkeletonView(height: 14, width: 200, cornerRadius: 2)
+                }
+                .padding(.horizontal)
+
+                // 标签行
+                HStack(spacing: 8) {
+                    SkeletonCapsule(width: 50, height: 24)
+                    SkeletonCapsule(width: 70, height: 24)
+                    SkeletonCapsule(width: 40, height: 24)
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                // 信息行
+                HStack(spacing: 24) {
+                    SkeletonView(height: 12, width: 50, cornerRadius: 2)
+                    SkeletonView(height: 12, width: 70, cornerRadius: 2)
+                    Spacer()
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical)
+        }
     }
 
     private func loadNovel() {
