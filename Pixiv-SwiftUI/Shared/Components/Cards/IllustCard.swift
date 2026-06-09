@@ -112,37 +112,43 @@ struct IllustCard: View, Equatable {
                 thumbnailImage
                     .clipped()
 
-                HStack(spacing: 4) {
-                    if isManga {
-                        Text("漫画").badgeStyle()
-                    }
+                VStack(spacing: 0) {
+                    HStack(spacing: 4) {
+                        if isManga {
+                            Text("漫画").badgeStyle()
+                        }
 
-                    if isUgoira {
-                        Text("动图").badgeStyle()
-                    }
+                        if isUgoira {
+                            Text("动图").badgeStyle()
+                        }
 
-                    if isAI {
-                        Text("AI").badgeStyle()
+                        if isAI {
+                            Text("AI").badgeStyle()
+                        }
+                    }
+                    .padding(6)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                    if showsBookmarkCount {
+                        Spacer(minLength: 0)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart.fill")
+                                .font(.caption2)
+                            Text(NumberFormatter.formatCount(illust.totalBookmarks))
+                        }
+                        .badgeStyle()
+                        .padding(6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(6)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .glassEffectContainerIfAvailable(spacing: 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if illust.pageCount > 1 {
                     Text("\(illust.pageCount)")
                         .badgeStyle()
                         .padding(6)
-                }
-
-                if showsBookmarkCount {
-                    HStack(spacing: 4) {
-                        Image(systemName: "heart.fill")
-                            .font(.caption2)
-                        Text(NumberFormatter.formatCount(illust.totalBookmarks))
-                    }
-                    .badgeStyle()
-                    .padding(6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 }
             }
 

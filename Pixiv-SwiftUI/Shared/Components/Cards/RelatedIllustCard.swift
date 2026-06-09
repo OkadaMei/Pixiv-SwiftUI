@@ -108,6 +108,7 @@ struct RelatedIllustCard: View, Equatable {
                     }
                     .padding(6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .glassEffectContainerIfAvailable(spacing: 8)
 
                     if illust.pageCount > 1 {
                         Text("\(illust.pageCount)")

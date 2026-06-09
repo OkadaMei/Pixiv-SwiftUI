@@ -442,70 +442,29 @@ struct BrowseHistoryCard: View {
                     .clipped()
                     .blur(radius: shouldBlur ? 20 : 0)
 
-                    if isAI {
-                        Text("AI")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background {
-                                if #available(iOS 26.0, macOS 26.0, *) {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(.clear)
-                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                } else {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(.ultraThinMaterial)
-                                }
+                    VStack(spacing: 0) {
+                        if isAI {
+                            Text("AI")
+                                .badgeStyle()
+                                .padding(4)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        }
+
+                        HStack(spacing: 4) {
+                            if isUgoira {
+                                Text("动图")
+                                    .badgeStyle()
                             }
-                            .cornerRadius(8)
-                            .padding(4)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    }
 
-                    HStack(spacing: 4) {
-                        if isUgoira {
-                            Text("动图")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background {
-                                    if #available(iOS 26.0, macOS 26.0, *) {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.clear)
-                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.ultraThinMaterial)
-                                    }
-                                }
-                                .cornerRadius(8)
+                            if illust.pageCount > 1 {
+                                Text("\(illust.pageCount)")
+                                    .badgeStyle()
+                            }
                         }
-
-                        if illust.pageCount > 1 {
-                            Text("\(illust.pageCount)")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background {
-                                    if #available(iOS 26.0, macOS 26.0, *) {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.clear)
-                                .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(.ultraThinMaterial)
-                                    }
-                                }
-                                .cornerRadius(8)
-                        }
+                        .padding(6)
                     }
-                    .padding(6)
+                    .glassEffectContainerIfAvailable(spacing: 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {

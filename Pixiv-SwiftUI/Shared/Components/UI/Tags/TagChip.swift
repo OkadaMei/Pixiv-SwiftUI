@@ -37,7 +37,7 @@ struct TagChip: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        let chipContent = HStack(spacing: 4) {
             Text("#")
                 .foregroundColor(themeManager.currentColor)
                 .font(.caption)
@@ -68,12 +68,11 @@ struct TagChip: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background {
-            if #available(iOS 26.0, macOS 26.0, *) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.clear)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
-            } else {
+
+        if #available(iOS 26.0, macOS 26.0, *) {
+            chipContent.glassEffect(.regular, in: .rect(cornerRadius: 12))
+        } else {
+            chipContent.background {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(themeManager.currentColor.opacity(colorScheme == .dark ? 0.2 : 0.12))
             }

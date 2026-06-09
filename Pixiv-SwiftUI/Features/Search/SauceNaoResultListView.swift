@@ -120,21 +120,7 @@ private struct SauceNaoResultWaterfallCard: View {
         )
         .overlay(alignment: .topTrailing) {
             Text(item.similarityTagText)
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background {
-                    if #available(iOS 26.0, macOS 26.0, *) {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.clear)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                    } else {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
-                }
+                .badgeStyle()
                 .padding(6)
                 .padding(.top, item.illust.pageCount > 1 ? 24 : 0)
                 .allowsHitTesting(false)

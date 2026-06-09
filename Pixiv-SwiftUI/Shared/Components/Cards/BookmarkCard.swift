@@ -115,7 +115,7 @@ struct BookmarkCard: View, Equatable {
                 .clipped()
                 .blur(radius: shouldBlur ? 20 : 0)
 
-                VStack {
+                VStack(spacing: 0) {
                     HStack(spacing: 4) {
                         if isDeleted {
                             Text("已删除")
@@ -129,21 +129,21 @@ struct BookmarkCard: View, Equatable {
                         }
 
                         if isManga {
-                            tagLabel("漫画")
+                            Text("漫画").badgeStyle()
                         }
 
                         if isUgoira {
-                            tagLabel("动图")
+                            Text("动图").badgeStyle()
                         }
 
                         if isAI {
-                            tagLabel("AI")
+                            Text("AI").badgeStyle()
                         }
                     }
                     .padding(6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-                    Spacer()
+                    Spacer(minLength: 0)
 
                     if cacheStatus != .none && bookmarkCacheEnabled {
                         HStack {
@@ -153,24 +153,12 @@ struct BookmarkCard: View, Equatable {
                         .padding(6)
                     }
                 }
+                .glassEffectContainerIfAvailable(spacing: 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if illust.pageCount > 1 {
                     Text("\(illust.pageCount)")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background {
-                            if #available(iOS 26.0, macOS 26.0, *) {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(.clear)
-                                    .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                            } else {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(.ultraThinMaterial)
-                            }
-                        }
+                        .badgeStyle()
                         .padding(6)
                 }
             }
@@ -308,26 +296,6 @@ struct BookmarkCard: View, Equatable {
     }
 
     @ViewBuilder
-    private func tagLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.bold)
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background {
-                if #available(iOS 26.0, macOS 26.0, *) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.clear)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.ultraThinMaterial)
-                }
-            }
-    }
-
-    @ViewBuilder
     private var cacheStatusLabel: some View {
         switch cacheStatus {
         case .none:
@@ -336,34 +304,10 @@ struct BookmarkCard: View, Equatable {
             Text("未缓存")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background {
-                    if #available(iOS 26.0, macOS 26.0, *) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.clear)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                    } else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.ultraThinMaterial)
-                    }
-                }
+                .badgeStyle()
         case .cached(let quality):
             Text(quality.displayName)
-                .font(.caption2)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background {
-                    if #available(iOS 26.0, macOS 26.0, *) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.clear)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                    } else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.ultraThinMaterial)
-                    }
-                }
+                .badgeStyle()
         }
     }
 

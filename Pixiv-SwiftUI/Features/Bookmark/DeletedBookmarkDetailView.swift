@@ -208,20 +208,22 @@ struct DeletedBookmarkDetailView: View {
 
             FlowLayout(spacing: 8) {
                 ForEach(illust.tags, id: \.name) { tag in
-                    Text("#\(tag.translatedName ?? tag.name)")
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background {
-                            if #available(iOS 26.0, macOS 26.0, *) {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(.clear)
-                                    .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                            } else {
+                    if #available(iOS 26.0, macOS 26.0, *) {
+                        Text("#\(tag.translatedName ?? tag.name)")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                    } else {
+                        Text("#\(tag.translatedName ?? tag.name)")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.secondary.opacity(0.1))
                             }
-                        }
+                    }
                 }
             }
 
@@ -366,23 +368,28 @@ struct DeletedBookmarkDetailView: View {
 
     @ViewBuilder
     private func toastView(message: String) -> some View {
-        Text(message)
-            .font(.subheadline)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background {
-                if #available(iOS 26.0, macOS 26.0, *) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.clear)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                } else {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            Text(message)
+                .font(.subheadline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                .padding(.bottom, 20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut, value: showCopyToast || showSaveToast)
+        } else {
+            Text(message)
+                .font(.subheadline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background {
                     RoundedRectangle(cornerRadius: 20)
                         .fill(.ultraThinMaterial)
                 }
-            }
-            .padding(.bottom, 20)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .animation(.easeInOut, value: showCopyToast || showSaveToast)
+                .padding(.bottom, 20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut, value: showCopyToast || showSaveToast)
+        }
     }
 }
 

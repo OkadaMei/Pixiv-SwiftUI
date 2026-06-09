@@ -5,7 +5,7 @@ struct ReadingProgressTag: View {
     let percentage: Int
 
     var body: some View {
-        HStack(spacing: 2) {
+        let tagContent = HStack(spacing: 2) {
             Text("\(percentage)%")
                 .font(.caption)
                 .fontWeight(.medium)
@@ -13,16 +13,15 @@ struct ReadingProgressTag: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background {
-            if #available(iOS 26.0, macOS 26.0, *) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.clear)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
-            } else {
+
+        if #available(iOS 26.0, macOS 26.0, *) {
+            tagContent.glassEffect(.regular, in: .rect(cornerRadius: 12))
+        } else {
+            tagContent.background {
                 Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.15)
             }
+            .cornerRadius(12)
         }
-        .cornerRadius(12)
     }
 }
 
