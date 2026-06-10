@@ -123,26 +123,7 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 
 ## 二、性能 (Performance)
 
-### 问题 P-1: CacheManager 内存泄漏隐患
 
-**严重程度**: ★★★
-**文件**: `Shared/Utils/CacheManager.swift`
-
-`CacheManager` 使用 `[String: CacheEntry]` 字典缓存数据，其中 `CacheEntry.data` 是 `Any` 类型（类型擦除）。系统内存压力时无自动清理机制，仅有 `maxEntries = 100` 的软限制。
-
-**具体风险**:
-- `CacheEntry` 强引用任意类型对象，大对象（如大型 `[Illusts]` 数组）可能无法及时释放
-- 未监听 `didReceiveMemoryWarningNotification`
-- `cleanExpiredEntries()` 仅在 `cacheMap.count > maxEntries` 时触发，过期缓存可能长时间驻留
-- `Any` 类型擦除意味着每次 `get<T>()` 都是运行时类型强转，存在 `as!` 失败风险
-
-**建议**:
-- 改用 `NSCache<NSString, CacheEntry>` —— 系统级的自动淘汰
-- 或在 `AppInitializer` 中注册内存警告回调，调用 `CacheManager.clearAll()`
-- 考虑引入 `DiskCache` + `MemoryCache` 两层架构而非单一字典
-- 对缓存值类型使用泛型约束，避免 `Any`
-
----
 
 ### 问题 P-2: 双重缓存策略不一致
 
@@ -342,7 +323,6 @@ NSApp.windows.forEach { $0.appearance = appearance }
 | 优先级 | 分类 | 问题 | 预估工作量 |
 |--------|------|------|-----------|
 | 🔴 P0 | UX | UX-1 全局错误处理不统一 | 3-5天 |
-| 🔴 P0 | Performance | P-1 CacheManager 内存泄漏隐患 | 1-2天 |
 | 🟡 P1 | Architecture | A-2 PixivAPI 重构 | 5-7天 |
 | 🟡 P1 | Architecture | A-4 引入 DTO 映射层 | 5-10天 |
 | 🟢 P2 | Architecture | A-3 Store 依赖注入 | 3-5天 |
