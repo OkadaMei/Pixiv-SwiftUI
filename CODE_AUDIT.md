@@ -283,27 +283,9 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 ---
 
-### 问题 UX-3: 搜索缺少输入防抖 (Debounce)
 
-**严重程度**: ★★
-**文件**: `Features/Search/SearchView.swift`
 
-搜索输入框未实现输入防抖，在连续快速输入时会触发多次 API 请求。不仅浪费用户流量，还可能因请求返回顺序导致搜索结果与输入不匹配。
-
-**建议**:
-```swift
-// 在 SearchStore 或 SearchView 中添加防抖
-.task(id: searchText) {
-    try? await Task.sleep(nanoseconds: 300_000_000)  // 300ms
-    guard !Task.isCancelled else { return }
-    await performSearch()
-}
-```
-同时在 `searchText` 变化时自动取消前一个 Task。
-
----
-
-### 问题 UX-4: 首次启动缺少引导流程
+### 问题 UX-3: 首次启动缺少引导流程
 
 **严重程度**: ★★
 
@@ -363,7 +345,6 @@ NSApp.windows.forEach { $0.appearance = appearance }
 | 🔴 P0 | Performance | P-1 CacheManager 内存泄漏隐患 | 1-2天 |
 | 🟡 P1 | Architecture | A-2 PixivAPI 重构 | 5-7天 |
 | 🟡 P1 | Architecture | A-4 引入 DTO 映射层 | 5-10天 |
-| 🟡 P1 | UX | UX-3 搜索防抖 | 0.5天 |
 | 🟢 P2 | Architecture | A-3 Store 依赖注入 | 3-5天 |
 | 🟢 P2 | Performance | P-2 统一缓存策略 | 2-3天 |
 | 🟢 P2 | UX | UX-4 首次引导流程 | 3-5天 |
