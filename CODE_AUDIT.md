@@ -306,17 +306,6 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 ---
 
-### 问题 O-2: macOS 回退逻辑中 NSAppearance 可能已被废弃
-
-**文件**: `Core/State/ThemeManager.swift`（L59-68）
-
-```swift
-NSApp.appearance = appearance
-NSApp.windows.forEach { $0.appearance = appearance }
-```
-在 macOS 14+ 中，`NSAppearance` 的直接设置已被标记为 deprecated，推荐使用 `NSWindow.appearance` 或 SwiftUI 的 `preferredColorScheme`。
-
----
 
 ## 优先级总览
 
@@ -329,7 +318,7 @@ NSApp.windows.forEach { $0.appearance = appearance }
 | 🟢 P2 | Performance | P-2 统一缓存策略 | 2-3天 |
 | 🟢 P2 | UX | UX-4 首次引导流程 | 3-5天 |
 | 🟢 P3 | Architecture | A-5 View 瘦身 | 持续改进 |
-| 🔵 P4 | 其他 | O-1 SwiftLint 配置、O-2 macOS API | 按需 |
+| 🔵 P4 | 其他 | O-1 SwiftLint 配置 | 按需 |
 
 ---
 
