@@ -440,15 +440,9 @@ final class PixivAPI {
 
         return try await NetworkClient.shared.get(
             from: url,
-            headers: getAuthHeaders(for: UserDefaults.standard.string(forKey: "access_token") ?? ""),
+            headers: getAuthHeaders(for: AccountStore.shared.currentAccount?.accessToken ?? ""),
             responseType: T.self
         )
-    }
-
-    // MARK: - Private Properties
-
-    private var accessToken: String? {
-        return UserDefaults.standard.string(forKey: "access_token")
     }
 
     // MARK: - 小说相关
