@@ -26,13 +26,12 @@ struct UpdateAvailableSheet: View {
                 .foregroundColor(.secondary)
 
             ScrollView {
-                Text(updateInfo.releaseNotes)
-                    .font(.body)
-                    .foregroundColor(.secondary)
+                Text(LocalizedStringKey(stringLiteral: updateInfo.releaseNotes))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
             }
-            .frame(maxHeight: 150)
+            #if os(macOS)
+            .frame(maxHeight: 200)
+            #endif
 
             HStack(spacing: 20) {
                 Button("关闭") {
@@ -54,7 +53,9 @@ struct UpdateAvailableSheet: View {
             }
         }
         .padding(30)
-        .frame(width: 400, height: 400)
+        #if os(macOS)
+        .frame(width: 420, height: 450)
+        #endif
     }
 }
 
@@ -63,7 +64,27 @@ struct UpdateAvailableSheet: View {
         updateInfo: AppUpdateInfo(
             version: "0.11.2",
             releaseName: "v0.11.2",
-            releaseNotes: "修复了一些 bug\n新增了功能\n优化了性能",
+            releaseNotes: """
+            ## 新功能
+            - **深色模式** 适配完成
+            - 新增 *收藏夹* 分组功能
+            - `API` 请求速度优化
+
+            ## 修复
+            - 修复了启动时[崩溃](https://github.com)的问题
+            - 优化了图片加载性能
+
+            > 感谢所有用户的反馈
+
+            ### 技术细节
+            1. 升级了 Kingfisher 到 8.x
+            2. 重构了缓存层
+
+            ```swift
+            let x = 42
+            print(x)
+            ```
+            """,
             releaseUrl: "https://github.com/Eslzzyl/Pixiv-SwiftUI/releases",
             downloadUrl: nil
         ),
