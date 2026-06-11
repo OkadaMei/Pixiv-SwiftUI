@@ -148,12 +148,12 @@ struct UserPreviewCard: View {
             do {
                 if newState {
                     let isPrivate = UserSettingStore.shared.userSetting.defaultPrivateLike
-                    try await PixivAPI.shared.followUser(
+                    try await PixivAPI.shared.userAPI.followUser(
                         userId: userPreview.user.id.stringValue,
                         restrict: isPrivate ? "private" : "public"
                     )
                 } else {
-                    try await PixivAPI.shared.unfollowUser(userId: userPreview.user.id.stringValue)
+                    try await PixivAPI.shared.userAPI.unfollowUser(userId: userPreview.user.id.stringValue)
                 }
             } catch {
                 // 乐观更新失败，回滚到之前的状态

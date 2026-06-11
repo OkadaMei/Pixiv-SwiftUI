@@ -624,14 +624,14 @@ struct IllustDetailView: View {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
                     await syncBookmarkCacheRemoval(illustId: illustId)
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     await syncBookmarkCacheUpdate(restrict: isPrivate ? "private" : "public")
                 } else {
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     await syncBookmarkCacheAdd(restrict: isPrivate ? "private" : "public")
                 }
             } catch {
@@ -773,7 +773,7 @@ struct IllustDetailView: View {
 
         Task {
             do {
-                let detail = try await PixivAPI.shared.getIllustDetail(illustId: illust.id)
+                let detail = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illust.id)
                 await MainActor.run {
                     if let comments = detail.totalComments {
                         self.totalComments = comments
@@ -808,7 +808,7 @@ struct IllustDetailView: View {
 
         do {
             let type = isManga ? "manga" : "illust"
-            try await PixivAPI.shared.deleteIllust(illustId: illust.id, type: type)
+            try await PixivAPI.shared.illustAPI.deleteIllust(illustId: illust.id, type: type)
 
             await MainActor.run {
                 showDeleteSuccessToast = true

@@ -179,7 +179,7 @@ private final class SauceNaoResultListStore {
             if Task.isCancelled { return }
 
             do {
-                let illust = try await PixivAPI.shared.getIllustDetail(illustId: match.illustId)
+                let illust = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: match.illustId)
                 let item = SauceNaoResultItem(index: index, illust: illust, similarity: match.similarity)
 
                 // 确保 UI 更新在主线程

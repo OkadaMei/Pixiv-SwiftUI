@@ -95,7 +95,7 @@ struct IllustLoaderView: View {
         errorMessage = nil
         Task {
             do {
-                let illust = try await PixivAPI.shared.getIllustDetail(illustId: illustId)
+                let illust = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illustId)
                 await MainActor.run {
                     self.illust = illust
                     self.isLoading = false
@@ -205,7 +205,7 @@ struct NovelLoaderView: View {
         errorMessage = nil
         Task {
             do {
-                let novel = try await PixivAPI.shared.getNovelDetail(novelId: novelId)
+                let novel = try await PixivAPI.shared.novelAPI.getNovelDetail(novelId: novelId)
                 await MainActor.run {
                     self.novel = novel
                     self.isLoading = false

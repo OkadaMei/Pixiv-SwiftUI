@@ -7,8 +7,6 @@ final class NetworkClient {
     static let shared = NetworkClient()
 
     private let session: URLSession
-    private var isRefreshing = false
-    private var refreshTask: Task<Void, Error>?
 
     private init() {
         let config = URLSessionConfiguration.default
@@ -271,7 +269,7 @@ final class NetworkClient {
                 #if DEBUG
                 Logger.token.debug("检测到 OAuth 错误，尝试刷新 token...")
                 #endif
-                try await refreshTokenIfNeeded()
+                try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
                 Logger.token.debug("Token 刷新成功，重试请求")
@@ -279,8 +277,8 @@ final class NetworkClient {
 
                 if retryCount < 1 {
                     var newRequest = request
-                    if let newAccessToken = AccountStore.shared.currentAccount?.accessToken {
-                        newRequest.setValue("Bearer \(newAccessToken)", forHTTPHeaderField: "Authorization")
+                    if let newToken = SessionManager.shared.currentAccessToken {
+                        newRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
                     }
                     return try await perform(newRequest, responseType: responseType, isLongContent: isLongContent, retryCount: retryCount + 1)
                 }
@@ -327,7 +325,7 @@ final class NetworkClient {
                 #if DEBUG
                 Logger.token.debug("[直连] 检测到 OAuth 错误，尝试刷新 token...")
                 #endif
-                try await refreshTokenIfNeeded()
+                try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
                 Logger.token.debug("[直连] Token 刷新成功，重试请求")
@@ -335,8 +333,8 @@ final class NetworkClient {
 
                 if retryCount < 1 {
                     var newHeaders = headers
-                    if let newAccessToken = AccountStore.shared.currentAccount?.accessToken {
-                        newHeaders["Authorization"] = "Bearer \(newAccessToken)"
+                    if let newToken = SessionManager.shared.currentAccessToken {
+                        newHeaders["Authorization"] = "Bearer \(newToken)"
                     }
                     return try await directGet(from: url, headers: newHeaders, responseType: responseType, isLongContent: isLongContent, retryCount: retryCount + 1)
                 }
@@ -387,7 +385,7 @@ final class NetworkClient {
                 #if DEBUG
                 Logger.token.debug("[直连][POST] 检测到 OAuth 错误，尝试刷新 token...")
                 #endif
-                try await refreshTokenIfNeeded()
+                try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
                 Logger.token.debug("[直连][POST] Token 刷新成功，重试请求")
@@ -395,8 +393,8 @@ final class NetworkClient {
 
                 if retryCount < 1 {
                     var newHeaders = headers
-                    if let newAccessToken = AccountStore.shared.currentAccount?.accessToken {
-                        newHeaders["Authorization"] = "Bearer \(newAccessToken)"
+                    if let newToken = SessionManager.shared.currentAccessToken {
+                        newHeaders["Authorization"] = "Bearer \(newToken)"
                     }
                     return try await directPost(to: url, body: body, headers: newHeaders, responseType: responseType, isLongContent: isLongContent, retryCount: retryCount + 1)
                 }
@@ -542,65 +540,6 @@ final class NetworkClient {
         } else {
             // 非 Pixiv 域名不应走直连；此处作为兜底，避免误路由到图片节点。
             return .api
-        }
-    }
-
-    // MARK: - Token 刷新
-
-    /// 刷新 token（如果需要）
-    private func refreshTokenIfNeeded() async throws {
-        if isRefreshing {
-            if let task = refreshTask {
-                try await task.value
-            }
-            return
-        }
-
-        isRefreshing = true
-        defer { isRefreshing = false }
-
-        guard let refreshToken = AccountStore.shared.currentAccount?.refreshToken else {
-            #if DEBUG
-            Logger.token.debug("无 refreshToken，无法刷新")
-            #endif
-            notifyTokenRefreshFailed(message: "无登录凭证，请重新登录")
-            return
-        }
-
-        refreshTask = Task {
-            do {
-                let (newAccessToken, newRefreshToken, _, expiresIn) = try await PixivAPI.shared.refreshAccessToken(refreshToken)
-
-                if let currentAccount = AccountStore.shared.currentAccount {
-                    currentAccount.accessToken = newAccessToken
-                    currentAccount.refreshToken = newRefreshToken
-                    try AccountStore.shared.updateAccount(currentAccount, expiresIn: expiresIn)
-                }
-
-                PixivAPI.shared.setAccessToken(newAccessToken)
-
-                #if DEBUG
-                Logger.token.debug("Token 刷新成功，已更新本地存储")
-                #endif
-            } catch {
-                #if DEBUG
-                Logger.token.error("Token 刷新失败: \(error.localizedDescription)")
-                #endif
-                await MainActor.run {
-                    AccountStore.shared.tokenRefreshErrorMessage = error.localizedDescription
-                    AccountStore.shared.showTokenRefreshFailedToast = true
-                }
-                throw error
-            }
-        }
-
-        try await refreshTask?.value
-    }
-
-    private func notifyTokenRefreshFailed(message: String) {
-        Task { @MainActor in
-            AccountStore.shared.tokenRefreshErrorMessage = message
-            AccountStore.shared.showTokenRefreshFailedToast = true
         }
     }
 

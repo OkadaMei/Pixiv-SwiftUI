@@ -57,7 +57,7 @@ class UpdatesStore {
         }
 
         do {
-            let (illusts, nextUrl) = try await api.getFollowIllusts(restrict: effectiveRestrict)
+            let (illusts, nextUrl) = try await api.userAPI.getFollowIllusts(restrict: effectiveRestrict)
             self.updates = illusts
             self.nextUrlUpdates = nextUrl
             cache.set((illusts, nextUrl), forKey: cacheKeyUpdates(restrict: effectiveRestrict), expiration: expiration)
@@ -118,7 +118,7 @@ class UpdatesStore {
         }
 
         do {
-            let (users, nextUrl) = try await api.getUserFollowing(userId: userId)
+            let (users, nextUrl) = try await api.userAPI.getUserFollowing(userId: userId)
             self.following = users
             self.nextUrlFollowing = nextUrl
             cache.set((users, nextUrl), forKey: cacheKeyFollowing(userId: userId), expiration: expiration)

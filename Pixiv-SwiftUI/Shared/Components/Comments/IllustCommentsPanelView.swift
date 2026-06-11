@@ -14,9 +14,9 @@ struct IllustCommentsPanelView: View {
         self.onUserTapped = onUserTapped
         self._viewModel = State(initialValue: CommentPanelBase(
             cacheKeyProvider: { CacheManager.commentsKey(illustId: $0) },
-            loadCommentsAPI: { try await PixivAPI.shared.getIllustComments(illustId: $0) },
-            postCommentAPI: { id, text, parent in try await PixivAPI.shared.postIllustComment(illustId: id, comment: text, parentCommentId: parent) },
-            deleteCommentAPI: { try await PixivAPI.shared.deleteIllustComment(commentId: $0) }
+            loadCommentsAPI: { try await PixivAPI.shared.illustAPI.getIllustComments(illustId: $0) },
+            postCommentAPI: { id, text, parent in try await PixivAPI.shared.illustAPI.postIllustComment(illustId: id, comment: text, parentCommentId: parent) },
+            deleteCommentAPI: { try await PixivAPI.shared.illustAPI.deleteIllustComment(commentId: $0) }
         ))
     }
 

@@ -127,7 +127,7 @@ struct NovelDetailInfoSection: View {
         .task {
             if isLoggedIn && isFollowed == nil {
                 do {
-                    let detail = try await PixivAPI.shared.getUserDetail(userId: novel.user.id.stringValue)
+                    let detail = try await PixivAPI.shared.userAPI.getUserDetail(userId: novel.user.id.stringValue)
                     isFollowed = detail.user.isFollowed
                 } catch {
                     print("Failed to fetch user detail: \(error)")
@@ -366,10 +366,10 @@ struct NovelDetailInfoSection: View {
 
             do {
                 if isFollowed == true {
-                    try await PixivAPI.shared.unfollowUser(userId: userId)
+                    try await PixivAPI.shared.userAPI.unfollowUser(userId: userId)
                     isFollowed = false
                 } else {
-                    try await PixivAPI.shared.followUser(userId: userId)
+                    try await PixivAPI.shared.userAPI.followUser(userId: userId)
                     isFollowed = true
                 }
             } catch {
@@ -398,12 +398,12 @@ struct NovelDetailInfoSection: View {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 } else {
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 }
             } catch {
                 await MainActor.run {

@@ -238,7 +238,7 @@ struct CommentsPanelInlineView: View {
         commentsError = nil
 
         do {
-            let response = try await PixivAPI.shared.getIllustComments(illustId: illust.id)
+            let response = try await PixivAPI.shared.illustAPI.getIllustComments(illustId: illust.id)
             comments = response.comments
             cache.set(response, forKey: cacheKey, expiration: expiration)
             isLoadingComments = false
@@ -268,7 +268,7 @@ struct CommentsPanelInlineView: View {
 
         Task {
             do {
-                let response = try await PixivAPI.shared.getIllustCommentsReplies(commentId: commentId)
+                let response = try await PixivAPI.shared.illustAPI.getIllustCommentsReplies(commentId: commentId)
                 await MainActor.run {
                     repliesDict[commentId] = response.comments
                     loadingReplyIds.remove(commentId)
@@ -297,7 +297,7 @@ struct CommentsPanelInlineView: View {
 
         Task {
             do {
-                _ = try await PixivAPI.shared.postIllustComment(
+                _ = try await PixivAPI.shared.illustAPI.postIllustComment(
                     illustId: illust.id,
                     comment: trimmedComment,
                     parentCommentId: replyToCommentId
@@ -346,7 +346,7 @@ struct CommentsPanelInlineView: View {
         showDeleteAlert = false
 
         do {
-            try await PixivAPI.shared.deleteIllustComment(commentId: commentId)
+            try await PixivAPI.shared.illustAPI.deleteIllustComment(commentId: commentId)
             comments.removeAll { $0.id == commentId }
             for key in repliesDict.keys {
                 repliesDict[key] = repliesDict[key]?.filter { $0.id != commentId }

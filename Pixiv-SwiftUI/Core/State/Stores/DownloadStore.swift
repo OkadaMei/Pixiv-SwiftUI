@@ -770,7 +770,7 @@ final class DownloadStore {
 
                     while retries < maxRetries && content == nil {
                         do {
-                            content = try await PixivAPI.shared.getNovelContent(novelId: chapter.novelId)
+                            content = try await PixivAPI.shared.novelAPI.getNovelContent(novelId: chapter.novelId)
 
                             // 从 API 获取小说基本信息 - 通过小说详情端点
                             if let novelContent = content {

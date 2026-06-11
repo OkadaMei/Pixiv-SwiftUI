@@ -212,7 +212,7 @@ struct IllustDetailInfoSection: View {
         .task {
             if isLoggedIn && illust.user.isFollowed == nil {
                 do {
-                    let detail = try await PixivAPI.shared.getUserDetail(userId: illust.user.id.stringValue)
+                    let detail = try await PixivAPI.shared.userAPI.getUserDetail(userId: illust.user.id.stringValue)
                     illust.user.isFollowed = detail.user.isFollowed
                 } catch {
                     print("Failed to fetch user detail: \(error)")
@@ -388,11 +388,11 @@ struct IllustDetailInfoSection: View {
 
             do {
                 if isFollowed {
-                    try await PixivAPI.shared.unfollowUser(userId: userId)
+                    try await PixivAPI.shared.userAPI.unfollowUser(userId: userId)
                     isFollowed = false
                     illust.user.isFollowed = false
                 } else {
-                    try await PixivAPI.shared.followUser(userId: userId)
+                    try await PixivAPI.shared.userAPI.followUser(userId: userId)
                     isFollowed = true
                     illust.user.isFollowed = true
                 }
@@ -428,14 +428,14 @@ struct IllustDetailInfoSection: View {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
                     await syncBookmarkCacheRemoval(illustId: illustId)
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     await syncBookmarkCacheUpdate(restrict: isPrivate ? "private" : "public")
                 } else {
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     await syncBookmarkCacheAdd(restrict: isPrivate ? "private" : "public")
                 }
             } catch {

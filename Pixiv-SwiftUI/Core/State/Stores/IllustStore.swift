@@ -380,7 +380,7 @@ final class IllustStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getIllustRanking(mode: mode.rawValue, date: dateString)
+            let result = try await api.illustAPI.getIllustRanking(mode: mode.rawValue, date: dateString)
             self.rankingIllustsByMode[mode] = result.illusts
             self.nextUrlsByRankingMode[mode] = result.nextUrl
             cache.set(IllustRankingResponse(illusts: result.illusts, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
@@ -425,7 +425,7 @@ final class IllustStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getIllustRankingByURL(url)
+            let result = try await api.illustAPI.getIllustRankingByURL(url)
             self.rankingIllustsByMode[mode, default: []].append(contentsOf: result.illusts)
             self.nextUrlsByRankingMode[mode] = result.nextUrl
             loadingNextUrlsByRankingMode[mode] = nil

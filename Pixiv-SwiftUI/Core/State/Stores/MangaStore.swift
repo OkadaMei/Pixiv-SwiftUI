@@ -47,9 +47,9 @@ final class MangaStore {
         do {
             let result: (illusts: [Illusts], nextUrl: String?)
             if AccountStore.shared.isLoggedIn {
-                result = try await api.getRecommendedManga()
+                result = try await api.mangaAPI.getRecommendedManga()
             } else {
-                result = try await api.getRecommendedMangaNoLogin()
+                result = try await api.mangaAPI.getRecommendedMangaNoLogin()
             }
             self.recommendedManga = result.illusts
             self.nextUrlRecommended = result.nextUrl
@@ -89,7 +89,7 @@ final class MangaStore {
         defer { isLoadingWatchlist = false }
 
         do {
-            let result = try await api.getWatchlistManga()
+            let result = try await api.mangaAPI.getWatchlistManga()
             self.watchlistSeries = result.series
             self.nextUrlWatchlist = result.nextUrl
             cache.set((result.series, result.nextUrl), forKey: cacheKeyWatchlist, expiration: expiration)
@@ -107,7 +107,7 @@ final class MangaStore {
         defer { isLoadingWatchlist = false }
 
         do {
-            let result = try await api.getMangaSeriesByURL(nextUrl)
+            let result = try await api.mangaAPI.getMangaSeriesByURL(nextUrl)
             self.watchlistSeries.append(contentsOf: result.series)
             self.nextUrlWatchlist = result.nextUrl
             loadingNextUrlWatchlist = nil
@@ -118,7 +118,7 @@ final class MangaStore {
 
     func addSeries(_ seriesId: Int) async {
         do {
-            try await api.addMangaSeries(seriesId: seriesId)
+            try await api.mangaAPI.addMangaSeries(seriesId: seriesId)
             if let index = watchlistSeries.firstIndex(where: { $0.id == seriesId }) {
                 watchlistSeries[index].isFollowed = true
             }
@@ -129,7 +129,7 @@ final class MangaStore {
 
     func removeSeries(_ seriesId: Int) async {
         do {
-            try await api.removeMangaSeries(seriesId: seriesId)
+            try await api.mangaAPI.removeMangaSeries(seriesId: seriesId)
             if let index = watchlistSeries.firstIndex(where: { $0.id == seriesId }) {
                 watchlistSeries[index].isFollowed = false
             }

@@ -298,7 +298,7 @@ struct SearchView: View {
                     isLoadingDetail = true
                     defer { pendingIllustId = nil }
                     do {
-                        let illust = try await PixivAPI.shared.getIllustDetail(illustId: illustId)
+                        let illust = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illustId)
                         await MainActor.run {
                             path.append(illust)
                         }
@@ -318,7 +318,7 @@ struct SearchView: View {
                     isLoadingDetail = true
                     defer { pendingUserId = nil }
                     do {
-                        let userDetail = try await PixivAPI.shared.getUserDetail(userId: userId)
+                        let userDetail = try await PixivAPI.shared.userAPI.getUserDetail(userId: userId)
                         await MainActor.run {
                             path.append(userDetail.user)
                         }

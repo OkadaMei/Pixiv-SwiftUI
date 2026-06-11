@@ -45,7 +45,7 @@ struct IllustWindowRootView: View {
             }
 
             // Otherwise fetch from API
-            let detail = try await PixivAPI.shared.getIllustDetail(illustId: illustID)
+            let detail = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illustID)
             self.illust = detail
             self.isLoading = false
             // Save to store for future use
@@ -98,7 +98,7 @@ struct NovelWindowRootView: View {
                 return
             }
 
-            let detail = try await PixivAPI.shared.getNovelDetail(novelId: novelID)
+            let detail = try await PixivAPI.shared.novelAPI.getNovelDetail(novelId: novelID)
             self.novel = detail
             self.isLoading = false
             // Save to store for future use

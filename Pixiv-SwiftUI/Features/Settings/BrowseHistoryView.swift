@@ -523,9 +523,9 @@ struct BrowseHistoryCard: View {
         Task {
             do {
                 if wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
                 } else {
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: defaultIsPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: defaultIsPrivate)
                 }
             } catch {
                 await MainActor.run {

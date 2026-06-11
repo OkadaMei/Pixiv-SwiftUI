@@ -321,12 +321,12 @@ struct UserDetailView: View {
 
         do {
             if isFollowed {
-                try await PixivAPI.shared.unfollowUser(userId: userId)
+                try await PixivAPI.shared.userAPI.unfollowUser(userId: userId)
                 isFollowed = false
                 store.userDetail?.user.isFollowed = false
             } else {
                 let isPrivate = userSettingStore.userSetting.defaultPrivateLike
-                try await PixivAPI.shared.followUser(userId: userId, restrict: isPrivate ? "private" : "public")
+                try await PixivAPI.shared.userAPI.followUser(userId: userId, restrict: isPrivate ? "private" : "public")
                 isFollowed = true
                 store.userDetail?.user.isFollowed = true
             }
@@ -342,7 +342,7 @@ struct UserDetailView: View {
         defer { isFollowLoading = false }
 
         do {
-            try await PixivAPI.shared.followUser(userId: userId, restrict: isPrivate ? "private" : "public")
+            try await PixivAPI.shared.userAPI.followUser(userId: userId, restrict: isPrivate ? "private" : "public")
             isFollowed = true
             store.userDetail?.user.isFollowed = true
         } catch {
@@ -357,7 +357,7 @@ struct UserDetailView: View {
         defer { isFollowLoading = false }
 
         do {
-            try await PixivAPI.shared.unfollowUser(userId: userId)
+            try await PixivAPI.shared.userAPI.unfollowUser(userId: userId)
             isFollowed = false
             store.userDetail?.user.isFollowed = false
         } catch {

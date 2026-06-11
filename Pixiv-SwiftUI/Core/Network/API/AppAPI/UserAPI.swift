@@ -4,10 +4,14 @@ import Foundation
 @MainActor
 final class UserAPI {
     private let client = NetworkClient.shared
-    private let authHeaders: [String: String]
 
-    init(authHeaders: [String: String]) {
-        self.authHeaders = authHeaders
+    init() {}
+
+    private func requireAuthHeaders() throws -> [String: String] {
+        guard let headers = SessionManager.shared.authHeaders else {
+            throw NetworkError.invalidResponse
+        }
+        return headers
     }
 
     /// 获取用户作品列表
@@ -31,7 +35,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
 
@@ -46,7 +50,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
 
@@ -67,7 +71,7 @@ final class UserAPI {
 
         return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: UserDetailResponse.self
         )
     }
@@ -94,7 +98,7 @@ final class UserAPI {
         _ = try await client.post(
             to: url,
             body: formEncodedData,
-            headers: authHeaders.merging(["Content-Type": "application/x-www-form-urlencoded"], uniquingKeysWith: { (_, new) in new }),
+            headers: try requireAuthHeaders(),
             responseType: EmptyResponse.self
         )
     }
@@ -120,7 +124,7 @@ final class UserAPI {
         _ = try await client.post(
             to: url,
             body: formEncodedData,
-            headers: authHeaders.merging(["Content-Type": "application/x-www-form-urlencoded"], uniquingKeysWith: { (_, new) in new }),
+            headers: try requireAuthHeaders(),
             responseType: EmptyResponse.self
         )
     }
@@ -138,7 +142,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
 
@@ -150,7 +154,7 @@ final class UserAPI {
         var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.userBookmarksIllust)
         components?.queryItems = [
             URLQueryItem(name: "user_id", value: userId),
-            URLQueryItem(name: "restrict", value: restrict)
+            URLQueryItem(name: "restrict", value: restrict),
         ]
 
         guard let url = components?.url else {
@@ -159,7 +163,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
 
@@ -168,7 +172,7 @@ final class UserAPI {
 
     /// 获取用户小说列表
     func getUserNovels(userId: String, offset: Int = 0) async throws -> ([Novel], String?) {
-        var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.userNovels)
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/user/novels")
         components?.queryItems = [
             URLQueryItem(name: "user_id", value: userId),
             URLQueryItem(name: "filter", value: "for_ios"),
@@ -181,8 +185,8 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
-            responseType: UserNovels.self
+            headers: try requireAuthHeaders(),
+            responseType: NovelResponse.self
         )
 
         return (response.novels, response.nextUrl)
@@ -196,8 +200,8 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
-            responseType: UserNovels.self
+            headers: try requireAuthHeaders(),
+            responseType: NovelResponse.self
         )
 
         return (response.novels, response.nextUrl)
@@ -208,7 +212,7 @@ final class UserAPI {
         var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.userFollowing)
         components?.queryItems = [
             URLQueryItem(name: "user_id", value: userId),
-            URLQueryItem(name: "restrict", value: restrict)
+            URLQueryItem(name: "restrict", value: restrict),
         ]
 
         guard let url = components?.url else {
@@ -217,7 +221,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: UserPreviewsResponse.self
         )
 
@@ -237,7 +241,7 @@ final class UserAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: UserPreviewsResponse.self
         )
 

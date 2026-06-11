@@ -255,7 +255,7 @@ struct IllustDetailRelatedSection: View {
 
         Task {
             do {
-                let result = try await PixivAPI.shared.getRelatedIllusts(illustId: illustId)
+                let result = try await PixivAPI.shared.illustAPI.getRelatedIllusts(illustId: illustId)
                 print("[IllustDetailRelatedSection] API returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
                 await MainActor.run {
                     // 过滤掉当前插画
@@ -286,7 +286,7 @@ struct IllustDetailRelatedSection: View {
 
         Task {
             do {
-                let result = try await PixivAPI.shared.getIllustsByURL(nextUrl)
+                let result = try await PixivAPI.shared.illustAPI.getIllustsByURL(nextUrl)
                 print("[IllustDetailRelatedSection] loadMore returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
                 await MainActor.run {
                     // 过滤掉已存在的和当前的插画

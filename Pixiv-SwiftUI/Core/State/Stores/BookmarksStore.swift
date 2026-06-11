@@ -72,7 +72,7 @@ class BookmarksStore {
             #if DEBUG
             print("[BookmarksStore] 开始网络请求: restrict=\(capturedRestrict)")
             #endif
-            let (illusts, nextUrl) = try await api.getUserBookmarksIllusts(userId: userId, restrict: capturedRestrict)
+            let (illusts, nextUrl) = try await api.userAPI.getUserBookmarksIllusts(userId: userId, restrict: capturedRestrict)
 
             guard capturedRestrict == self.bookmarkRestrict else {
                 #if DEBUG

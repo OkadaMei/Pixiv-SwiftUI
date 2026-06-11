@@ -3,10 +3,14 @@ import Foundation
 @MainActor
 final class MangaAPI {
     private let client = NetworkClient.shared
-    private let authHeaders: [String: String]
 
-    init(authHeaders: [String: String]) {
-        self.authHeaders = authHeaders
+    init() {}
+
+    private func requireAuthHeaders() throws -> [String: String] {
+        guard let headers = SessionManager.shared.authHeaders else {
+            throw NetworkError.invalidResponse
+        }
+        return headers
     }
 
     func getRecommendedManga(offset: Int = 0, limit: Int = 30) async throws -> (illusts: [Illusts], nextUrl: String?) {
@@ -34,7 +38,7 @@ final class MangaAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self,
             isLongContent: true
         )
@@ -68,7 +72,7 @@ final class MangaAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self,
             isLongContent: true
         )
@@ -98,7 +102,7 @@ final class MangaAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self
         )
 
@@ -112,7 +116,7 @@ final class MangaAPI {
             throw NetworkError.invalidResponse
         }
 
-        var headers = authHeaders
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         struct EmptyResponse: Decodable {}
@@ -131,7 +135,7 @@ final class MangaAPI {
             throw NetworkError.invalidResponse
         }
 
-        var headers = authHeaders
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         struct EmptyResponse: Decodable {}
@@ -160,7 +164,7 @@ final class MangaAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self
         )
 

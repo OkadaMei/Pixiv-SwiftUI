@@ -223,7 +223,7 @@ final class SearchResultStore {
                 self.illustOffset = illustBatch.nextOffset
                 self.illustHasMore = illustBatch.hasMore
             } else {
-                let response = try await api.searchIllustsPage(
+                let response = try await api.searchAPI.searchIllustsPage(
                     word: finalWord,
                     searchTarget: searchTarget.rawValue,
                     sort: sort,
@@ -314,7 +314,7 @@ final class SearchResultStore {
                 updatePseudoPopularState: true
             )
 
-            let fetchedUsers = try await api.getSearchUser(word: word, offset: 0)
+            let fetchedUsers = try await api.searchAPI.getSearchUser(word: word, offset: 0)
 
             self.userResults = fetchedUsers
             self.novelResults = fetchedNovels
@@ -453,7 +453,7 @@ final class SearchResultStore {
         guard !isLoading, !isLoadingMoreUsers, userHasMore else { return }
         isLoadingMoreUsers = true
         do {
-            let more = try await api.getSearchUser(word: word, offset: self.userOffset)
+            let more = try await api.searchAPI.getSearchUser(word: word, offset: self.userOffset)
             self.userResults += more
             self.userOffset += more.count
             self.userHasMore = !more.isEmpty
@@ -809,7 +809,7 @@ final class SearchResultStore {
             return batch.items
         }
 
-        let response = try await api.searchNovelsPage(
+        let response = try await api.searchAPI.searchNovelsPage(
             word: baseWord + context.bookmarkFilter.suffix,
             searchTarget: context.searchTarget.rawValue,
             sort: context.sort,
@@ -988,7 +988,7 @@ final class SearchResultStore {
                     samplePageCount: self.pseudoPopularInitialSamplePageCount,
                     updatePseudoPopularState: true
                 )
-                let fetchedUsers = try await self.api.getSearchUser(word: context.word, offset: 0)
+                let fetchedUsers = try await self.api.searchAPI.getSearchUser(word: context.word, offset: 0)
 
                 guard !Task.isCancelled, sessionID == self.activeSearchSessionID else { return }
                 guard self.novelSearchSignature == nil || self.novelSearchSignature == prefetchNovelSignature else { return }

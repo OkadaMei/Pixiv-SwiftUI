@@ -4,10 +4,14 @@ import Foundation
 @MainActor
 final class BookmarkAPI {
     private let client = NetworkClient.shared
-    private let authHeaders: [String: String]
 
-    init(authHeaders: [String: String]) {
-        self.authHeaders = authHeaders
+    init() {}
+
+    private func requireAuthHeaders() throws -> [String: String] {
+        guard let headers = SessionManager.shared.authHeaders else {
+            throw NetworkError.invalidResponse
+        }
+        return headers
     }
 
     /// 添加书签（收藏）
@@ -40,7 +44,7 @@ final class BookmarkAPI {
 
         struct Response: Decodable {}
 
-        var headers = authHeaders
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         _ = try await client.post(
@@ -72,7 +76,7 @@ final class BookmarkAPI {
 
         struct Response: Decodable {}
 
-        var headers = authHeaders
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         _ = try await client.post(

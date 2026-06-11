@@ -4,10 +4,14 @@ import Foundation
 @MainActor
 final class SearchAPI {
     private let client = NetworkClient.shared
-    private let authHeaders: [String: String]
 
-    init(authHeaders: [String: String]) {
-        self.authHeaders = authHeaders
+    init() {}
+
+    private func requireAuthHeaders() throws -> [String: String] {
+        guard let headers = SessionManager.shared.authHeaders else {
+            throw NetworkError.invalidResponse
+        }
+        return headers
     }
 
     /// 获取搜索建议
@@ -24,7 +28,7 @@ final class SearchAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: SearchAutoCompleteResponse.self
         )
 
@@ -54,7 +58,7 @@ final class SearchAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
 
@@ -76,7 +80,7 @@ final class SearchAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: UserPreviewsResponse.self
         )
 
@@ -96,7 +100,7 @@ final class SearchAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: TrendingTagsResponse.self
         )
 
@@ -124,7 +128,6 @@ final class SearchAPI {
             offset: offset,
             limit: limit
         )
-
         return response.illusts
     }
 
@@ -138,13 +141,15 @@ final class SearchAPI {
         offset: Int = 0,
         limit: Int = 30
     ) async throws -> IllustsResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.searchIllust)
-        var queryItems = [
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/search/illust")
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "filter", value: "for_ios"),
+            URLQueryItem(name: "merge_plain_keyword_results", value: "true"),
             URLQueryItem(name: "word", value: word),
-            URLQueryItem(name: "search_target", value: searchTarget),
             URLQueryItem(name: "sort", value: sort),
+            URLQueryItem(name: "search_target", value: searchTarget),
             URLQueryItem(name: "offset", value: String(offset)),
-            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "limit", value: String(limit))
         ]
 
         if let searchAIType {
@@ -167,44 +172,12 @@ final class SearchAPI {
 
         return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustsResponse.self
         )
     }
 
-    /// 获取搜索建议
-    func getSearchAutocomplete(word: String) async throws -> [String] {
-        var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.autoWords)
-        components?.queryItems = [
-            URLQueryItem(name: "word", value: word)
-        ]
-
-        guard let url = components?.url else {
-            throw NetworkError.invalidResponse
-        }
-
-        struct Response: Decodable {
-            let candidates: [Candidate]
-
-            struct Candidate: Decodable {
-                let tagName: String
-
-                enum CodingKeys: String, CodingKey {
-                    case tagName = "tag_name"
-                }
-            }
-        }
-
-        let response = try await client.get(
-            from: url,
-            headers: authHeaders,
-            responseType: Response.self
-        )
-
-        return response.candidates.map { $0.tagName }
-    }
-
-    /// 搜索小说
+    /// 搜索小说（新版本）
     func searchNovels(
         word: String,
         searchTarget: String = "partial_match_for_tags",
@@ -225,7 +198,6 @@ final class SearchAPI {
             offset: offset,
             limit: limit
         )
-
         return response.novels
     }
 
@@ -270,7 +242,7 @@ final class SearchAPI {
 
         return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: NovelResponse.self
         )
     }

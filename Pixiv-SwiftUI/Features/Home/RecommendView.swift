@@ -390,20 +390,20 @@ struct RecommendView: View {
                 let result: (illusts: [Illusts], nextUrl: String?)
                 if let next = nextUrl {
                     if isLoggedIn {
-                        result = try await PixivAPI.shared.getIllustsByURL(next)
+                        result = try await PixivAPI.shared.illustAPI.getIllustsByURL(next)
                     } else {
                         result = try await WalkthroughAPI().getWalkthroughIllustsByURL(next)
                     }
                 } else {
                     if contentType == .manga {
                         if isLoggedIn {
-                            result = try await PixivAPI.shared.getRecommendedManga()
+                            result = try await PixivAPI.shared.mangaAPI.getRecommendedManga()
                         } else {
-                            result = try await PixivAPI.shared.getRecommendedMangaNoLogin()
+                            result = try await PixivAPI.shared.mangaAPI.getRecommendedMangaNoLogin()
                         }
                     } else {
                         if isLoggedIn {
-                            result = try await PixivAPI.shared.getRecommendedIllusts()
+                            result = try await PixivAPI.shared.illustAPI.getRecommendedIllusts()
                         } else {
                             result = try await WalkthroughAPI().getWalkthroughIllusts()
                         }
@@ -450,20 +450,20 @@ struct RecommendView: View {
             let result: (illusts: [Illusts], nextUrl: String?)
             if let next = nextUrl {
                 if isLoggedIn {
-                    result = try await PixivAPI.shared.getIllustsByURL(next)
+                    result = try await PixivAPI.shared.illustAPI.getIllustsByURL(next)
                 } else {
                     result = try await WalkthroughAPI().getWalkthroughIllustsByURL(next)
                 }
             } else {
                 if contentType == .manga {
                     if isLoggedIn {
-                        result = try await PixivAPI.shared.getRecommendedManga()
+                        result = try await PixivAPI.shared.mangaAPI.getRecommendedManga()
                     } else {
-                        result = try await PixivAPI.shared.getRecommendedMangaNoLogin()
+                        result = try await PixivAPI.shared.mangaAPI.getRecommendedMangaNoLogin()
                     }
                 } else {
                     if isLoggedIn {
-                        result = try await PixivAPI.shared.getRecommendedIllusts()
+                        result = try await PixivAPI.shared.illustAPI.getRecommendedIllusts()
                     } else {
                         result = try await WalkthroughAPI().getWalkthroughIllusts()
                     }
@@ -514,13 +514,13 @@ struct RecommendView: View {
 
             if contentType == .manga {
                 if isLoggedIn {
-                    result = try await PixivAPI.shared.getRecommendedManga()
+                    result = try await PixivAPI.shared.mangaAPI.getRecommendedManga()
                 } else {
-                    result = try await PixivAPI.shared.getRecommendedMangaNoLogin()
+                    result = try await PixivAPI.shared.mangaAPI.getRecommendedMangaNoLogin()
                 }
             } else {
                 if isLoggedIn {
-                    result = try await PixivAPI.shared.getRecommendedIllusts()
+                    result = try await PixivAPI.shared.illustAPI.getRecommendedIllusts()
                 } else {
                     result = try await WalkthroughAPI().getWalkthroughIllusts()
                 }

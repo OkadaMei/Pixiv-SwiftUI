@@ -97,7 +97,7 @@ final class NovelStore {
         defer { isLoadingRecom = false }
 
         do {
-            let result = try await api.getRecommendedNovels()
+            let result = try await api.novelAPI.getRecommendedNovels()
             self.recomNovels = result.novels
             self.nextUrlRecom = result.nextUrl
             cache.set(NovelResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKeyRecom, expiration: expiration)
@@ -115,7 +115,7 @@ final class NovelStore {
         defer { isLoadingRecom = false }
 
         do {
-            let result = try await api.getNovelsByURL(nextUrl)
+            let result = try await api.novelAPI.getNovelsByURL(nextUrl)
             self.recomNovels.append(contentsOf: result.novels)
             self.nextUrlRecom = result.nextUrl
             loadingNextUrlRecom = nil
@@ -140,7 +140,7 @@ final class NovelStore {
         defer { isLoadingFollowing = false }
 
         do {
-            let result = try await api.getFollowingNovels(restrict: restrict)
+            let result = try await api.novelAPI.getFollowingNovels(restrict: restrict)
             self.followingNovels = result.novels
             self.nextUrlFollowing = result.nextUrl
             cache.set(NovelResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
@@ -158,7 +158,7 @@ final class NovelStore {
         defer { isLoadingFollowing = false }
 
         do {
-            let result = try await api.getNovelsByURL(nextUrl)
+            let result = try await api.novelAPI.getNovelsByURL(nextUrl)
             self.followingNovels.append(contentsOf: result.novels)
             self.nextUrlFollowing = result.nextUrl
             loadingNextUrlFollowing = nil
@@ -183,7 +183,7 @@ final class NovelStore {
         defer { isLoadingBookmark = false }
 
         do {
-            let result = try await api.getUserBookmarkNovels(userId: Int(userId) ?? 0, restrict: restrict)
+            let result = try await api.novelAPI.getUserBookmarkNovels(userId: Int(userId) ?? 0, restrict: restrict)
             self.bookmarkNovels = result.novels
             self.nextUrlBookmark = result.nextUrl
             cache.set(NovelResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
@@ -201,7 +201,7 @@ final class NovelStore {
         defer { isLoadingBookmark = false }
 
         do {
-            let result = try await api.getNovelsByURL(nextUrl)
+            let result = try await api.novelAPI.getNovelsByURL(nextUrl)
             self.bookmarkNovels.append(contentsOf: result.novels)
             self.nextUrlBookmark = result.nextUrl
             loadingNextUrlBookmark = nil
@@ -226,9 +226,9 @@ final class NovelStore {
 
         do {
             if wasBookmarked {
-                try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
+                try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
             } else {
-                try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: defaultRestrict)
+                try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: defaultRestrict)
             }
         } catch {
             await MainActor.run {
@@ -276,7 +276,7 @@ final class NovelStore {
 
     func loadMore(listType: NovelListType, url: String) async -> LoadResult {
         do {
-            let result = try await api.getNovelsByURL(url)
+            let result = try await api.novelAPI.getNovelsByURL(url)
             switch listType {
             case .recommend:
                 recomNovels.append(contentsOf: result.novels)
@@ -310,7 +310,7 @@ final class NovelStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getNovelRanking(mode: NovelRankingMode.day.rawValue)
+            let result = try await api.novelAPI.getNovelRanking(mode: NovelRankingMode.day.rawValue)
             self.dailyRankingNovels = result.novels
             self.nextUrlDailyRanking = result.nextUrl
             cache.set(NovelRankingResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKeyDailyRanking, expiration: expiration)
@@ -331,7 +331,7 @@ final class NovelStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getNovelRanking(mode: NovelRankingMode.dayMale.rawValue)
+            let result = try await api.novelAPI.getNovelRanking(mode: NovelRankingMode.dayMale.rawValue)
             self.dailyMaleRankingNovels = result.novels
             self.nextUrlDailyMaleRanking = result.nextUrl
             cache.set(NovelRankingResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKeyDailyMaleRanking, expiration: expiration)
@@ -352,7 +352,7 @@ final class NovelStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getNovelRanking(mode: NovelRankingMode.dayFemale.rawValue)
+            let result = try await api.novelAPI.getNovelRanking(mode: NovelRankingMode.dayFemale.rawValue)
             self.dailyFemaleRankingNovels = result.novels
             self.nextUrlDailyFemaleRanking = result.nextUrl
             cache.set(NovelRankingResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKeyDailyFemaleRanking, expiration: expiration)
@@ -373,7 +373,7 @@ final class NovelStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getNovelRanking(mode: NovelRankingMode.week.rawValue)
+            let result = try await api.novelAPI.getNovelRanking(mode: NovelRankingMode.week.rawValue)
             self.weeklyRankingNovels = result.novels
             self.nextUrlWeeklyRanking = result.nextUrl
             cache.set(NovelRankingResponse(novels: result.novels, nextUrl: result.nextUrl), forKey: cacheKeyWeeklyRanking, expiration: expiration)
@@ -425,7 +425,7 @@ final class NovelStore {
         defer { isLoadingRanking = false }
 
         do {
-            let result = try await api.getNovelRankingByURL(url)
+            let result = try await api.novelAPI.getNovelRankingByURL(url)
             switch mode {
             case .day:
                 self.dailyRankingNovels.append(contentsOf: result.novels)

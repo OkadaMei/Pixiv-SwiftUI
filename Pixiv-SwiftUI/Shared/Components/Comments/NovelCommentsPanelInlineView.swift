@@ -203,7 +203,7 @@ struct NovelCommentsPanelInlineView: View {
         commentsError = nil
 
         do {
-            let response = try await PixivAPI.shared.getNovelComments(novelId: novel.id)
+            let response = try await PixivAPI.shared.novelAPI.getNovelComments(novelId: novel.id)
             comments = response.comments
             cache.set(response, forKey: cacheKey, expiration: expiration)
             isLoadingComments = false
@@ -229,7 +229,7 @@ struct NovelCommentsPanelInlineView: View {
 
         Task {
             do {
-                _ = try await PixivAPI.shared.postNovelComment(
+                _ = try await PixivAPI.shared.novelAPI.postNovelComment(
                     novelId: novel.id,
                     comment: trimmedComment,
                     parentCommentId: replyToCommentId
@@ -278,7 +278,7 @@ struct NovelCommentsPanelInlineView: View {
         showDeleteAlert = false
 
         do {
-            try await PixivAPI.shared.deleteNovelComment(commentId: commentId)
+            try await PixivAPI.shared.novelAPI.deleteNovelComment(commentId: commentId)
             comments.removeAll { $0.id == commentId }
             let cacheKey = CacheManager.novelCommentsKey(novelId: novel.id)
             cache.remove(forKey: cacheKey)

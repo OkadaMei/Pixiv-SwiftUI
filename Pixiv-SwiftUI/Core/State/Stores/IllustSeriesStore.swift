@@ -22,9 +22,7 @@ final class IllustSeriesStore {
         errorMessage = nil
 
         do {
-            guard let illustAPI = PixivAPI.shared.illustAPI else {
-                throw NetworkError.invalidURL // Using invalidURL as a placeholder if API is not initialized
-            }
+            let illustAPI = PixivAPI.shared.illustAPI
 
             let response = try await illustAPI.getIllustSeries(seriesId: seriesId)
 
@@ -45,9 +43,7 @@ final class IllustSeriesStore {
         isLoadingMore = true
 
         do {
-            guard let illustAPI = PixivAPI.shared.illustAPI else {
-                throw NetworkError.invalidURL
-            }
+            let illustAPI = PixivAPI.shared.illustAPI
 
             let response = try await illustAPI.getIllustSeriesByURL(nextUrl)
 

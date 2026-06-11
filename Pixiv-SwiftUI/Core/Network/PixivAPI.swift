@@ -1,87 +1,44 @@
 import Foundation
-import CryptoKit
 
-/// Pixiv API 服务 - 重构后的协调器类
+/// Pixiv API 服务 - 轻量协调器
+///
+/// 职责限于：
+/// - 持有子 API 实例（SearchAPI, IllustAPI 等）
+/// - 认证流程（login / refresh）
+/// - Ajax 会话辅助
+/// - 通用工具（fetchNext）
+///
+/// 子 API 的业务方法请直接访问其属性，例如：
+///   PixivAPI.shared.illustAPI.getIllustDetail(illustId:)
 @MainActor
 final class PixivAPI {
     static let shared = PixivAPI()
 
     private let authAPI = AuthAPI()
+    private let sessionManager = SessionManager.shared
+    private let ajaxSessionManager = AjaxSessionManager.shared
 
-    /// 缓存 auth headers，子 API 将在首次使用时懒加载
-    private var cachedAuthHeaders: [String: String]?
+    // MARK: - 子 API
 
-    /// 懒加载的子 API — 首次访问时才创建
-    private(set) lazy var searchAPI: SearchAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return SearchAPI(authHeaders: headers)
-    }()
+    let searchAPI = SearchAPI()
+    let illustAPI = IllustAPI()
+    let userAPI = UserAPI()
+    let bookmarkAPI = BookmarkAPI()
+    let mangaAPI = MangaAPI()
+    let novelAPI = NovelAPI()
 
-    private(set) lazy var illustAPI: IllustAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return IllustAPI(authHeaders: headers)
-    }()
+    // MARK: - 会话管理
 
-    private(set) lazy var userAPI: UserAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return UserAPI(authHeaders: headers)
-    }()
-
-    private(set) lazy var bookmarkAPI: BookmarkAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return BookmarkAPI(authHeaders: headers)
-    }()
-
-    private(set) lazy var mangaAPI: MangaAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return MangaAPI(authHeaders: headers)
-    }()
-
-    private(set) lazy var novelAPI: NovelAPI? = {
-        guard let headers = cachedAuthHeaders else { return nil }
-        return NovelAPI(authHeaders: headers)
-    }()
-
-    private(set) var ajaxAPI: AjaxAPI?
-
-    private var isAjaxSessionReady = false
-    private var currentAjaxCookies = AjaxSessionCookies()
-
-    private struct AjaxSessionCookies {
-        var phpSessId: String?
-        var yuidB: String?
-        var pAbDId: String?
-        var pAbId: String?
-        var pAbId2: String?
-    }
-
-    /// 设置访问令牌并缓存 headers，子 API 在使用时懒加载
+    /// 设置访问令牌并更新认证状态
     func setAccessToken(_ token: String) {
         authAPI.setAccessToken(token)
-
-        // 仅缓存 headers，子 API 延迟到首次使用时创建
-        cachedAuthHeaders = getAuthHeaders(for: token)
-
-        ajaxAPI = AjaxAPI()
-        ajaxAPI?.setSessionCookies(
-            phpSessId: currentAjaxCookies.phpSessId,
-            yuidB: currentAjaxCookies.yuidB,
-            pAbDId: currentAjaxCookies.pAbDId,
-            pAbId: currentAjaxCookies.pAbId,
-            pAbId2: currentAjaxCookies.pAbId2
-        )
-        isAjaxSessionReady = false
+        sessionManager.setAccessToken(token)
+        ajaxSessionManager.initializeSession()
     }
 
     /// 设置 Ajax Web 会话（PHPSESSID）
     func setAjaxPHPSESSID(_ phpsessid: String?) {
-        setAjaxSessionCookies(
-            phpSessId: phpsessid,
-            yuidB: currentAjaxCookies.yuidB,
-            pAbDId: currentAjaxCookies.pAbDId,
-            pAbId: currentAjaxCookies.pAbId,
-            pAbId2: currentAjaxCookies.pAbId2
-        )
+        ajaxSessionManager.setPHPSESSID(phpsessid)
     }
 
     /// 设置 Ajax Web 会话（完整 Cookie 组）
@@ -92,71 +49,13 @@ final class PixivAPI {
         pAbId: String?,
         pAbId2: String?
     ) {
-        currentAjaxCookies.phpSessId = normalizeCookieValue(phpSessId)
-        currentAjaxCookies.yuidB = normalizeCookieValue(yuidB)
-        currentAjaxCookies.pAbDId = normalizeCookieValue(pAbDId)
-        currentAjaxCookies.pAbId = normalizeCookieValue(pAbId)
-        currentAjaxCookies.pAbId2 = normalizeCookieValue(pAbId2)
-
-        // Ajax API 不依赖 App API token；当用户仅配置了 Web Cookies 时也应可用。
-        if ajaxAPI == nil {
-            ajaxAPI = AjaxAPI()
-        }
-
-        ajaxAPI?.setSessionCookies(
-            phpSessId: currentAjaxCookies.phpSessId,
-            yuidB: currentAjaxCookies.yuidB,
-            pAbDId: currentAjaxCookies.pAbDId,
-            pAbId: currentAjaxCookies.pAbId,
-            pAbId2: currentAjaxCookies.pAbId2
+        ajaxSessionManager.setSessionCookies(
+            phpSessId: phpSessId,
+            yuidB: yuidB,
+            pAbDId: pAbDId,
+            pAbId: pAbId,
+            pAbId2: pAbId2
         )
-        isAjaxSessionReady = false
-    }
-
-    private func normalizeCookieValue(_ value: String?) -> String? {
-        let normalized = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let normalized, !normalized.isEmpty {
-            return normalized
-        }
-        return nil
-    }
-
-    // MARK: - Private Helper Methods
-
-    private let hashSalt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
-
-    private var baseHeaders: [String: String] {
-        var headers = [String: String]()
-        let time = getIsoDate()
-        headers["X-Client-Time"] = time
-        headers["X-Client-Hash"] = getHash(time + hashSalt)
-        headers["App-OS"] = "ios"
-        headers["App-OS-Version"] = "14.6"
-        headers["App-Version"] = "7.13.3"
-        let langCode = Locale.current.language.languageCode?.identifier ?? "en"
-        let acceptLanguage = (langCode == "zh" || langCode.hasPrefix("zh-")) ? "zh-CN" : "en-US"
-        headers["Accept-Language"] = acceptLanguage
-        return headers
-    }
-
-    private func getAuthHeaders(for token: String) -> [String: String] {
-        var headers = baseHeaders
-        headers["Authorization"] = "Bearer \(token)"
-        headers["Accept"] = "application/json"
-        headers["Content-Type"] = "application/json"
-        return headers
-    }
-
-    private func getIsoDate() -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.string(from: Date())
-    }
-
-    private func getHash(_ string: String) -> String {
-        let data = Data(string.utf8)
-        let hash = Insecure.MD5.hash(data: data)
-        return hash.map { String(format: "%02hhx", $0) }.joined()
     }
 
     // MARK: - 认证相关
@@ -165,476 +64,57 @@ final class PixivAPI {
     func loginWithCode(_ code: String, codeVerifier: String) async throws -> (
         accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
-        return try await authAPI.loginWithCode(code, codeVerifier: codeVerifier)
+        try await authAPI.loginWithCode(code, codeVerifier: codeVerifier)
     }
 
     /// 使用 refresh_token 登录
     func loginWithRefreshToken(_ refreshToken: String) async throws -> (
         accessToken: String, user: User, expiresIn: Int
     ) {
-        return try await authAPI.loginWithRefreshToken(refreshToken)
+        try await authAPI.loginWithRefreshToken(refreshToken)
     }
 
     /// 刷新 accessToken
     func refreshAccessToken(_ refreshToken: String) async throws -> (
         accessToken: String, refreshToken: String, user: User, expiresIn: Int
     ) {
-        return try await authAPI.refreshAccessToken(refreshToken)
+        try await authAPI.refreshAccessToken(refreshToken)
     }
 
-    // MARK: - 搜索相关
+    // MARK: - Ajax API 辅助
 
-    /// 获取搜索建议
-    func getSearchAutoCompleteKeywords(word: String) async throws -> [SearchTag] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.getSearchAutoCompleteKeywords(word: word)
-    }
-
-    /// 搜索插画
-    func getSearchIllust(
-        word: String,
-        sort: String = "date_desc",
-        searchTarget: String = "partial_match_for_tags",
-        offset: Int = 0
-    ) async throws -> [Illusts] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.getSearchIllust(word: word, sort: sort, searchTarget: searchTarget, offset: offset)
-    }
-
-    /// 搜索用户
-    func getSearchUser(word: String, offset: Int = 0) async throws -> [UserPreviews] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.getSearchUser(word: word, offset: offset)
-    }
-
-    /// 获取热门标签
-    func getIllustTrendTags() async throws -> [TrendTag] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.getIllustTrendTags()
-    }
-
-    /// 搜索插画
-    func searchIllusts(
-        word: String,
-        searchTarget: String = "partial_match_for_tags",
-        sort: String = "date_desc",
-        searchAIType: Int? = nil,
-        startDate: Date? = nil,
-        endDate: Date? = nil,
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> [Illusts] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.searchIllusts(
-            word: word,
-            searchTarget: searchTarget,
-            sort: sort,
-            searchAIType: searchAIType,
-            startDate: startDate,
-            endDate: endDate,
-            offset: offset,
-            limit: limit
-        )
-    }
-
-    func searchIllustsPage(
-        word: String,
-        searchTarget: String = "partial_match_for_tags",
-        sort: String = "date_desc",
-        searchAIType: Int? = nil,
-        startDate: Date? = nil,
-        endDate: Date? = nil,
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> IllustsResponse {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.searchIllustsPage(
-            word: word,
-            searchTarget: searchTarget,
-            sort: sort,
-            searchAIType: searchAIType,
-            startDate: startDate,
-            endDate: endDate,
-            offset: offset,
-            limit: limit
-        )
-    }
-
-    // MARK: - 插画相关
-
-    /// 获取推荐插画
-    func getRecommendedIllusts(
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRecommendedIllusts(offset: offset, limit: limit)
-    }
-
-    /// 获取插画详情
-    func getIllustDetail(illustId: Int) async throws -> Illusts {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getIllustDetail(illustId: illustId)
-    }
-
-    /// 获取相关插画
-    func getRelatedIllusts(
-        illustId: Int,
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRelatedIllusts(illustId: illustId, offset: offset, limit: limit)
-    }
-
-    /// 通过 URL 获取插画列表（用于分页）
-    func getIllustsByURL(_ urlString: String) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getIllustsByURL(urlString)
-    }
-
-    /// 获取插画评论
-    func getIllustComments(illustId: Int) async throws -> CommentResponse {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getIllustComments(illustId: illustId)
-    }
-
-    /// 获取评论的回复列表
-    func getIllustCommentsReplies(commentId: Int) async throws -> CommentResponse {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getIllustCommentsReplies(commentId: commentId)
-    }
-
-    /// 发送插画评论
-    func postIllustComment(illustId: Int, comment: String, parentCommentId: Int? = nil) async throws {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        try await api.postIllustComment(illustId: illustId, comment: comment, parentCommentId: parentCommentId)
-    }
-
-    /// 删除插画评论
-    func deleteIllustComment(commentId: Int) async throws {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        try await api.deleteIllustComment(commentId: commentId)
-    }
-
-    /// 获取动图元数据
-    func getUgoiraMetadata(illustId: Int) async throws -> UgoiraMetadataResponse {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUgoiraMetadata(illustId: illustId)
-    }
-
-    /// 获取插画排行榜
-    func getIllustRanking(mode: String, date: String? = nil, offset: Int = 0) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRankingIllusts(mode: mode, date: date, offset: offset)
-    }
-
-    /// 通过 URL 获取排行榜插画列表（用于分页）
-    func getIllustRankingByURL(_ urlString: String) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRankingIllustsByURL(urlString)
-    }
-
-    /// 删除插画或漫画
-    func deleteIllust(illustId: Int, type: String = "illust") async throws {
-        guard let api = illustAPI else { throw NetworkError.invalidResponse }
-        try await api.deleteIllust(illustId: illustId, type: type)
-    }
-
-    // MARK: - 用户相关
-
-    /// 获取用户作品列表
-    func getUserIllusts(
-        userId: String,
-        type: String = "illust",
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> ([Illusts], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUserIllusts(userId: userId, type: type, offset: offset, limit: limit)
-    }
-
-    /// 通过 URL 加载更多插画（分页）
-    func loadMoreIllusts(urlString: String) async throws -> ([Illusts], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.loadMoreIllusts(urlString: urlString)
-    }
-
-    /// 获取用户详情
-    func getUserDetail(userId: String) async throws -> UserDetailResponse {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUserDetail(userId: userId)
-    }
-
-    /// 关注用户
-    func followUser(userId: String, restrict: String = "public") async throws {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        try await api.followUser(userId: userId, restrict: restrict)
-    }
-
-    /// 取消关注用户
-    func unfollowUser(userId: String) async throws {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        try await api.unfollowUser(userId: userId)
-    }
-
-    /// 获取关注者新作
-    func getFollowIllusts(restrict: String = "public") async throws -> ([Illusts], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getFollowIllusts(restrict: restrict)
-    }
-
-    /// 获取用户收藏
-    func getUserBookmarksIllusts(userId: String, restrict: String = "public") async throws -> ([Illusts], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUserBookmarksIllusts(userId: userId, restrict: restrict)
-    }
-
-    /// 获取用户小说列表
-    func getUserNovels(userId: String, offset: Int = 0) async throws -> ([Novel], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUserNovels(userId: userId, offset: offset)
-    }
-
-    /// 通过 URL 加载更多小说（分页）
-    func loadMoreNovels(urlString: String) async throws -> ([Novel], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.loadMoreNovels(urlString: urlString)
-    }
-
-    /// 获取用户关注列表
-    func getUserFollowing(userId: String, restrict: String = "public") async throws -> ([UserPreviews], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getUserFollowing(userId: userId, restrict: restrict)
-    }
-
-    /// 获取推荐画师
-    func getRecommendedUsers() async throws -> ([UserPreviews], String?) {
-        guard let api = userAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRecommendedUsers()
-    }
-
-    // MARK: - 收藏相关
-
-    /// 添加书签（收藏）
-    func addBookmark(
-        illustId: Int,
-        isPrivate: Bool = false,
-        tags: [String]? = nil
-    ) async throws {
-        guard let api = bookmarkAPI else { throw NetworkError.invalidResponse }
-        try await api.addBookmark(illustId: illustId, isPrivate: isPrivate, tags: tags)
-    }
-
-    /// 删除书签
-    func deleteBookmark(illustId: Int) async throws {
-        guard let api = bookmarkAPI else { throw NetworkError.invalidResponse }
-        try await api.deleteBookmark(illustId: illustId)
-    }
-
-    /// 通用：获取下一页数据
-    func fetchNext<T: Decodable>(urlString: String) async throws -> T {
-        guard let url = URL(string: urlString) else {
-            throw NetworkError.invalidResponse
-        }
-
-        return try await NetworkClient.shared.get(
-            from: url,
-            headers: getAuthHeaders(for: AccountStore.shared.currentAccount?.accessToken ?? ""),
-            responseType: T.self
-        )
-    }
-
-    // MARK: - 小说相关
-
-    /// 获取推荐小说
-    func getRecommendedNovels(offset: Int = 0) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getRecommendedNovels(offset: offset)
-        return (response.novels, response.nextUrl)
-    }
-
-    /// 获取关注用户的新作
-    /// 注意：首次请求不要传递 offset 参数，否则会返回 400 错误
-    func getFollowingNovels(restrict: String = "public", offset: Int? = nil) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getFollowingNovels(restrict: restrict, offset: offset)
-        return (response.novels, response.nextUrl)
-    }
-
-    /// 获取用户收藏的小说
-    func getUserBookmarkNovels(userId: Int, restrict: String = "public", offset: Int = 0) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getUserBookmarkNovels(userId: userId, restrict: restrict, offset: offset)
-        return (response.novels, response.nextUrl)
-    }
-
-    /// 获取小说详情
-    func getNovelDetail(novelId: Int) async throws -> Novel {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        return try await api.getNovelDetail(novelId: novelId)
-    }
-
-    /// 通过 URL 获取小说列表（用于分页）
-    func getNovelsByURL(_ urlString: String) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getNovelsByURL(urlString)
-        return (response.novels, response.nextUrl)
-    }
-
-    /// 获取小说评论
-    func getNovelComments(novelId: Int) async throws -> CommentResponse {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        return try await api.getNovelComments(novelId: novelId)
-    }
-
-    /// 发送小说评论
-    func postNovelComment(novelId: Int, comment: String, parentCommentId: Int? = nil) async throws {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        try await api.postNovelComment(novelId: novelId, comment: comment, parentCommentId: parentCommentId)
-    }
-
-    /// 删除小说评论
-    func deleteNovelComment(commentId: Int) async throws {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        try await api.deleteNovelComment(commentId: commentId)
-    }
-
-    /// 搜索小说
-    func searchNovels(
-        word: String,
-        searchTarget: String = "partial_match_for_tags",
-        sort: String = "date_desc",
-        searchAIType: Int? = nil,
-        startDate: Date? = nil,
-        endDate: Date? = nil,
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> [Novel] {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.searchNovels(
-            word: word,
-            searchTarget: searchTarget,
-            sort: sort,
-            searchAIType: searchAIType,
-            startDate: startDate,
-            endDate: endDate,
-            offset: offset,
-            limit: limit
-        )
-    }
-
-    func searchNovelsPage(
-        word: String,
-        searchTarget: String = "partial_match_for_tags",
-        sort: String = "date_desc",
-        searchAIType: Int? = nil,
-        startDate: Date? = nil,
-        endDate: Date? = nil,
-        offset: Int = 0,
-        limit: Int = 30
-    ) async throws -> NovelResponse {
-        guard let api = searchAPI else { throw NetworkError.invalidResponse }
-        return try await api.searchNovelsPage(
-            word: word,
-            searchTarget: searchTarget,
-            sort: sort,
-            searchAIType: searchAIType,
-            startDate: startDate,
-            endDate: endDate,
-            offset: offset,
-            limit: limit
-        )
-    }
-
-    /// 获取小说正文内容
-    func getNovelContent(novelId: Int) async throws -> NovelReaderContent {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        return try await api.getNovelContent(novelId: novelId)
-    }
-
-    /// 获取小说排行榜
-    func getNovelRanking(mode: String, date: String? = nil, offset: Int = 0) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getNovelRanking(mode: mode, date: date, offset: offset)
-        return (response.novels, response.nextUrl)
-    }
-
-/// 通过 URL 获取排行榜小说列表（用于分页）
-    func getNovelRankingByURL(_ urlString: String) async throws -> (novels: [Novel], nextUrl: String?) {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        let response = try await api.getNovelRankingByURL(urlString)
-        return (response.novels, response.nextUrl)
-    }
-
-    /// 删除小说
-    func deleteNovel(novelId: Int) async throws {
-        guard let api = novelAPI else { throw NetworkError.invalidResponse }
-        try await api.deleteNovel(novelId: novelId)
-    }
-
-    // MARK: - 漫画相关
-
-    func getRecommendedManga(offset: Int = 0, limit: Int = 30) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRecommendedManga(offset: offset, limit: limit)
-    }
-
-    func getRecommendedMangaNoLogin(offset: Int = 0, limit: Int = 30) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        return try await api.getRecommendedMangaNoLogin(offset: offset, limit: limit)
-    }
-
-    func getWatchlistManga() async throws -> (series: [MangaSeries], nextUrl: String?) {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        return try await api.getWatchlistManga()
-    }
-
-    func addMangaSeries(seriesId: Int) async throws {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        try await api.addMangaSeries(seriesId: seriesId)
-    }
-
-    func removeMangaSeries(seriesId: Int) async throws {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        try await api.removeMangaSeries(seriesId: seriesId)
-    }
-
-    func getMangaSeriesByURL(_ urlString: String) async throws -> (series: [MangaSeries], nextUrl: String?) {
-        guard let api = mangaAPI else { throw NetworkError.invalidResponse }
-        return try await api.getMangaSeriesByURL(urlString)
-    }
-
-    // MARK: - Ajax API 相关
-
-    /// 初始化 Ajax API 会话 (获取 CSRF Token)
+    /// 初始化 Ajax API 会话（获取 CSRF Token）
     func setupAjaxSession() async throws {
-        if isAjaxSessionReady { return }
-
-        guard let ajax = ajaxAPI else { throw NetworkError.invalidResponse }
-        // 目前 web_token 接口 404，暂时只获取 CSRF Token
-        try await ajax.refreshCSRFToken()
-
-        isAjaxSessionReady = true
+        try await ajaxSessionManager.setupSession()
     }
 
-    /// 获取搜索建议 (Ajax)
+    /// 获取搜索建议（Ajax）
     func getSearchSuggestion(mode: String = "all") async throws -> SearchSuggestionResponse {
         try await setupAjaxSession()
-        guard let ajax = ajaxAPI else { throw NetworkError.invalidResponse }
+        guard let ajax = ajaxSessionManager.ajaxAPI else { throw NetworkError.invalidResponse }
         return try await ajax.getSearchSuggestion(mode: mode)
     }
 
     /// 校验当前 Ajax 会话是否为登录态
     func validateAjaxSession() async -> Bool {
-        guard let ajax = ajaxAPI else { return false }
+        await ajaxSessionManager.validateSession()
+    }
 
-        do {
-            try await ajax.refreshCSRFToken()
-        } catch {
-            return false
+    // MARK: - 通用工具
+
+    /// 获取下一页数据
+    func fetchNext<T: Decodable>(urlString: String) async throws -> T {
+        guard let url = URL(string: urlString) else {
+            throw NetworkError.invalidResponse
         }
 
-        return await ajax.validateSession()
+        let token = AccountStore.shared.currentAccount?.accessToken ?? ""
+        let headers = SessionManager.shared.buildHeaders(for: token)
+
+        return try await NetworkClient.shared.get(
+            from: url,
+            headers: headers,
+            responseType: T.self
+        )
     }
 }

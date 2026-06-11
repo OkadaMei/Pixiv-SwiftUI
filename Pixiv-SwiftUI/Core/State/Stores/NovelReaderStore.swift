@@ -131,7 +131,7 @@ final class NovelReaderStore {
         resolvedSeriesNavigation = nil
 
         do {
-            let fetchedContent = try await PixivAPI.shared.getNovelContent(novelId: novelId)
+            let fetchedContent = try await PixivAPI.shared.novelAPI.getNovelContent(novelId: novelId)
             print("[NovelReaderStore] Fetched content, text length=\(fetchedContent.text.count)")
             content = fetchedContent
             isBookmarked = fetchedContent.isBookmarked ?? false
@@ -178,9 +178,7 @@ final class NovelReaderStore {
     }
 
     private func fetchSeriesNavigationFromSeries(seriesId: Int) async -> SeriesNavigation? {
-        guard let novelAPI = PixivAPI.shared.novelAPI else {
-            return nil
-        }
+        let novelAPI = PixivAPI.shared.novelAPI
 
         do {
             var novels: [Novel] = []
@@ -726,9 +724,9 @@ private func performTranslation(text: String, serviceId: String, targetLanguage:
 
         do {
             if isBookmarked {
-                try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
+                try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
             } else {
-                try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: defaultRestrict)
+                try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: defaultRestrict)
             }
             isBookmarked.toggle()
         } catch {

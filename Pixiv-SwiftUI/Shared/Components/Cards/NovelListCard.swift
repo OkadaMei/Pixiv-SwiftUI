@@ -135,12 +135,12 @@ struct NovelListCard: View {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 } else {
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 }
             } catch {
                 await MainActor.run {

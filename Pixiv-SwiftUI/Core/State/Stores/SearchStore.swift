@@ -138,7 +138,7 @@ class SearchStore {
         defer { isLoadingTrendTags = false }
 
         do {
-            let tags = try await api.getIllustTrendTags()
+            let tags = try await api.searchAPI.getIllustTrendTags()
             self.trendTags = tags
             cache.set(tags, forKey: cacheKey, expiration: trendTagsExpiration)
         } catch {

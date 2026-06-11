@@ -41,7 +41,7 @@ class RecommendedUsersStore {
         defer { isLoading = false }
 
         do {
-            let (users, nextUrl) = try await api.getRecommendedUsers()
+            let (users, nextUrl) = try await api.userAPI.getRecommendedUsers()
             self.users = users
             self.nextUrl = nextUrl
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)

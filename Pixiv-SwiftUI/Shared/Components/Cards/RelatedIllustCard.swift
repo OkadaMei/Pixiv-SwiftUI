@@ -237,7 +237,7 @@ struct RelatedIllustCard: View, Equatable {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
                     if UserSettingStore.shared.userSetting.bookmarkCacheEnabled {
                         await MainActor.run {
                             BookmarkCacheStore.shared.removeCache(
@@ -247,8 +247,8 @@ struct RelatedIllustCard: View, Equatable {
                         }
                     }
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.deleteBookmark(illustId: illustId)
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     if UserSettingStore.shared.userSetting.bookmarkCacheEnabled {
                         await MainActor.run {
                             BookmarkCacheStore.shared.addOrUpdateCache(
@@ -259,7 +259,7 @@ struct RelatedIllustCard: View, Equatable {
                         }
                     }
                 } else {
-                    try await PixivAPI.shared.addBookmark(illustId: illustId, isPrivate: isPrivate)
+                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
                     if UserSettingStore.shared.userSetting.bookmarkCacheEnabled {
                         await MainActor.run {
                             BookmarkCacheStore.shared.addOrUpdateCache(

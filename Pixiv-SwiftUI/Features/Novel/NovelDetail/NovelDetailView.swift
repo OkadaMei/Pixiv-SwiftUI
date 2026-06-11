@@ -410,12 +410,12 @@ struct NovelDetailView: View {
         Task {
             do {
                 if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
                 } else if wasBookmarked {
-                    try await PixivAPI.shared.novelAPI?.unbookmarkNovel(novelId: novelId)
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 } else {
-                    try await PixivAPI.shared.novelAPI?.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
+                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
                 }
             } catch {
                 await MainActor.run {
@@ -452,7 +452,7 @@ struct NovelDetailView: View {
 
         Task {
             do {
-                let detail = try await PixivAPI.shared.getUserDetail(userId: novel.user.id.stringValue)
+                let detail = try await PixivAPI.shared.userAPI.getUserDetail(userId: novel.user.id.stringValue)
                 await MainActor.run {
                     self.isFollowed = detail.user.isFollowed
                 }
@@ -465,7 +465,7 @@ struct NovelDetailView: View {
     private func fetchTotalCommentsIfNeeded() {
         Task {
             do {
-                let comments = try await PixivAPI.shared.getNovelComments(novelId: novel.id)
+                let comments = try await PixivAPI.shared.novelAPI.getNovelComments(novelId: novel.id)
                 await MainActor.run {
                     self.totalComments = comments.comments.count
                 }
@@ -486,7 +486,7 @@ struct NovelDetailView: View {
 
         Task {
             do {
-                let content = try await PixivAPI.shared.getNovelContent(novelId: novel.id)
+                let content = try await PixivAPI.shared.novelAPI.getNovelContent(novelId: novel.id)
                 await DownloadStore.shared.addNovelTask(
                     novelId: novel.id,
                     title: novel.title,
@@ -546,7 +546,7 @@ struct NovelDetailView: View {
         defer { isDeleting = false }
 
         do {
-            try await PixivAPI.shared.deleteNovel(novelId: novel.id)
+            try await PixivAPI.shared.novelAPI.deleteNovel(novelId: novel.id)
 
             await MainActor.run {
                 showDeleteSuccessToast = true

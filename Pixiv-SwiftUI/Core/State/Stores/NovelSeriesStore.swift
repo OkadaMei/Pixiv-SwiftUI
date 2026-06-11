@@ -22,14 +22,10 @@ final class NovelSeriesStore {
         errorMessage = nil
 
         do {
-            let response = try await PixivAPI.shared.novelAPI?.getNovelSeries(seriesId: seriesId)
-
-            if let response = response {
-                seriesDetail = response.novelSeriesDetail
-                novels = response.novels
-                nextUrl = response.nextUrl
-            }
-
+            let response = try await PixivAPI.shared.novelAPI.getNovelSeries(seriesId: seriesId)
+            seriesDetail = response.novelSeriesDetail
+            novels = response.novels
+            nextUrl = response.nextUrl
             isLoading = false
         } catch {
             errorMessage = error.localizedDescription
@@ -43,13 +39,9 @@ final class NovelSeriesStore {
         isLoadingMore = true
 
         do {
-            let response = try await PixivAPI.shared.novelAPI?.getNovelSeriesByURL(nextUrl)
-
-            if let response = response {
-                novels.append(contentsOf: response.novels)
-                self.nextUrl = response.nextUrl
-            }
-
+            let response = try await PixivAPI.shared.novelAPI.getNovelSeriesByURL(nextUrl)
+            novels.append(contentsOf: response.novels)
+            self.nextUrl = response.nextUrl
             isLoadingMore = false
         } catch {
             errorMessage = error.localizedDescription

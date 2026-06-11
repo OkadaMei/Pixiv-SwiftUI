@@ -21,7 +21,7 @@ final class SearchSuggestionManager {
 
         var officialResults: [UnifiedSearchSuggestion] = []
         do {
-            let apiSuggestions = try await api.getSearchAutoCompleteKeywords(word: query)
+            let apiSuggestions = try await api.searchAPI.getSearchAutoCompleteKeywords(word: query)
             for tag in apiSuggestions {
                 let displayTranslation = tagTranslationService.getDisplayTranslation(
                     for: tag.name,

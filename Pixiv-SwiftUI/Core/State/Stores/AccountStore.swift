@@ -436,7 +436,6 @@ final class AccountStore {
     /// 当账号变动（切换、登入、登出）时调用
     private func onAccountChanged() async {
         // 1. 清理内存缓存
-        try? await DIContainer.shared.cacheService.clearAll()
         CacheManager.shared.clearAll()
 
         // 2. 清理全局 Store 的内存状态

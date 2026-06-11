@@ -81,11 +81,11 @@ final class UserDetailStore {
         errorMessage = nil
 
         do {
-            let fetchedDetail = try await api.getUserDetail(userId: userId)
-            let fetchedIllusts = try await api.getUserIllusts(userId: userId, type: "illust")
-            let fetchedMangas = try await api.getUserIllusts(userId: userId, type: "manga")
-            let fetchedBookmarksResult = try await api.getUserBookmarksIllusts(userId: userId)
-            let fetchedNovelsResult = try await api.getUserNovels(userId: userId)
+            let fetchedDetail = try await api.userAPI.getUserDetail(userId: userId)
+            let fetchedIllusts = try await api.userAPI.getUserIllusts(userId: userId, type: "illust")
+            let fetchedMangas = try await api.userAPI.getUserIllusts(userId: userId, type: "manga")
+            let fetchedBookmarksResult = try await api.userAPI.getUserBookmarksIllusts(userId: userId)
+            let fetchedNovelsResult = try await api.userAPI.getUserNovels(userId: userId)
 
             self.userDetail = fetchedDetail
             self.illusts = fetchedIllusts.0
@@ -130,7 +130,7 @@ final class UserDetailStore {
         isLoadingMoreIllusts = true
 
         do {
-            let (newIllusts, nextUrl) = try await api.loadMoreIllusts(urlString: nextUrl)
+            let (newIllusts, nextUrl) = try await api.userAPI.loadMoreIllusts(urlString: nextUrl)
             self.illusts.append(contentsOf: newIllusts)
             self.nextIllustsUrl = nextUrl
         } catch {
@@ -148,7 +148,7 @@ final class UserDetailStore {
         isLoadingMoreMangas = true
 
         do {
-            let (newMangas, nextUrl) = try await api.loadMoreIllusts(urlString: nextUrl)
+            let (newMangas, nextUrl) = try await api.userAPI.loadMoreIllusts(urlString: nextUrl)
             self.mangas.append(contentsOf: newMangas)
             self.nextMangasUrl = nextUrl
         } catch {
@@ -184,7 +184,7 @@ final class UserDetailStore {
         isLoadingMoreNovels = true
 
         do {
-            let (newNovels, nextUrl) = try await api.loadMoreNovels(urlString: nextUrl)
+            let (newNovels, nextUrl) = try await api.userAPI.loadMoreNovels(urlString: nextUrl)
             self.novels.append(contentsOf: newNovels)
             self.nextNovelsUrl = nextUrl
         } catch {
@@ -211,11 +211,11 @@ final class UserDetailStore {
 
         do {
             if isFollowed {
-                try await api.unfollowUser(userId: userId)
+                try await api.userAPI.unfollowUser(userId: userId)
             } else {
-                try await api.followUser(userId: userId)
+                try await api.userAPI.followUser(userId: userId)
             }
-            let newDetail = try await api.getUserDetail(userId: userId)
+            let newDetail = try await api.userAPI.getUserDetail(userId: userId)
             self.userDetail = newDetail
             let cacheKey = CacheManager.userDetailDataKey(userId: userId)
             let detailCacheKey = CacheManager.userDetailKey(userId: userId)

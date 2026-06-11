@@ -45,7 +45,7 @@ class FollowingListStore {
         defer { isLoadingFollowing = false }
 
         do {
-            let (users, nextUrl) = try await api.getUserFollowing(userId: userId, restrict: effectiveRestrict)
+            let (users, nextUrl) = try await api.userAPI.getUserFollowing(userId: userId, restrict: effectiveRestrict)
             self.following = users
             self.nextUrlFollowing = nextUrl
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)

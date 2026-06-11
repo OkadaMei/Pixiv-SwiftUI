@@ -4,10 +4,14 @@ import Foundation
 @MainActor
 final class IllustAPI {
     private let client = NetworkClient.shared
-    private let authHeaders: [String: String]
 
-    init(authHeaders: [String: String]) {
-        self.authHeaders = authHeaders
+    init() {}
+
+    private func requireAuthHeaders() throws -> [String: String] {
+        guard let headers = SessionManager.shared.authHeaders else {
+            throw NetworkError.invalidResponse
+        }
+        return headers
     }
 
     /// 获取推荐插画
@@ -39,7 +43,7 @@ final class IllustAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self,
             isLongContent: true
         )
@@ -48,7 +52,7 @@ final class IllustAPI {
     }
 
     /// 获取排行榜插画
-    func getRankingIllusts(
+    func getIllustRanking(
         mode: String = "day",
         date: String? = nil,
         offset: Int = 0,
@@ -81,7 +85,7 @@ final class IllustAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self
         )
 
@@ -102,17 +106,16 @@ final class IllustAPI {
         ]
 
         guard let url = components?.url else {
-            throw NetworkError.invalidURL
+            throw NetworkError.invalidResponse
         }
 
         return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustSeriesResponse.self
         )
     }
 
-    /// 通过 URL 获取系列插画列表（用于分页）
     func getIllustSeriesByURL(_ urlString: String) async throws -> IllustSeriesResponse {
         guard let url = URL(string: urlString) else {
             throw NetworkError.invalidURL
@@ -120,34 +123,9 @@ final class IllustAPI {
 
         return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: IllustSeriesResponse.self
         )
-    }
-
-    /// 通过 URL 获取排行榜插画列表（用于分页）
-    func getRankingIllustsByURL(_ urlString: String) async throws -> (illusts: [Illusts], nextUrl: String?) {
-        guard let url = URL(string: urlString) else {
-            throw NetworkError.invalidResponse
-        }
-
-        struct Response: Decodable {
-            let illusts: [Illusts]
-            let nextUrl: String?
-
-            enum CodingKeys: String, CodingKey {
-                case illusts
-                case nextUrl = "next_url"
-            }
-        }
-
-        let response = try await client.get(
-            from: url,
-            headers: authHeaders,
-            responseType: Response.self
-        )
-
-        return (response.illusts, response.nextUrl)
     }
 
     /// 获取插画详情
@@ -168,7 +146,7 @@ final class IllustAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self
         )
 
@@ -178,21 +156,16 @@ final class IllustAPI {
     /// 获取相关插画
     func getRelatedIllusts(
         illustId: Int,
-        offset: Int? = nil,
-        limit: Int? = nil
+        offset: Int = 0,
+        limit: Int = 30
     ) async throws -> (illusts: [Illusts], nextUrl: String?) {
         var components = URLComponents(string: APIEndpoint.baseURL + "/v2/illust/related")
-        var queryItems: [URLQueryItem] = [
+        components?.queryItems = [
             URLQueryItem(name: "illust_id", value: String(illustId)),
             URLQueryItem(name: "filter", value: "for_ios"),
+            URLQueryItem(name: "offset", value: String(offset)),
+            URLQueryItem(name: "limit", value: String(limit)),
         ]
-        if let offset = offset {
-            queryItems.append(URLQueryItem(name: "offset", value: String(offset)))
-        }
-        if let limit = limit {
-            queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
-        }
-        components?.queryItems = queryItems
 
         guard let url = components?.url else {
             throw NetworkError.invalidResponse
@@ -210,9 +183,8 @@ final class IllustAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
-            responseType: Response.self,
-            isLongContent: true
+            headers: try requireAuthHeaders(),
+            responseType: Response.self
         )
 
         return (response.illusts, response.nextUrl)
@@ -236,7 +208,7 @@ final class IllustAPI {
 
         let response = try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: Response.self
         )
 
@@ -245,7 +217,7 @@ final class IllustAPI {
 
     /// 获取插画评论
     func getIllustComments(illustId: Int) async throws -> CommentResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v3/illust/comments")
+        var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.illustComments)
         components?.queryItems = [
             URLQueryItem(name: "illust_id", value: String(illustId))
         ]
@@ -254,18 +226,16 @@ final class IllustAPI {
             throw NetworkError.invalidResponse
         }
 
-        let response = try await client.get(
+        return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: CommentResponse.self
         )
-
-        return response
     }
 
     /// 获取评论的回复列表
     func getIllustCommentsReplies(commentId: Int) async throws -> CommentResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v2/illust/comment/replies")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/comment/replies")
         components?.queryItems = [
             URLQueryItem(name: "comment_id", value: String(commentId))
         ]
@@ -274,69 +244,68 @@ final class IllustAPI {
             throw NetworkError.invalidResponse
         }
 
-        let response = try await client.get(
+        return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: CommentResponse.self
         )
-
-        return response
     }
 
     /// 发送插画评论
-    /// - Parameters:
-    ///   - illustId: 插画ID
-    ///   - comment: 评论内容（最多140字符）
-    ///   - parentCommentId: 可选，父评论ID（回复评论时使用）
     func postIllustComment(illustId: Int, comment: String, parentCommentId: Int? = nil) async throws {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/comment/add")
-
-        var bodyItems: [URLQueryItem] = [
-            URLQueryItem(name: "illust_id", value: String(illustId)),
-            URLQueryItem(name: "comment", value: comment),
-        ]
-        if let parentId = parentCommentId {
-            bodyItems.append(URLQueryItem(name: "parent_comment_id", value: String(parentId)))
-        }
-
-        components?.queryItems = bodyItems
-
-        guard let url = components?.url else {
+        guard let url = URL(string: APIEndpoint.baseURL + "/v1/illust/comment/add") else {
             throw NetworkError.invalidResponse
         }
 
-        var headers = authHeaders
+        var body = [String: String]()
+        body["illust_id"] = String(illustId)
+        body["comment"] = comment
+
+        if let parentCommentId {
+            body["parent_comment_id"] = String(parentCommentId)
+        }
+
+        var formComponents = URLComponents()
+        formComponents.queryItems = body.map { URLQueryItem(name: $0.key, value: $0.value) }
+        let formData = formComponents.percentEncodedQuery ?? ""
+
+        guard let formEncodedData = formData.data(using: .utf8) else {
+            throw NetworkError.invalidResponse
+        }
+
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
+        struct EmptyResponse: Decodable {}
         _ = try await client.post(
             to: url,
-            body: components?.query?.data(using: .utf8),
+            body: formEncodedData,
             headers: headers,
             responseType: EmptyResponse.self
         )
     }
 
     /// 删除插画评论
-    /// - Parameter commentId: 评论ID
     func deleteIllustComment(commentId: Int) async throws {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/comment/delete")
-
-        let bodyItems: [URLQueryItem] = [
-            URLQueryItem(name: "comment_id", value: String(commentId))
-        ]
-
-        components?.queryItems = bodyItems
-
-        guard let url = components?.url else {
+        guard let url = URL(string: APIEndpoint.baseURL + "/v1/illust/comment/delete") else {
             throw NetworkError.invalidResponse
         }
 
-        var headers = authHeaders
+        var formComponents = URLComponents()
+        formComponents.queryItems = [URLQueryItem(name: "comment_id", value: String(commentId))]
+        let formData = formComponents.percentEncodedQuery ?? ""
+
+        guard let formEncodedData = formData.data(using: .utf8) else {
+            throw NetworkError.invalidResponse
+        }
+
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
+        struct EmptyResponse: Decodable {}
         _ = try await client.post(
             to: url,
-            body: components?.query?.data(using: .utf8),
+            body: formEncodedData,
             headers: headers,
             responseType: EmptyResponse.self
         )
@@ -344,7 +313,7 @@ final class IllustAPI {
 
     /// 获取动图元数据
     func getUgoiraMetadata(illustId: Int) async throws -> UgoiraMetadataResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/ugoira/metadata")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/ugoira/metadata")
         components?.queryItems = [
             URLQueryItem(name: "illust_id", value: String(illustId))
         ]
@@ -353,19 +322,39 @@ final class IllustAPI {
             throw NetworkError.invalidResponse
         }
 
-        let response = try await client.get(
+        return try await client.get(
             from: url,
-            headers: authHeaders,
+            headers: try requireAuthHeaders(),
             responseType: UgoiraMetadataResponse.self
         )
+    }
 
-        return response
+    /// 通过 URL 获取排行榜插画列表（用于分页）
+    func getIllustRankingByURL(_ urlString: String) async throws -> (illusts: [Illusts], nextUrl: String?) {
+        guard let url = URL(string: urlString) else {
+            throw NetworkError.invalidResponse
+        }
+
+        struct Response: Decodable {
+            let illusts: [Illusts]
+            let nextUrl: String?
+
+            enum CodingKeys: String, CodingKey {
+                case illusts
+                case nextUrl = "next_url"
+            }
+        }
+
+        let response = try await client.get(
+            from: url,
+            headers: try requireAuthHeaders(),
+            responseType: Response.self
+        )
+
+        return (response.illusts, response.nextUrl)
     }
 
     /// 删除插画或漫画
-    /// - Parameters:
-    ///   - illustId: 插画ID
-    ///   - type: 作品类型（"illust" 或 "manga"）
     func deleteIllust(illustId: Int, type: String = "illust") async throws {
         guard let url = URL(string: APIEndpoint.baseURL + "/v1/illust/delete") else {
             throw NetworkError.invalidResponse
@@ -382,9 +371,11 @@ final class IllustAPI {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         components?.queryItems = bodyItems
 
-        let body = components?.query?.data(using: .utf8)
+        guard let body = components?.query?.data(using: .utf8) else {
+            throw NetworkError.invalidResponse
+        }
 
-        var headers = authHeaders
+        var headers = try requireAuthHeaders()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         _ = try await client.post(

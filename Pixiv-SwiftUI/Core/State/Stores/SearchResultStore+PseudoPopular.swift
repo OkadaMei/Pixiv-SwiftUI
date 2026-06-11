@@ -367,7 +367,7 @@ extension SearchResultStore {
                 }
                 try validateIllustPseudoPopularSession(sessionID)
 
-                let page = try await api.searchIllusts(
+                let page = try await api.searchAPI.searchIllusts(
                     word: queryState.query.word,
                     searchTarget: queryState.query.searchTarget.rawValue,
                     sort: SearchSortOption.dateDesc.rawValue,
@@ -419,7 +419,7 @@ extension SearchResultStore {
                 }
                 try validateNovelPseudoPopularSession(sessionID)
 
-                let page = try await api.searchNovels(
+                let page = try await api.searchAPI.searchNovels(
                     word: queryState.query.word,
                     searchTarget: queryState.query.searchTarget.rawValue,
                     sort: SearchSortOption.dateDesc.rawValue,
@@ -463,7 +463,7 @@ extension SearchResultStore {
 
         while session.items.count < desiredCount {
             try validateIllustPseudoPopularSession(sessionID)
-            let page = try await api.searchIllusts(
+            let page = try await api.searchAPI.searchIllusts(
                 word: session.key.word,
                 searchTarget: session.key.searchTarget.rawValue,
                 sort: SearchSortOption.dateDesc.rawValue,
@@ -501,7 +501,7 @@ extension SearchResultStore {
 
         while session.items.count < desiredCount {
             try validateNovelPseudoPopularSession(sessionID)
-            let page = try await api.searchNovels(
+            let page = try await api.searchAPI.searchNovels(
                 word: session.key.word,
                 searchTarget: session.key.searchTarget.rawValue,
                 sort: SearchSortOption.dateDesc.rawValue,

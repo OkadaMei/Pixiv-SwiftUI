@@ -174,7 +174,7 @@ struct RecommendByTagView: View {
 // Fetch sequentially since SwiftData models aren't Sendable
             var results: [Illusts] = []
             for id in idsToFetch {
-                if let detail = try? await PixivAPI.shared.getIllustDetail(illustId: id) {
+                if let detail = try? await PixivAPI.shared.illustAPI.getIllustDetail(illustId: id) {
                     results.append(detail)
                 }
             }
@@ -207,7 +207,7 @@ struct RecommendByTagView: View {
             // Fetch sequentially
             var newIllusts: [Illusts] = []
             for id in idsToFetch {
-                if let detail = try? await PixivAPI.shared.getIllustDetail(illustId: id) {
+                if let detail = try? await PixivAPI.shared.illustAPI.getIllustDetail(illustId: id) {
                     newIllusts.append(detail)
                 }
             }

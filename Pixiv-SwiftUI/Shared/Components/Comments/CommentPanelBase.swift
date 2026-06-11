@@ -126,7 +126,7 @@ final class CommentPanelBase {
 
         Task {
             do {
-                let response = try await PixivAPI.shared.getIllustCommentsReplies(commentId: commentId)
+                let response = try await PixivAPI.shared.illustAPI.getIllustCommentsReplies(commentId: commentId)
                 repliesDict[commentId] = response.comments
                 loadingReplyIds.remove(commentId)
             } catch {

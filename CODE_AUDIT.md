@@ -8,50 +8,6 @@
 
 ## 一、架构设计 (Architecture)
 
-### 问题 A-1: DIContainer 沦为死代码
-
-**严重程度**: ★★★
-**文件**: `Core/State/Base/DIContainer.swift`
-
-`DIContainer` 定义了完整的 DI 框架（`NetworkService`、`AuthService`、`CacheService` 协议 + 实现），但 `NetworkServiceImpl.request` 直接 `preconditionFailure("not implemented")`，所有 Store 和 API 全部使用 `static let shared` 单例。
-
-**影响**:
-- 可测试性为零，无法 mock 依赖进行单元测试
-- 容器本身占用代码量却无实际作用，误导后续开发者
-
-**建议**:
-- 方案 A：彻底移除 DIContainer，统一使用 shared 单例模式并明确约定
-- 方案 B：真正实现 DI，通过 `@Environment` 或初始化注入方式管理依赖
-
----
-
-### 问题 A-2: PixivAPI 协调器层过胖
-
-**严重程度**: ★★★
-**文件**: `Core/Network/PixivAPI.swift`（646 行）
-
-`PixivAPI` 同时承担了以下职责：
-- API 路由调度
-- App API + Ajax API 双 Session 生命周期管理
-- Token 刷新代理
-- 各子 API（SearchAPI、IllustAPI 等）的懒加载初始化
-- Ajax Cookie 状态管理
-
-**影响**:
-- 违反单一职责原则，修改任一职责需理解全部逻辑
-- 646 行文件难以维护和测试
-- Ajax 和 App API 两套认证体系的耦合使得任意一方的变更都可能影响另一方
-
-**建议**:
-拆分为三个独立模块：
-```
-PixivAPI (轻量协调) → APISessionManager (Token/Ajax Session生命周期)
-                    → ApiRouter (端点和Header组装)
-                    → 子API层 (业务无关)
-```
-
----
-
 ### 问题 A-3: Store 间隐式双向依赖
 
 **严重程度**: ★★
@@ -312,13 +268,11 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 | 优先级 | 分类 | 问题 | 预估工作量 |
 |--------|------|------|-----------|
 | 🔴 P0 | UX | UX-1 全局错误处理不统一 | 3-5天 |
-| 🟡 P1 | Architecture | A-2 PixivAPI 重构 | 5-7天 |
 | 🟡 P1 | Architecture | A-4 引入 DTO 映射层 | 5-10天 |
 | 🟢 P2 | Architecture | A-3 Store 依赖注入 | 3-5天 |
 | 🟢 P2 | Performance | P-2 统一缓存策略 | 2-3天 |
 | 🟢 P2 | UX | UX-4 首次引导流程 | 3-5天 |
 | 🟢 P3 | Architecture | A-5 View 瘦身 | 持续改进 |
-| 🔵 P4 | 其他 | O-1 SwiftLint 配置 | 按需 |
 
 ---
 

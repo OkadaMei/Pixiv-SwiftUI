@@ -294,7 +294,7 @@ final class BookmarkCacheStore {
                     illusts = response.illusts
                     nextUrl = response.nextUrl
                 } else {
-                    (illusts, nextUrl) = try await api.getUserBookmarksIllusts(userId: userId, restrict: "public")
+                    (illusts, nextUrl) = try await api.userAPI.getUserBookmarksIllusts(userId: userId, restrict: "public")
                 }
 
                 allIllusts.append(contentsOf: illusts)
@@ -317,7 +317,7 @@ final class BookmarkCacheStore {
                     illusts = response.illusts
                     privateNextUrl = response.nextUrl
                 } else {
-                    (illusts, privateNextUrl) = try await api.getUserBookmarksIllusts(userId: userId, restrict: "private")
+                    (illusts, privateNextUrl) = try await api.userAPI.getUserBookmarksIllusts(userId: userId, restrict: "private")
                 }
 
                 allIllusts.append(contentsOf: illusts)

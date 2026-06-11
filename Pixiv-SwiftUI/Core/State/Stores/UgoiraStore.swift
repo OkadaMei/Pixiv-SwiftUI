@@ -85,7 +85,7 @@ final class UgoiraStore {
         Logger.ugoira.debug("loadMetadata() 开始加载 illustId=\(self.illustId, privacy: .public)")
 
         do {
-            let response = try await PixivAPI.shared.getUgoiraMetadata(illustId: self.illustId)
+            let response = try await PixivAPI.shared.illustAPI.getUgoiraMetadata(illustId: self.illustId)
             Logger.ugoira.info("API 请求成功，frames.count=\(response.ugoiraMetadata.frames.count)")
             self.metadata = response.ugoiraMetadata
             self.frameDelays = response.ugoiraMetadata.frames.map { $0.delayTimeInterval }
