@@ -2,13 +2,13 @@
 
 ```bash
 # macOS build
-xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Debug -configuration Debug -destination 'platform=macOS' build 2>&1 | grep -E "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)"
+xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Pixiv-SwiftUI -configuration Debug -destination 'platform=macOS' build 2>&1 | grep -E "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)"
 
 # iOS Simulator build (iPhone 17)
-xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Debug -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' build 2>&1 | grep -E "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)"
+xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Pixiv-SwiftUI -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' build 2>&1 | grep -E "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)"
 
 # Full verbose build
-xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Debug -configuration Debug -destination 'platform=macOS' build
+xcodebuild -project Pixiv-SwiftUI.xcodeproj -scheme Pixiv-SwiftUI -configuration Debug -destination 'platform=macOS' build
 ```
 
 ## SwiftLint
