@@ -68,6 +68,7 @@ final class AppInitializer {
 
         Task {
             if let updateInfo = await UpdateChecker.shared.checkForUpdate() {
+                print("[Update] Current: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"), Latest: \(updateInfo.version), Newer: \(updateInfo.isNewerThanCurrent)")
                 await MainActor.run {
                     if updateInfo.isNewerThanCurrent {
                         NotificationCenter.default.post(
