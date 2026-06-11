@@ -213,8 +213,11 @@ struct UserDetailView: View {
                             EmptyView()
                         }
                     } else if store.isLoadingDetail {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, minHeight: 200)
+                        SkeletonUserDetailHeader(
+                            columnCount: 2,
+                            itemCount: skeletonItemCount
+                        )
+                        .transition(.opacity)
                     } else if let error = store.errorMessage {
                         VStack {
                             Text(String(localized: "加载失败"))
