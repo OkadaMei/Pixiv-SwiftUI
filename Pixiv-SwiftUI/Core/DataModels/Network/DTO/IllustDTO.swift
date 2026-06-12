@@ -29,7 +29,7 @@ nonisolated struct IllustDTO: Codable {
     let series: IllustSeriesDTO?
     let illustBookStyle: Int?
     let totalComments: Int?
-    let restrictionAttributes: [String]
+    let restrictionAttributes: [String]?
     let ownerId: String?
 
     enum CodingKeys: String, CodingKey {
@@ -97,7 +97,7 @@ extension IllustDTO {
             series: series?.toDomain(),
             illustBookStyle: illustBookStyle,
             totalComments: totalComments,
-            restrictionAttributes: restrictionAttributes,
+            restrictionAttributes: restrictionAttributes ?? [],
             ownerId: ownerId ?? "guest"
         )
     }
