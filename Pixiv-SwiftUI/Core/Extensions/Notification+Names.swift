@@ -9,4 +9,5 @@ extension Notification.Name {
     static let toggleSidebar = Notification.Name("ToggleSidebar")
     static let clearCache = Notification.Name("ClearCache")
     static let clearHistory = Notification.Name("ClearHistory")
+    static let networkModeDidChange = Notification.Name("NetworkModeDidChange")
 }

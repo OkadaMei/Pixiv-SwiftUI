@@ -44,6 +44,9 @@ final class NetworkModeStore {
     var currentMode: NetworkMode {
         didSet {
             UserDefaults.standard.set(currentMode.rawValue, forKey: networkModeKey)
+            CacheManager.shared.clearAll()
+            NotificationCenter.default.post(name: .networkModeDidChange, object: nil)
+            NotificationCenter.default.post(name: .refreshCurrentPage, object: nil)
         }
     }
 

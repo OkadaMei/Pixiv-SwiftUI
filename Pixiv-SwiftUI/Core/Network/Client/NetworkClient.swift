@@ -22,11 +22,29 @@ final class NetworkClient {
         config.waitsForConnectivity = true
 
         self.session = URLSession(configuration: config)
+
+        NotificationCenter.default.addObserver(
+            forName: .networkModeDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.cancelInFlightRequests()
+        }
     }
 
     /// 是否使用直连模式
     var useDirectConnection: Bool {
         NetworkModeStore.shared.useDirectConnection
+    }
+
+    /// 取消所有进行中的 URLSession 请求（网络模式切换时调用）
+    private func cancelInFlightRequests() {
+        Task {
+            let (dataTasks, uploadTasks, downloadTasks) = await session.tasks
+            let allTasks = dataTasks + uploadTasks + downloadTasks
+            allTasks.forEach { $0.cancel() }
+            Logger.network.debug("网络模式切换: 已取消 \(allTasks.count) 个进行中的请求")
+        }
     }
 
     private func supportsDirectConnection(host: String) -> Bool {
