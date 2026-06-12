@@ -9,7 +9,7 @@ class RecommendedUsersStore {
     var users: [UserPreviews] = []
     var isLoading = false
     var nextUrl: String?
-    var error: String?
+    var error: AppError?
 
     private var loadingNextUrl: String?
 
@@ -46,7 +46,7 @@ class RecommendedUsersStore {
             self.nextUrl = nextUrl
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
-            self.error = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Failed to fetch recommended users: \(error)")
         }
     }

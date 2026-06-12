@@ -179,7 +179,7 @@ struct SearchResultView: View {
             store.cancelNovelBackgroundTasks()
             attempts += 1
 
-            if store.novelLoadMoreErrorMessage != nil {
+            if store.novelLoadMoreError != nil {
                 return
             }
 
@@ -204,20 +204,20 @@ struct SearchResultView: View {
         // 尝试了 novelAutoLoadBurstLimit 次后仍无足够可见内容 + 仍有更多 → 进入暂停态
         store.cancelNovelBackgroundTasks()
 
-        if store.novelHasMore && store.novelLoadMoreErrorMessage == nil {
+        if store.novelHasMore && store.novelLoadMoreError == nil {
             isNovelLoadMorePaused = true
         }
     }
 
     @ViewBuilder
     private var novelLoadMoreFooter: some View {
-        if let errorMessage = store.novelLoadMoreErrorMessage {
+        if let errorMessage = store.novelLoadMoreError {
             VStack(spacing: 8) {
                 Text("加载更多失败")
                     .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text(errorMessage)
+                Text(errorMessage.localizedDescription ?? "未知错误")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -285,7 +285,7 @@ struct SearchResultView: View {
             store.cancelIllustBackgroundTasks()
             attempts += 1
 
-            if store.illustLoadMoreErrorMessage != nil {
+            if store.illustLoadMoreError != nil {
                 return
             }
 
@@ -306,20 +306,20 @@ struct SearchResultView: View {
         // 暂停条件：可见项增长极少（不到总量的10%）
         let totalFetched = store.illustResults.count - initialStoreCount
         let visibleGain = filteredIllusts.count - initialVisibleCount
-        if store.illustHasMore && visibleGain * 10 < totalFetched && store.illustLoadMoreErrorMessage == nil {
+        if store.illustHasMore && visibleGain * 10 < totalFetched && store.illustLoadMoreError == nil {
             isIllustLoadMorePaused = true
         }
     }
 
     @ViewBuilder
     private var illustLoadMoreFooter: some View {
-        if let errorMessage = store.illustLoadMoreErrorMessage {
+        if let errorMessage = store.illustLoadMoreError {
             VStack(spacing: 8) {
                 Text("加载更多失败")
                     .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text(errorMessage)
+                Text(errorMessage.localizedDescription ?? "未知错误")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -372,8 +372,8 @@ struct SearchResultView: View {
             )
             .padding(.horizontal, 12)
             .transition(.opacity)
-        } else if let error = store.errorMessage, store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
-            ContentUnavailableView("出错了", systemImage: "exclamationmark.triangle", description: Text(error))
+        } else if let error = store.error, store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
+            ContentUnavailableView("出错了", systemImage: "exclamationmark.triangle", description: Text(error.localizedDescription ?? "未知错误"))
         } else if selectedTab == 0 {
             illustTabContent(columnCount: columnCount, waterfallWidth: waterfallWidth)
         } else if selectedTab == 1 {

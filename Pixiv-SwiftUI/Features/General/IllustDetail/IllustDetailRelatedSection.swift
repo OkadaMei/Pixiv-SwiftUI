@@ -142,25 +142,8 @@ struct IllustDetailRelatedSection: View {
     }
 
     private var errorView: some View {
-        HStack {
-            Spacer()
-            VStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle")
-                    .foregroundColor(.secondary)
-                Text("加载失败")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                if let error = relatedIllustError {
-                    Text(error)
-                        .font(.caption2)
-                        .foregroundColor(.red)
-                }
-                Button("重试") {
-                    fetchRelatedIllusts()
-                }
-                .buttonStyle(.bordered)
-            }
-            Spacer()
+        ErrorStateView(message: relatedIllustError ?? "未知错误") {
+            fetchRelatedIllusts()
         }
         .frame(minHeight: 300)
     }

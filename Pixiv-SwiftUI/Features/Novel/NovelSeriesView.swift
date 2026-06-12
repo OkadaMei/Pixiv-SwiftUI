@@ -30,8 +30,8 @@ struct NovelSeriesView: View {
                 if store.isLoading && store.seriesDetail == nil {
                     skeletonLoadingView
                         .transition(.opacity)
-                } else if let error = store.errorMessage {
-                    errorView(error)
+                } else if let error = store.error {
+                    errorView(error.localizedDescription ?? "未知错误")
                 } else if let detail = store.seriesDetail {
                     content(detail)
                         .transition(.opacity)
@@ -156,27 +156,11 @@ struct NovelSeriesView: View {
     }
 
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundColor(.orange)
-
-            Text("加载失败")
-                .font(.headline)
-
-            Text(error)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button("重试") {
-                Task {
-                    await store.fetch()
-                }
+        ErrorStateView(message: error, retryAction: {
+            Task {
+                await store.fetch()
             }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
+        })
     }
 
     private func content(_ detail: NovelSeriesDetail) -> some View {

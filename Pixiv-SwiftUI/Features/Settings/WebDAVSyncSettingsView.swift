@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WebDAVSyncSettingsView: View {
     @Environment(AccountStore.self) private var accountStore
+    @Environment(ToastPresenter.self) private var toast
     @State private var syncStore = WebDAVSyncStore.shared
     @State private var showRestoreConfirmation = false
 
@@ -20,10 +21,13 @@ struct WebDAVSyncSettingsView: View {
         .task {
             syncStore.reloadConfiguration()
         }
-        .alert("同步失败", isPresented: $syncStore.showError) {
+        .alert("同步失败", isPresented: Binding(
+            get: { syncStore.showError },
+            set: { if !$0 { syncStore.error = nil } }
+        )) {
             Button("确定", role: .cancel) { }
         } message: {
-            Text(syncStore.errorMessage)
+            Text(syncStore.error?.localizedDescription ?? "")
         }
         .confirmationDialog("从 WebDAV 恢复", isPresented: $showRestoreConfirmation, titleVisibility: .visible) {
             Button("恢复并覆盖本地同步数据", role: .destructive) {
@@ -35,7 +39,11 @@ struct WebDAVSyncSettingsView: View {
         } message: {
             Text("将恢复安全设置、屏蔽/过滤数据、搜索历史以及小说阅读进度。本地对应数据会被远端备份覆盖。")
         }
-        .toast(isPresented: $syncStore.showSuccessToast, message: syncStore.successMessage)
+        .onChange(of: syncStore.showSuccessToast) { _, newValue in
+            if newValue {
+                toast.show(syncStore.successMessage)
+            }
+        }
     }
 
     private var serverSection: some View {

@@ -24,8 +24,8 @@ struct IllustSeriesView: View {
                     if store.isLoading && store.seriesDetail == nil {
                         loadingView
                             .transition(.opacity)
-                    } else if let error = store.errorMessage {
-                        errorView(error)
+                    } else if let error = store.error {
+                        errorView(error.localizedDescription ?? "未知错误")
                     } else if let detail = store.seriesDetail {
                         content(detail, viewportWidth: viewportWidth)
                             .transition(.opacity)
@@ -83,21 +83,11 @@ struct IllustSeriesView: View {
 
     @ViewBuilder
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-            Text(error)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button(String(localized: "重试")) {
-                Task {
-                    await store.fetch()
-                }
+        ErrorStateView(message: error, retryAction: {
+            Task {
+                await store.fetch()
             }
-            .buttonStyle(.bordered)
-        }
+        })
         .frame(maxWidth: .infinity, minHeight: 400)
     }
 

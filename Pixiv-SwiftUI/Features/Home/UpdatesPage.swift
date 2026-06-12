@@ -78,6 +78,13 @@ struct UpdatesPage: View {
                                     .padding(.horizontal, 12)
                                     .frame(minHeight: 400)
                                     .transition(.opacity)
+                                } else if let error = store.error, store.updates.isEmpty {
+                                    ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+                                        Task {
+                                            await store.refreshUpdates()
+                                        }
+                                    })
+                                    .frame(maxWidth: .infinity, minHeight: 200)
                                 } else if store.updates.isEmpty {
                                     VStack(spacing: 16) {
                                         Image(systemName: "photo.on.rectangle.angled")

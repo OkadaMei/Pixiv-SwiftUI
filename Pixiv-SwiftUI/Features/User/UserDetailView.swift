@@ -6,8 +6,7 @@ struct UserDetailView: View {
     @State private var store: UserDetailStore
     @State private var selectedTab: Int = 0
     @Environment(UserSettingStore.self) var userSettingStore
-    @State private var showCopyToast = false
-    @State private var showBlockUserToast = false
+    @Environment(ToastPresenter.self) var toast
     @State private var isFollowLoading = false
     @State private var isFollowed: Bool = false
     @State private var isBlockTriggered: Bool = false
@@ -218,16 +217,12 @@ struct UserDetailView: View {
                             itemCount: skeletonItemCount
                         )
                         .transition(.opacity)
-                    } else if let error = store.errorMessage {
-                        VStack {
-                            Text(String(localized: "加载失败"))
-                            Text(error).font(.caption).foregroundColor(.gray)
-                            Button(String(localized: "重试")) {
-                                Task {
-                                    await store.fetchAll()
-                                }
+                    } else if let error = store.error {
+                        ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+                            Task {
+                                await store.fetchAll()
                             }
-                        }
+                        })
                         .frame(maxWidth: .infinity, minHeight: 200)
                     }
                 }
@@ -291,7 +286,7 @@ struct UserDetailView: View {
                                     avatarUrl: detail.user.profileImageUrls.medium
                                 )
                             }
-                            showBlockUserToast = true
+                            toast.show(String(localized: "已屏蔽作者"))
                             dismiss()
                         }) {
                             Label(String(localized: "屏蔽此作者"), systemImage: "eye.slash")
@@ -312,8 +307,6 @@ struct UserDetailView: View {
                 isFollowed = detail.user.isFollowed
             }
         }
-        .toast(isPresented: $showCopyToast, message: String(localized: "已复制"))
-        .toast(isPresented: $showBlockUserToast, message: String(localized: "已屏蔽作者"))
     }
 
     private func toggleFollow() async {
@@ -376,7 +369,7 @@ struct UserDetailView: View {
         pasteBoard.clearContents()
         pasteBoard.setString(text, forType: .string)
         #endif
-        showCopyToast = true
+        toast.show(String(localized: "已复制"))
     }
 
 }

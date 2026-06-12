@@ -10,7 +10,7 @@ final class IllustSeriesStore {
     var illusts: [Illusts] = []
     var isLoading = false
     var isLoadingMore = false
-    var errorMessage: String?
+    var error: AppError?
     var nextUrl: String?
 
     init(seriesId: Int) {
@@ -19,7 +19,7 @@ final class IllustSeriesStore {
 
     func fetch() async {
         isLoading = true
-        errorMessage = nil
+        error = nil
 
         do {
             let illustAPI = PixivAPI.shared.illustAPI
@@ -32,7 +32,7 @@ final class IllustSeriesStore {
 
             isLoading = false
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             isLoading = false
         }
     }
@@ -52,7 +52,7 @@ final class IllustSeriesStore {
 
             isLoadingMore = false
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             isLoadingMore = false
         }
     }

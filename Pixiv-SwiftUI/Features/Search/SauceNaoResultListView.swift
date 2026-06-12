@@ -30,11 +30,11 @@ struct SauceNaoResultListView: View {
             let waterfallWidth = availableWidth > 0 ? availableWidth : nil
 
             ZStack {
-                if let errorMessage = store.errorMessage {
+                if let error = store.error {
                     ContentUnavailableView(
                         "出错了",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(errorMessage)
+                        description: Text(error.localizedDescription ?? "未知错误")
                     )
                 } else if store.isLoading && filteredItems.isEmpty {
                     SkeletonIllustWaterfallGrid(
@@ -135,7 +135,7 @@ private final class SauceNaoResultListStore {
     var matches: [SauceNaoMatch] = []
     var isLoading = false
     var hasSearched = false
-    var errorMessage: String?
+    var error: AppError?
     var failedDetailCount = 0
 
     private let requestId: UUID
@@ -150,13 +150,13 @@ private final class SauceNaoResultListStore {
         guard !hasLoaded else { return }
         hasLoaded = true
         isLoading = true
-        errorMessage = nil
+        error = nil
         failedDetailCount = 0
         defer { isLoading = false }
 
         guard let request = SauceNaoSearchRequestStore.shared.consume(requestId: requestId) else {
             hasSearched = true
-            errorMessage = "请求已过期，请重新选择图片"
+            error = AppError.networkError("请求已过期，请重新选择图片")
             return
         }
 
@@ -166,7 +166,7 @@ private final class SauceNaoResultListStore {
             hasSearched = true
         } catch {
             hasSearched = true
-            errorMessage = "搜图失败: \(error.localizedDescription)"
+            self.error = AppError.unknown(error)
             return
         }
 

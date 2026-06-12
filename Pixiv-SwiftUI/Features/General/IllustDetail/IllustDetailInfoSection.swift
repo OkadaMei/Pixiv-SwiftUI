@@ -10,14 +10,12 @@ struct IllustDetailInfoSection: View {
     @Binding var isFollowed: Bool
     @Binding var isBookmarked: Bool
     @Binding var totalComments: Int?
-    @Binding var showNotLoggedInToast: Bool
-    @Binding var showCopyToast: Bool
-    @Binding var showBlockTagToast: Bool
     @Binding var isBlockTriggered: Bool
     @Binding var isCommentsPanelPresented: Bool
     @Binding var navigateToUserId: String?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(ToastPresenter.self) private var toast
     @Environment(ThemeManager.self) var themeManager
 
     @State private var isFollowLoading = false
@@ -337,7 +335,7 @@ struct IllustDetailInfoSection: View {
                         if isLoggedIn {
                             Button(action: {
                                 try? userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
-                                showBlockTagToast = true
+                                toast.show(String(localized: "已屏蔽 Tag"))
                                 dismiss()
                             }) {
                                 Label(String(localized: "屏蔽 tag"), systemImage: "eye.slash")
@@ -376,7 +374,7 @@ struct IllustDetailInfoSection: View {
 
     private func toggleFollow() {
         guard isLoggedIn else {
-            showNotLoggedInToast = true
+            toast.show(String(localized: "请先登录"), duration: 2.0)
             return
         }
 
@@ -404,7 +402,7 @@ struct IllustDetailInfoSection: View {
 
     private func bookmarkIllust(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
         guard isLoggedIn else {
-            showNotLoggedInToast = true
+            toast.show(String(localized: "请先登录"), duration: 2.0)
             return
         }
 
@@ -515,6 +513,6 @@ struct IllustDetailInfoSection: View {
         pasteBoard.clearContents()
         pasteBoard.setString(text, forType: .string)
         #endif
-        showCopyToast = true
+        toast.show(String(localized: "已复制"))
     }
 }

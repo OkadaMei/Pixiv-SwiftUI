@@ -144,6 +144,13 @@ ScrollView {
                             .padding(.horizontal, 12)
                             .frame(minHeight: 400)
                             .transition(.opacity)
+                        } else if let error = store.error, store.bookmarks.isEmpty {
+                            ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+                                Task {
+                                    await store.refreshBookmarks(userId: AccountStore.shared.currentUserId)
+                                }
+                            })
+                            .frame(maxWidth: .infinity, minHeight: 200)
                         } else if store.bookmarks.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "bookmark.slash")

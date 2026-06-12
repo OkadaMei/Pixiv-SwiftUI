@@ -10,7 +10,7 @@ final class NovelSeriesStore {
     var novels: [Novel] = []
     var isLoading = false
     var isLoadingMore = false
-    var errorMessage: String?
+    var error: AppError?
     var nextUrl: String?
 
     init(seriesId: Int) {
@@ -19,7 +19,7 @@ final class NovelSeriesStore {
 
     func fetch() async {
         isLoading = true
-        errorMessage = nil
+        error = nil
 
         do {
             let response = try await PixivAPI.shared.novelAPI.getNovelSeries(seriesId: seriesId)
@@ -28,7 +28,7 @@ final class NovelSeriesStore {
             nextUrl = response.nextUrl
             isLoading = false
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             isLoading = false
         }
     }
@@ -44,7 +44,7 @@ final class NovelSeriesStore {
             self.nextUrl = response.nextUrl
             isLoadingMore = false
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             isLoadingMore = false
         }
     }

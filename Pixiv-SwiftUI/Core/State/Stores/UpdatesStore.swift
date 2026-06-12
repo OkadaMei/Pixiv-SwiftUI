@@ -13,6 +13,7 @@ class UpdatesStore {
     var isLoadingFollowing = false
     var hasFetchedUpdates = false
     var hasFetchedFollowing = false
+    var error: AppError?
 
     var currentRestrict: String = "public"
 
@@ -62,6 +63,7 @@ class UpdatesStore {
             self.nextUrlUpdates = nextUrl
             cache.set((illusts, nextUrl), forKey: cacheKeyUpdates(restrict: effectiveRestrict), expiration: expiration)
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to fetch updates: \(error)")
         }
     }
@@ -87,6 +89,7 @@ class UpdatesStore {
             // 成功后清除，以便下次可以加载新的 nextUrl
             loadingNextUrlUpdates = nil
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to load more updates: \(error)")
             // 失败也清除，以便可以重试
             loadingNextUrlUpdates = nil
@@ -123,6 +126,7 @@ class UpdatesStore {
             self.nextUrlFollowing = nextUrl
             cache.set((users, nextUrl), forKey: cacheKeyFollowing(userId: userId), expiration: expiration)
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to fetch following: \(error)")
         }
     }
@@ -145,6 +149,7 @@ class UpdatesStore {
             self.nextUrlFollowing = response.nextUrl
             loadingNextUrlFollowing = nil
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to load more following: \(error)")
             loadingNextUrlFollowing = nil
         }

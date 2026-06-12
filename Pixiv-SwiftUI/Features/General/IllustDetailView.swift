@@ -12,16 +12,13 @@ import AppKit
 struct IllustDetailView: View {
     @Environment(UserSettingStore.self) var userSettingStore
     @Environment(AccountStore.self) var accountStore
+    @Environment(ToastPresenter.self) var toast
     @Environment(\.colorScheme) private var colorScheme
     let illust: Illusts
     @State private var illustStore = IllustStore()
     @State private var currentPage = 0
     @State private var isCommentsPanelPresented = false
     @State private var isFullscreen = false
-    @State private var showCopyToast = false
-    @State private var showBlockTagToast = false
-    @State private var showBlockIllustToast = false
-    @State private var showBlockUserToast = false
     @State private var isFollowLoading = false
     @State private var relatedIllusts: [Illusts] = []
     @State private var isLoadingRelated = false
@@ -43,13 +40,9 @@ struct IllustDetailView: View {
     @State private var navigateToIllustId: Int?
     @State private var navigateToNovelId: Int?
     @State private var shouldLoadRelated: Bool = false
-    @State private var showSaveToast = false
     @State private var showAuthView = false
-    @State private var showNotLoggedInToast = false
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
-    @State private var showDeleteSuccessToast = false
-    @State private var showDeleteErrorToast = false
     @State private var detailFetched = false
     @State private var ugoiraStore: UgoiraStore?
 
@@ -250,9 +243,6 @@ struct IllustDetailView: View {
                                 isFollowed: $isFollowed,
                                 isBookmarked: $isBookmarked,
                                 totalComments: $totalComments,
-                                showNotLoggedInToast: $showNotLoggedInToast,
-                                showCopyToast: $showCopyToast,
-                                showBlockTagToast: $showBlockTagToast,
                                 isBlockTriggered: $isBlockTriggered,
                                 isCommentsPanelPresented: $isCommentsPanelPresented,
                                 navigateToUserId: $navigateToUserId
@@ -296,9 +286,6 @@ struct IllustDetailView: View {
                             isFollowed: $isFollowed,
                             isBookmarked: $isBookmarked,
                             totalComments: $totalComments,
-                            showNotLoggedInToast: $showNotLoggedInToast,
-                            showCopyToast: $showCopyToast,
-                            showBlockTagToast: $showBlockTagToast,
                             isBlockTriggered: $isBlockTriggered,
                             isCommentsPanelPresented: $isCommentsPanelPresented,
                             navigateToUserId: $navigateToUserId
@@ -407,7 +394,7 @@ struct IllustDetailView: View {
                                     authorName: illust.user.name,
                                     thumbnailUrl: illust.imageUrls.squareMedium
                                 )
-                                showBlockIllustToast = true
+                                toast.show(String(localized: "已屏蔽作品"))
                                 dismiss()
                             }) {
                                 Label(String(localized: "屏蔽此作品"), systemImage: "eye.slash")
@@ -422,7 +409,7 @@ struct IllustDetailView: View {
                                     account: illust.user.account,
                                     avatarUrl: illust.user.profileImageUrls?.medium
                                 )
-                                showBlockUserToast = true
+                                toast.show(String(localized: "已屏蔽作者"))
                                 dismiss()
                             }) {
                                 Label(String(localized: "屏蔽此作者"), systemImage: "person.slash")
@@ -524,31 +511,6 @@ struct IllustDetailView: View {
             }
             return .systemAction
         })
-        .toast(isPresented: $showCopyToast, message: String(localized: "已复制"))
-        .toast(isPresented: $showBlockTagToast, message: String(localized: "已屏蔽 Tag"))
-        .toast(isPresented: $showBlockIllustToast, message: String(localized: "已屏蔽作品"))
-        .toast(isPresented: $showBlockUserToast, message: String(localized: "已屏蔽作者"))
-        .toast(isPresented: $showSaveToast, message: String(localized: "已添加到下载队列"))
-        .toast(isPresented: $showDeleteSuccessToast, message: String(localized: "作品已删除"))
-        .toast(isPresented: $showDeleteErrorToast, message: String(localized: "删除失败"))
-        .alert(String(localized: "确认删除"), isPresented: $showDeleteConfirmation) {
-            Button(String(localized: "取消"), role: .cancel) { }
-            Button(String(localized: "删除"), role: .destructive) {
-                Task {
-                    await deleteIllust()
-                }
-            }
-            .disabled(isDeleting)
-        } message: {
-            Text(String(localized: "删除后将无法恢复，确定要删除这个作品吗？"))
-        }
-        .navigationDestination(isPresented: $navigateToDownloadTasks) {
-            DownloadTasksView()
-        }
-        .sheet(isPresented: $showAuthView) {
-            AuthView(accountStore: accountStore)
-        }
-        .toast(isPresented: $showNotLoggedInToast, message: String(localized: "请先登录"), duration: 2.0)
     }
 
     private func preloadAllImages() {
@@ -600,7 +562,7 @@ struct IllustDetailView: View {
 
     private func bookmarkIllust(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
         guard isLoggedIn else {
-            showNotLoggedInToast = true
+            toast.show(String(localized: "请先登录"), duration: 2.0)
             return
         }
 
@@ -662,7 +624,7 @@ struct IllustDetailView: View {
         pasteBoard.clearContents()
         pasteBoard.setString(text, forType: .string)
         #endif
-        showCopyToast = true
+        toast.show(String(localized: "已复制"))
     }
 
     private func saveIllust() async {
@@ -676,7 +638,7 @@ struct IllustDetailView: View {
             let quality = userSettingStore.userSetting.downloadQuality
             await DownloadStore.shared.addTask(illust, quality: quality)
         }
-        showSaveToast = true
+        toast.show(String(localized: "已添加到下载队列"))
     }
 
     private func saveUgoira() async {
@@ -751,7 +713,7 @@ struct IllustDetailView: View {
             let quality = userSettingStore.userSetting.downloadQuality
             await DownloadStore.shared.addTask(illust, quality: quality, customSaveURL: url)
         }
-        showSaveToast = true
+        toast.show(String(localized: "已添加到下载队列"))
     }
     #endif
 
@@ -811,12 +773,12 @@ struct IllustDetailView: View {
             try await PixivAPI.shared.illustAPI.deleteIllust(illustId: illust.id, type: type)
 
             await MainActor.run {
-                showDeleteSuccessToast = true
+                toast.show(String(localized: "作品已删除"))
                 dismiss()
             }
         } catch {
             await MainActor.run {
-                showDeleteErrorToast = true
+                toast.show(String(localized: "删除失败"))
             }
         }
     }

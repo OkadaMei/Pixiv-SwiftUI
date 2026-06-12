@@ -321,23 +321,11 @@ struct SpotlightDetailView: View {
     }
 
     private func errorView(_ error: AppError) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-
-            Text(error.localizedDescription)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button(String(localized: "重试")) {
-                Task {
-                    await store.fetch(url: article.articleUrl)
-                }
+        ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+            Task {
+                await store.fetch(url: article.articleUrl)
             }
-            .buttonStyle(.bordered)
-        }
+        })
         .frame(maxWidth: .infinity)
         .padding(.top, 32)
     }

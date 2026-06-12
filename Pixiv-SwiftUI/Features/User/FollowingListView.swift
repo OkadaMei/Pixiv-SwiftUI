@@ -24,6 +24,13 @@ struct FollowingListView: View {
                     }
                     .padding()
                     .transition(.opacity)
+                } else if let error = store.error, store.following.isEmpty {
+                    ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+                        Task {
+                            await store.fetchFollowing(userId: userId, restrict: restrictString)
+                        }
+                    })
+                    .frame(maxWidth: .infinity, minHeight: 200)
                 } else if store.following.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "person.slash")

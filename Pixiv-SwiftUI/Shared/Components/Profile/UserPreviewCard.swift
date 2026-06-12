@@ -85,7 +85,7 @@ struct UserPreviewCard: View {
             // 作品预览行
             HStack(spacing: 6) {
                 if !userPreview.illusts.isEmpty {
-                    ForEach(Array(userPreview.illusts.prefix(3).enumerated()), id: \.element.id) { index, illust in
+                    ForEach(Array(userPreview.illusts.prefix(3).enumerated()), id: \.element.id) { _, illust in
                         CachedAsyncImage(urlString: illust.imageUrls.squareMedium)
                             .aspectRatio(1, contentMode: .fill)
                             .frame(minWidth: 0, maxWidth: .infinity)

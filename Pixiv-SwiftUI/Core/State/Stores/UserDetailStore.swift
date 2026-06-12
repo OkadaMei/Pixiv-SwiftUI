@@ -21,7 +21,7 @@ final class UserDetailStore {
     var isLoadingMoreBookmarks: Bool = false
     var isLoadingMoreNovels: Bool = false
 
-    var errorMessage: String?
+    var error: AppError?
 
     var isIllustsReachedEnd: Bool {
         !illusts.isEmpty && nextIllustsUrl == nil && !isLoadingMoreIllusts
@@ -78,7 +78,7 @@ final class UserDetailStore {
         isLoadingMangas = true
         isLoadingBookmarks = true
         isLoadingNovels = true
-        errorMessage = nil
+        error = nil
 
         do {
             let fetchedDetail = try await api.userAPI.getUserDetail(userId: userId)
@@ -112,7 +112,7 @@ final class UserDetailStore {
             cache.set(cachedData, forKey: cacheKey, expiration: expiration)
             cache.set(fetchedDetail, forKey: detailCacheKey, expiration: expiration)
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Error fetching user detail: \(error)")
         }
 
@@ -134,7 +134,7 @@ final class UserDetailStore {
             self.illusts.append(contentsOf: newIllusts)
             self.nextIllustsUrl = nextUrl
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Error loading more illusts: \(error)")
         }
 
@@ -152,7 +152,7 @@ final class UserDetailStore {
             self.mangas.append(contentsOf: newMangas)
             self.nextMangasUrl = nextUrl
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Error loading more mangas: \(error)")
         }
 
@@ -170,7 +170,7 @@ final class UserDetailStore {
             self.bookmarks.append(contentsOf: response.illusts)
             self.nextBookmarksUrl = response.nextUrl
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Error loading more bookmarks: \(error)")
         }
 
@@ -188,7 +188,7 @@ final class UserDetailStore {
             self.novels.append(contentsOf: newNovels)
             self.nextNovelsUrl = nextUrl
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             print("Error loading more novels: \(error)")
         }
 
@@ -235,7 +235,7 @@ final class UserDetailStore {
             cache.set(cachedData, forKey: cacheKey, expiration: expiration)
             cache.set(newDetail, forKey: detailCacheKey, expiration: expiration)
         } catch {
-            self.errorMessage = "操作失败: \(error.localizedDescription)"
+            self.error = AppError.unknown(error)
         }
     }
 }

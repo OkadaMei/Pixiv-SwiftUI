@@ -175,25 +175,12 @@ struct NovelReaderView: View {
         if store.isLoading {
             novelReaderSkeleton
                 .transition(.opacity)
-        } else if let error = store.errorMessage {
-            VStack(spacing: 16) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.largeTitle)
-                    .foregroundColor(.secondary)
-                Text("加载失败")
-                    .font(.headline)
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                Button("重试") {
-                    Task {
-                        await store.fetch()
-                    }
+        } else if let error = store.error {
+            ErrorStateView(message: error.localizedDescription ?? "未知错误", retryAction: {
+                Task {
+                    await store.fetch()
                 }
-                .buttonStyle(.bordered)
-            }
+            })
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollViewReader { proxy in

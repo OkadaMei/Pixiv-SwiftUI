@@ -8,6 +8,7 @@ import Combine
 class BookmarksStore {
     var bookmarks: [Illusts] = []
     var isLoadingBookmarks = false
+    var error: AppError?
     var bookmarkRestrict: String = "public"
 
     var nextUrlBookmarks: String?
@@ -90,6 +91,7 @@ class BookmarksStore {
 
             await syncToBookmarkCache(illusts: illusts, userId: userId, restrict: capturedRestrict)
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to fetch bookmarks: \(error)")
         }
     }
@@ -114,6 +116,7 @@ class BookmarksStore {
 
             await syncToBookmarkCache(illusts: response.illusts, userId: AccountStore.shared.currentUserId, restrict: bookmarkRestrict)
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to load more bookmarks: \(error)")
             loadingNextUrl = nil
         }

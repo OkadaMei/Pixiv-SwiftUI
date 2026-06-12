@@ -14,8 +14,8 @@ final class WebDAVSyncStore {
     var isBusy = false
     var busyMessage = ""
     var statusMessage = ""
-    var errorMessage = ""
-    var showError = false
+    var error: AppError?
+    var showError: Bool { error != nil }
     var successMessage = ""
     var showSuccessToast = false
     var lastOperationDescription = "从未同步"
@@ -142,8 +142,7 @@ final class WebDAVSyncStore {
     }
 
     private func present(_ error: Error) {
-        errorMessage = error.localizedDescription
-        showError = true
+        self.error = AppError.unknown(error)
     }
 
     private func showSuccess(message: String) {

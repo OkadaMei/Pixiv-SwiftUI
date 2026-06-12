@@ -321,22 +321,9 @@ struct RecommendView: View {
     private var errorView: some View {
         Group {
             if let error = error {
-                VStack(spacing: 8) {
-                    HStack {
-                        Image(systemName: "exclamationmark.circle.fill")
-                        Text(error)
-                    }
-                    .font(.caption)
-                    .foregroundColor(.red)
-
-                    Button(action: loadMoreData) {
-                        Text("重试")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
+                ErrorStateView(message: error) {
+                    loadMoreData()
                 }
-                .padding()
-                .background(Color.red.opacity(0.1))
             }
         }
     }

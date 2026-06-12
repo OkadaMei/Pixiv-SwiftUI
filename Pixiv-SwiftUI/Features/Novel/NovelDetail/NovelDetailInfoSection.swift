@@ -10,13 +10,11 @@ struct NovelDetailInfoSection: View {
     @Binding var isBookmarked: Bool
     @Binding var isFollowed: Bool?
     @Binding var totalComments: Int?
-    @Binding var showNotLoggedInToast: Bool
-    @Binding var showBlockTagToast: Bool
-    @Binding var showCopyToast: Bool
     @Binding var navigateToUserId: String?
     @Binding var isCommentsPanelPresented: Bool
 
     @State private var isFollowLoading = false
+    @Environment(ToastPresenter.self) private var toast
 
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) var themeManager
@@ -380,7 +378,7 @@ struct NovelDetailInfoSection: View {
 
     private func toggleBookmark(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
         guard isLoggedIn else {
-            showNotLoggedInToast = true
+            toast.show(String(localized: "请先登录"), duration: 2.0)
             return
         }
 
@@ -447,7 +445,7 @@ struct NovelDetailInfoSection: View {
                         if isLoggedIn {
                             Button(action: {
                                 try? userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
-                                showBlockTagToast = true
+                                toast.show(String(localized: "已屏蔽 Tag"))
                                 dismiss()
                             }) {
                                 Label(String(localized: "屏蔽 tag"), systemImage: "eye.slash")
@@ -468,7 +466,7 @@ struct NovelDetailInfoSection: View {
         pasteBoard.clearContents()
         pasteBoard.setString(text, forType: .string)
         #endif
-        showCopyToast = true
+        toast.show(String(localized: "已复制"))
     }
 }
 
@@ -519,9 +517,6 @@ struct NovelDetailInfoSection: View {
         isBookmarked: .constant(false),
         isFollowed: .constant(nil),
         totalComments: .constant(5),
-        showNotLoggedInToast: .constant(false),
-        showBlockTagToast: .constant(false),
-        showCopyToast: .constant(false),
         navigateToUserId: .constant(nil),
         isCommentsPanelPresented: .constant(false)
     )

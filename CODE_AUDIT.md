@@ -178,31 +178,7 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 ## 四、用户体验 (UX)
 
-### 问题 UX-1: 全局错误处理不统一
 
-**严重程度**: ★★★
-**涉及文件**: `UpdatesStore`、`IllustStore`、`SearchStore` 等多数 Store
-
-各 Store 的错误处理策略不统一：
-
-| Store | 失败时行为 |
-|-------|-----------|
-| `UpdatesStore.fetchUpdates()` | 仅 `print("Failed: \(error)")`，`isLoadingUpdates` 通过 defer 置 false，用户无感知 |
-| `IllustStore.loadMoreRanking()` | 空 catch，用户无感知 |
-| `AccountStore.loadAccounts()` | 设置 `self.error = AppError.databaseError(...)`，但 View 层未统一监听 |
-| `SearchStore` | 部分方法透传 throw，由 View 层 catch |
-
-存在以下问题：
-- 部分加载失败后 UI 永远停留在 loading 状态
-- 无统一的 Toast / Alert 错误呈现通道
-- 无自动重试机制
-
-**建议**:
-- 引入 `ErrorWrapper` 统一状态管理（`isError: Bool`、`errorMessage: String`、`retryAction: () -> Void`）
-- 在 `App` 层或 `ContentView` 层注册全局错误 Toast
-- 网络错误自动重试策略（如指数退避）
-
----
 
 ### 问题 UX-2: 网络模式切换无状态恢复
 
@@ -267,7 +243,6 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 | 优先级 | 分类 | 问题 | 预估工作量 |
 |--------|------|------|-----------|
-| 🔴 P0 | UX | UX-1 全局错误处理不统一 | 3-5天 |
 | 🟡 P1 | Architecture | A-4 引入 DTO 映射层 | 5-10天 |
 | 🟢 P2 | Architecture | A-3 Store 依赖注入 | 3-5天 |
 | 🟢 P2 | Performance | P-2 统一缓存策略 | 2-3天 |

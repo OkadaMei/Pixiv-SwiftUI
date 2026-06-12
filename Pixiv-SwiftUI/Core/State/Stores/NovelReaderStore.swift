@@ -16,7 +16,7 @@ final class NovelReaderStore {
     var resolvedSeriesNavigation: SeriesNavigation?
     var spans: [NovelSpan] = []
     var isLoading = false
-    var errorMessage: String?
+    var error: AppError?
     var translationError: String?
 
     var translatedParagraphs: [Int: String] = [:]
@@ -127,7 +127,7 @@ final class NovelReaderStore {
         guard !isLoading else { return }
         print("[NovelReaderStore] Fetching content for novelId=\(novelId)")
         isLoading = true
-        errorMessage = nil
+        error = nil
         resolvedSeriesNavigation = nil
 
         do {
@@ -153,7 +153,7 @@ final class NovelReaderStore {
             }
         } catch {
             print("[NovelReaderStore] Fetch failed: \(error)")
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
             resolvedSeriesNavigation = nil
             isLoading = false
         }

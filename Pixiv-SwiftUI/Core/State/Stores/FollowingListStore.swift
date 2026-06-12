@@ -8,6 +8,7 @@ import Combine
 class FollowingListStore {
     var following: [UserPreviews] = []
     var isLoadingFollowing = false
+    var error: AppError?
 
     var currentRestrict: String = "public"
 
@@ -50,6 +51,7 @@ class FollowingListStore {
             self.nextUrlFollowing = nextUrl
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to fetch following: \(error)")
         }
     }
@@ -74,6 +76,7 @@ class FollowingListStore {
             self.nextUrlFollowing = response.nextUrl
             loadingNextUrlFollowing = nil
         } catch {
+            self.error = AppError.unknown(error)
             print("Failed to load more following: \(error)")
             loadingNextUrlFollowing = nil
         }

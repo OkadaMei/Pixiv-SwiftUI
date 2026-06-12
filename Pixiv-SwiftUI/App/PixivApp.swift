@@ -36,6 +36,7 @@ struct PixivApp: App {
                         .modelContainer(initializer.modelContainer ?? DataContainer.shared.modelContainer)
                 }
             }
+            .withGlobalToast()
             .sheet(item: $pendingUpdateInfo) { info in
                     UpdateAvailableSheet(updateInfo: info, isPresented: Binding(
                         get: { pendingUpdateInfo != nil },
@@ -78,6 +79,7 @@ struct PixivApp: App {
                     .environment(UserSettingStore.shared)
                     .environment(ThemeManager.shared)
                     .modelContainer(DataContainer.shared.modelContainer)
+                    .withGlobalToast()
             }
         }
         .windowStyle(.titleBar)
@@ -91,6 +93,7 @@ struct PixivApp: App {
                     .environment(UserSettingStore.shared)
                     .environment(ThemeManager.shared)
                     .modelContainer(DataContainer.shared.modelContainer)
+                    .withGlobalToast()
             }
         }
         .windowStyle(.titleBar)
@@ -102,6 +105,7 @@ struct PixivApp: App {
                 .environment(UserSettingStore.shared)
                 .environment(ThemeManager.shared)
                 .modelContainer(DataContainer.shared.modelContainer)
+                .withGlobalToast()
                 .frame(minWidth: 600, minHeight: 500)
         }
         .defaultSize(width: 600, height: 500)
@@ -123,10 +127,10 @@ struct PixivApp: App {
 struct ContentView: View {
     @Environment(AccountStore.self) var accountStore
     @Environment(UserSettingStore.self) var userSettingStore
+    @Environment(ToastPresenter.self) var toast
     #if os(iOS)
     @Environment(\.scenePhase) private var scenePhase
     #endif
-    @State private var showTokenRefreshFailedToast: Bool = false
 
     var body: some View {
         Group {
@@ -146,15 +150,12 @@ struct ContentView: View {
                     userSettingStore.userSetting.colorSchemeMode == 1 ? .light :
                     userSettingStore.userSetting.colorSchemeMode == 2 ? .dark : nil
                 )
-                .toast(
-                    isPresented: $showTokenRefreshFailedToast,
-                    message: "登录状态已过期，请重新登录",
-                    duration: 3.0
-                )
             }
         }
         .onChange(of: accountStore.showTokenRefreshFailedToast) { _, newValue in
-            showTokenRefreshFailedToast = newValue
+            if newValue {
+                toast.show("登录状态已过期，请重新登录", duration: 3.0)
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: accountStore.isLoggedIn)
         #if os(iOS)

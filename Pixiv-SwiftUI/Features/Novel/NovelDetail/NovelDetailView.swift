@@ -16,15 +16,12 @@ struct NovelDetailView: View {
     @State private var novelData: Novel
     @Environment(UserSettingStore.self) var userSettingStore
     @Environment(AccountStore.self) var accountStore
+    @Environment(ToastPresenter.self) var toast
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var isBookmarked: Bool
     @State private var isFollowed: Bool?
     @State private var totalComments: Int?
-    @State private var showCopyToast = false
-    @State private var showBlockTagToast = false
-    @State private var showBlockUserToast = false
-    @State private var showNotLoggedInToast = false
     @State private var navigateToUserId: String?
     @State private var navigateToIllustId: Int?
     @State private var navigateToNovelId: Int?
@@ -32,9 +29,6 @@ struct NovelDetailView: View {
     @State private var showAuthView = false
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
-    @State private var showDeleteSuccessToast = false
-    @State private var showDeleteErrorToast = false
-    @State private var showExportToast = false
     @State private var isExporting = false
     @State private var isBlockTriggered: Bool = false
 
@@ -148,9 +142,6 @@ struct NovelDetailView: View {
                             isBookmarked: $isBookmarked,
                             isFollowed: $isFollowed,
                             totalComments: $totalComments,
-                            showNotLoggedInToast: $showNotLoggedInToast,
-                            showBlockTagToast: $showBlockTagToast,
-                            showCopyToast: $showCopyToast,
                             navigateToUserId: $navigateToUserId,
                             isCommentsPanelPresented: .constant(false)
                         )
@@ -195,9 +186,6 @@ struct NovelDetailView: View {
                         isBookmarked: $isBookmarked,
                         isFollowed: $isFollowed,
                         totalComments: $totalComments,
-                        showNotLoggedInToast: $showNotLoggedInToast,
-                        showBlockTagToast: $showBlockTagToast,
-                        showCopyToast: $showCopyToast,
                         navigateToUserId: $navigateToUserId,
                         isCommentsPanelPresented: $showComments
                     )
@@ -263,7 +251,7 @@ struct NovelDetailView: View {
                                 account: novel.user.account,
                                 avatarUrl: novel.user.profileImageUrls?.medium
                             )
-                            showBlockUserToast = true
+                            toast.show(String(localized: "已屏蔽作者"))
                             dismiss()
                         }) {
                             Label(String(localized: "屏蔽此作者"), systemImage: "person.slash")
@@ -286,13 +274,6 @@ struct NovelDetailView: View {
                 .menuIndicator(.hidden)
             }
         }
-        .toast(isPresented: $showCopyToast, message: String(localized: "已复制"))
-        .toast(isPresented: $showBlockTagToast, message: String(localized: "已屏蔽 Tag"))
-        .toast(isPresented: $showBlockUserToast, message: String(localized: "已屏蔽作者"))
-        .toast(isPresented: $showNotLoggedInToast, message: String(localized: "请先登录"), duration: 2.0)
-        .toast(isPresented: $showDeleteSuccessToast, message: String(localized: "作品已删除"))
-        .toast(isPresented: $showDeleteErrorToast, message: String(localized: "删除失败"))
-        .toast(isPresented: $showExportToast, message: String(localized: "已添加到下载队列"))
         .alert(String(localized: "确认删除"), isPresented: $showDeleteConfirmation) {
             Button(String(localized: "取消"), role: .cancel) { }
             Button(String(localized: "删除"), role: .destructive) {
@@ -388,7 +369,7 @@ struct NovelDetailView: View {
 
     private func toggleBookmark(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
         guard isLoggedIn else {
-            showNotLoggedInToast = true
+            toast.show(String(localized: "请先登录"), duration: 2.0)
             return
         }
 
@@ -444,7 +425,7 @@ struct NovelDetailView: View {
         pasteBoard.clearContents()
         pasteBoard.setString(text, forType: .string)
         #endif
-        showCopyToast = true
+        toast.show(String(localized: "已复制"))
     }
 
     private func fetchUserDetailIfNeeded() {
@@ -497,7 +478,7 @@ struct NovelDetailView: View {
                     customSaveURL: customSaveURL
                 )
                 await MainActor.run {
-                    showExportToast = true
+                    toast.show(String(localized: "已添加到下载队列"))
                     isExporting = false
                 }
             } catch {
@@ -549,12 +530,12 @@ struct NovelDetailView: View {
             try await PixivAPI.shared.novelAPI.deleteNovel(novelId: novel.id)
 
             await MainActor.run {
-                showDeleteSuccessToast = true
+                toast.show(String(localized: "作品已删除"))
                 dismiss()
             }
         } catch {
             await MainActor.run {
-                showDeleteErrorToast = true
+                toast.show(String(localized: "删除失败"))
             }
         }
     }

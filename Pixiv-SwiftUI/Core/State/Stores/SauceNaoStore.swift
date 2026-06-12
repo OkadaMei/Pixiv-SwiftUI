@@ -9,13 +9,13 @@ import UniformTypeIdentifiers
 final class SauceNaoStore {
     var isSearching = false
     var results: [SauceNaoMatch] = []
-    var errorMessage: String?
+    var error: AppError?
 
     private let api = SauceNAOAPI()
 
     func search(imageData: Data, fileName: String = "image.jpg") async {
         isSearching = true
-        errorMessage = nil
+        error = nil
         results = []
         defer { isSearching = false }
 
@@ -24,7 +24,7 @@ final class SauceNaoStore {
         do {
             results = try await api.searchMatches(imageData: compressedData, fileName: fileName)
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
         }
     }
 

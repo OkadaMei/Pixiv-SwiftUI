@@ -46,7 +46,7 @@ final class SearchResultStore {
     var novelResults: [Novel] = []
 
     var isLoading: Bool = false
-    var errorMessage: String?
+    var error: AppError?
     @ObservationIgnored private var illustNextURL: String?
     @ObservationIgnored private var novelNextURL: String?
 
@@ -55,7 +55,7 @@ final class SearchResultStore {
     var illustLimit: Int = 30
     var illustHasMore: Bool = false
     var isLoadingMoreIllusts: Bool = false
-    var illustLoadMoreErrorMessage: String?
+    var illustLoadMoreError: AppError?
 
     var userOffset: Int = 0
     var userHasMore: Bool = false
@@ -65,7 +65,7 @@ final class SearchResultStore {
     var novelLimit: Int = 30
     var novelHasMore: Bool = false
     var isLoadingMoreNovels: Bool = false
-    var novelLoadMoreErrorMessage: String?
+    var novelLoadMoreError: AppError?
 
     @ObservationIgnored let api = PixivAPI.shared
     @ObservationIgnored let pseudoPopularInitialSamplePageCount = 1
@@ -112,7 +112,7 @@ final class SearchResultStore {
         endDate: Date? = nil
     ) async {
         self.isLoading = true
-        self.errorMessage = nil
+        error = nil
         SearchStore.shared.addHistory(word)
         self.activeSearchSessionID = UUID()
 
@@ -336,7 +336,7 @@ final class SearchResultStore {
                 )
             }
         } catch {
-            self.errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
         }
 
         self.isLoading = false
@@ -355,7 +355,7 @@ final class SearchResultStore {
     ) async {
         guard !isLoading, !isLoadingMoreIllusts, illustHasMore else { return }
         isLoadingMoreIllusts = true
-        illustLoadMoreErrorMessage = nil
+        illustLoadMoreError = nil
         let baseWord = normalizeSearchWord(word)
         let usesPseudoPopularSort = preferLocalPopularSort && sort == SearchSortOption.popularDesc.rawValue
         let usesUsersTagPseudoPopularSort = usesPseudoPopularSort && searchTarget != .titleAndCaption
@@ -443,7 +443,7 @@ final class SearchResultStore {
             }
         } catch {
             print("Failed to load more illusts: \(error)")
-            illustLoadMoreErrorMessage = error.localizedDescription
+            illustLoadMoreError = AppError.unknown(error)
         }
         isLoadingMoreIllusts = false
     }
@@ -544,8 +544,8 @@ final class SearchResultStore {
 
         guard !isLoading else { return }
         isLoading = true
-        errorMessage = nil
-        novelLoadMoreErrorMessage = nil
+        error = nil
+        novelLoadMoreError = nil
         novelOffset = 0
         novelNextURL = nil
         novelHasMore = false
@@ -618,7 +618,7 @@ final class SearchResultStore {
                 )
             }
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = AppError.unknown(error)
         }
         isLoading = false
     }
@@ -636,7 +636,7 @@ final class SearchResultStore {
     ) async {
         guard !isLoading, !isLoadingMoreNovels, novelHasMore else { return }
         isLoadingMoreNovels = true
-        novelLoadMoreErrorMessage = nil
+        novelLoadMoreError = nil
         let baseWord = normalizeSearchWord(word)
         let usesPseudoPopularSort = preferLocalPopularSort && sort == SearchSortOption.popularDesc.rawValue
         let usesUsersTagPseudoPopularSort = usesPseudoPopularSort && searchTarget != .titleAndCaption
@@ -725,7 +725,7 @@ final class SearchResultStore {
             }
         } catch {
             print("Failed to load more novels: \(error)")
-            novelLoadMoreErrorMessage = error.localizedDescription
+            novelLoadMoreError = AppError.unknown(error)
         }
         isLoadingMoreNovels = false
     }
