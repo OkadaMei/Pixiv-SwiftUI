@@ -376,7 +376,7 @@ struct IllustMini: Codable {
     let id: Int
     let title: String
     let type: String
-    let imageUrls: ImageUrls
+    let imageUrls: ImageUrlsDTO
 
     enum CodingKeys: String, CodingKey {
         case id

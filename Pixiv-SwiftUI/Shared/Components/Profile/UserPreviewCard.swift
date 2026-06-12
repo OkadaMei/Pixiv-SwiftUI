@@ -168,11 +168,18 @@ struct UserPreviewCard: View {
 
 #Preview {
     // 示例数据用于预览
-    let sampleUser = User(
-        profileImageUrls: ProfileImageUrls(medium: "https://via.placeholder.com/150"),
+    let sampleUser = UserDTO(
+        profileImageUrls: ProfileImageUrlsDTO(medium: "https://via.placeholder.com/150"),
         id: .string("123"),
         name: "示例用户",
-        account: "sample_user"
+        account: "sample_user",
+        mailAddress: nil,
+        isPremium: nil,
+        xRestrict: nil,
+        isMailAuthorized: nil,
+        requirePolicyAgreement: nil,
+        isAcceptRequest: nil,
+        isFollowed: nil
     )
     let sampleIllust = Illusts(
         id: 1,
@@ -181,7 +188,7 @@ struct UserPreviewCard: View {
         imageUrls: ImageUrls(squareMedium: "https://via.placeholder.com/150", medium: "https://via.placeholder.com/300", large: "https://via.placeholder.com/600"),
         caption: "",
         restrict: 0,
-        user: sampleUser,
+        user: sampleUser.toDomain(),
         tags: [],
         tools: [],
         createDate: "",
@@ -202,7 +209,7 @@ struct UserPreviewCard: View {
     )
     let sampleUserPreview = UserPreviews(
         user: sampleUser,
-        illusts: [sampleIllust, sampleIllust, sampleIllust],
+        illusts: [IllustDTO.fromDomain(sampleIllust), IllustDTO.fromDomain(sampleIllust), IllustDTO.fromDomain(sampleIllust)],
         novels: [],
         isMuted: false
     )

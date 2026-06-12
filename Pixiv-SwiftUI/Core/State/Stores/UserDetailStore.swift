@@ -166,8 +166,8 @@ final class UserDetailStore {
         isLoadingMoreBookmarks = true
 
         do {
-            let response: IllustsResponse = try await api.fetchNext(urlString: nextUrl)
-            self.bookmarks.append(contentsOf: response.illusts)
+            let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextUrl)
+            self.bookmarks.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextBookmarksUrl = response.nextUrl
         } catch {
             self.error = AppError.unknown(error)

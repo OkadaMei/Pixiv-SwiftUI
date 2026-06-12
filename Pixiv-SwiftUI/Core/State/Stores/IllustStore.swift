@@ -362,8 +362,8 @@ final class IllustStore {
         let dateString = date.map { dateFormatter.string(from: $0) }
         let cacheKey = cacheKey(for: mode, dateString: dateString)
 
-        if !forceRefresh, let cached: IllustRankingResponse = cache.get(forKey: cacheKey) {
-            self.rankingIllustsByMode[mode] = cached.illusts
+        if !forceRefresh, let cached: IllustRankingResponseDTO = cache.get(forKey: cacheKey) {
+            self.rankingIllustsByMode[mode] = cached.illusts.map { $0.toDomain() }
             self.nextUrlsByRankingMode[mode] = cached.nextUrl
             return
         }
@@ -383,7 +383,7 @@ final class IllustStore {
             let result = try await api.illustAPI.getIllustRanking(mode: mode.rawValue, date: dateString)
             self.rankingIllustsByMode[mode] = result.illusts
             self.nextUrlsByRankingMode[mode] = result.nextUrl
-            cache.set(IllustRankingResponse(illusts: result.illusts, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
+            cache.set(IllustRankingResponseDTO(illusts: result.illusts.map { IllustDTO.fromDomain($0) }, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
             print("Failed to load \(mode.rawValue) ranking illusts: \(error)")
         }

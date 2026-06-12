@@ -27,7 +27,7 @@ final class IllustSeriesStore {
             let response = try await illustAPI.getIllustSeries(seriesId: seriesId)
 
             seriesDetail = response.illustSeriesDetail
-            illusts = response.illusts
+            illusts = response.illusts.map { $0.toDomain() }
             nextUrl = response.nextUrl
 
             isLoading = false
@@ -47,7 +47,7 @@ final class IllustSeriesStore {
 
             let response = try await illustAPI.getIllustSeriesByURL(nextUrl)
 
-            illusts.append(contentsOf: response.illusts)
+            illusts.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextUrl = response.nextUrl
 
             isLoadingMore = false

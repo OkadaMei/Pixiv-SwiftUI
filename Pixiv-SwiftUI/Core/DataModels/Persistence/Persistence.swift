@@ -225,7 +225,7 @@ final class CachedIllust: Codable {
         self.id = illust.id
         self.ownerId = ownerId
         self.title = illust.title
-        self.imageUrlsData = try? JSONEncoder().encode(illust.imageUrls)
+        self.imageUrlsData = try? JSONEncoder().encode(ImageUrlsDTO.fromDomain(illust.imageUrls))
         self.userName = illust.user.name
         self.userAccount = illust.user.account
         self.userId = illust.user.id.stringValue
@@ -297,7 +297,8 @@ final class CachedIllust: Codable {
 
     var imageUrls: ImageUrls? {
         guard let data = imageUrlsData else { return nil }
-        return try? JSONDecoder().decode(ImageUrls.self, from: data)
+        guard let dto = try? JSONDecoder().decode(ImageUrlsDTO.self, from: data) else { return nil }
+        return dto.toDomain()
     }
 
     func toUser() -> User {

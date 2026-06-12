@@ -110,27 +110,15 @@ enum IllustRankingMode: String, CaseIterable, Identifiable {
 }
 
 /// 插画排行榜响应
-struct IllustRankingResponse: Codable {
+struct IllustRankingResponse {
     let illusts: [Illusts]
     let nextUrl: String?
-
-    enum CodingKeys: String, CodingKey {
-        case illusts
-        case nextUrl = "next_url"
-    }
 }
 
 /// 排行榜中的插画（包含排名信息）
-struct RankingIllust: Codable {
+struct RankingIllust {
     let illust: Illusts
     let rank: Int
     let previousRank: Int?
     let change: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case illust
-        case rank
-        case previousRank = "previous_rank"
-        case change
-    }
 }

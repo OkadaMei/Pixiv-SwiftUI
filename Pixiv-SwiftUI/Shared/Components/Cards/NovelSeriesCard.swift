@@ -208,7 +208,7 @@ struct NovelSeriesCard: View {
                 restrict: 0,
                 xRestrict: 0,
                 isOriginal: true,
-                imageUrls: ImageUrls(
+                imageUrls: ImageUrlsDTO(
                     squareMedium: "",
                     medium: "",
                     large: ""
@@ -217,11 +217,18 @@ struct NovelSeriesCard: View {
                 tags: [],
                 pageCount: 1,
                 textLength: 15000,
-                user: User(
-                    profileImageUrls: ProfileImageUrls(px50x50: ""),
+                user: UserDTO(
+                    profileImageUrls: ProfileImageUrlsDTO(px50x50: ""),
                     id: StringIntValue.string("1"),
                     name: "测试作者",
-                    account: "test"
+                    account: "test",
+                    mailAddress: nil,
+                    isPremium: nil,
+                    xRestrict: nil,
+                    isMailAuthorized: nil,
+                    requirePolicyAgreement: nil,
+                    isAcceptRequest: nil,
+                    isFollowed: nil
                 ),
                 series: nil,
                 isBookmarked: false,
@@ -244,7 +251,7 @@ struct NovelSeriesCard: View {
                 restrict: 0,
                 xRestrict: 0,
                 isOriginal: true,
-                imageUrls: ImageUrls(
+                imageUrls: ImageUrlsDTO(
                     squareMedium: "",
                     medium: "",
                     large: ""
@@ -253,11 +260,18 @@ struct NovelSeriesCard: View {
                 tags: [],
                 pageCount: 1,
                 textLength: 15000,
-                user: User(
-                    profileImageUrls: ProfileImageUrls(px50x50: ""),
+                user: UserDTO(
+                    profileImageUrls: ProfileImageUrlsDTO(px50x50: ""),
                     id: StringIntValue.string("1"),
                     name: "测试作者",
-                    account: "test"
+                    account: "test",
+                    mailAddress: nil,
+                    isPremium: nil,
+                    xRestrict: nil,
+                    isMailAuthorized: nil,
+                    requirePolicyAgreement: nil,
+                    isAcceptRequest: nil,
+                    isFollowed: nil
                 ),
                 series: nil,
                 isBookmarked: false,

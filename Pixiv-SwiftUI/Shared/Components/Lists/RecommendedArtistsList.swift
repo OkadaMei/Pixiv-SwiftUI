@@ -85,11 +85,18 @@ struct RecommendedArtistsList: View {
         RecommendedArtistsList(
             recommendedUsers: .constant([
                 UserPreviews(
-                    user: User(
-                        profileImageUrls: ProfileImageUrls(px16x16: "", px50x50: "", px170x170: "", medium: "https://i.pixiv.cat/img/user-img/1/1.jpg"),
+                    user: UserDTO(
+                        profileImageUrls: ProfileImageUrlsDTO(px16x16: "", px50x50: "", px170x170: "", medium: "https://i.pixiv.cat/img/user-img/1/1.jpg"),
                         id: .string("1"),
                         name: "测试用户",
-                        account: "test_user"
+                        account: "test_user",
+                        mailAddress: nil,
+                        isPremium: nil,
+                        xRestrict: nil,
+                        isMailAuthorized: nil,
+                        requirePolicyAgreement: nil,
+                        isAcceptRequest: nil,
+                        isFollowed: nil
                     ),
                     illusts: [],
                     novels: [],

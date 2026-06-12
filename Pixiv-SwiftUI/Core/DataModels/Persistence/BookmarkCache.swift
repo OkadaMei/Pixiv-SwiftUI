@@ -84,7 +84,8 @@ final class BookmarkCache {
     /// 从 Illusts 创建缓存记录
     static func from(_ illust: Illusts, ownerId: String, bookmarkRestrict: String) -> BookmarkCache {
         let encoder = JSONEncoder()
-        let illustData = try? encoder.encode(illust)
+        let dto = IllustDTO.fromDomain(illust)
+        let illustData = try? encoder.encode(dto)
 
         return BookmarkCache(
             illustId: illust.id,
@@ -99,13 +100,15 @@ final class BookmarkCache {
     func getIllust() -> Illusts? {
         guard let data = illustData else { return nil }
         let decoder = JSONDecoder()
-        return try? decoder.decode(Illusts.self, from: data)
+        guard let dto = try? decoder.decode(IllustDTO.self, from: data) else { return nil }
+        return dto.toDomain()
     }
 
     /// 更新作品数据
     func updateIllustData(_ illust: Illusts) {
         let encoder = JSONEncoder()
-        self.illustData = try? encoder.encode(illust)
+        let dto = IllustDTO.fromDomain(illust)
+        self.illustData = try? encoder.encode(dto)
         self.pageCount = illust.pageCount
         self.lastCheckedAt = Date()
     }

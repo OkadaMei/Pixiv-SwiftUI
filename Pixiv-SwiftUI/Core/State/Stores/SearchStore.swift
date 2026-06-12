@@ -203,7 +203,7 @@ class SearchStore {
                         return TrendTagIllust(
                             id: Int(thumb.id) ?? 0,
                             title: thumb.title,
-                            imageUrls: ImageUrls(
+                            imageUrls: ImageUrlsDTO(
                                 squareMedium: thumb.url,
                                 medium: thumb.url,
                                 large: thumb.url
@@ -237,7 +237,7 @@ class SearchStore {
                 let trendIllust = TrendTagIllust(
                     id: Int(thumb.id) ?? 0,
                     title: thumb.title,
-                    imageUrls: ImageUrls(
+                    imageUrls: ImageUrlsDTO(
                         squareMedium: thumb.url,
                         medium: thumb.url,
                         large: thumb.url

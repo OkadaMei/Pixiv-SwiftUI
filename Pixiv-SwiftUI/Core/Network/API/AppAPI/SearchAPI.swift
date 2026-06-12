@@ -56,13 +56,13 @@ final class SearchAPI {
             throw NetworkError.invalidResponse
         }
 
-        let response = try await client.get(
+        let response: IllustsResponseDTO = try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
 
-        return response.illusts
+        return response.illusts.map { $0.toDomain() }
     }
 
     /// 搜索用户
@@ -141,6 +141,33 @@ final class SearchAPI {
         offset: Int = 0,
         limit: Int = 30
     ) async throws -> IllustsResponse {
+        let dtoResponse = try await searchIllustsPageDTO(
+            word: word,
+            searchTarget: searchTarget,
+            sort: sort,
+            searchAIType: searchAIType,
+            startDate: startDate,
+            endDate: endDate,
+            offset: offset,
+            limit: limit
+        )
+        return IllustsResponse(
+            illusts: dtoResponse.illusts.map { $0.toDomain() },
+            nextUrl: dtoResponse.nextUrl
+        )
+    }
+
+    /// 搜索插画（返回 DTO，内部使用）
+    private func searchIllustsPageDTO(
+        word: String,
+        searchTarget: String = "partial_match_for_tags",
+        sort: String = "date_desc",
+        searchAIType: Int? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        offset: Int = 0,
+        limit: Int = 30
+    ) async throws -> IllustsResponseDTO {
         var components = URLComponents(string: APIEndpoint.baseURL + "/v1/search/illust")
         var queryItems: [URLQueryItem] = [
             URLQueryItem(name: "filter", value: "for_ios"),
@@ -173,7 +200,7 @@ final class SearchAPI {
         return try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
     }
 

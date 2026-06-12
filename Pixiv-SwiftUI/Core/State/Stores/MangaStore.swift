@@ -68,8 +68,8 @@ final class MangaStore {
         defer { isLoadingRecommended = false }
 
         do {
-            let response: IllustsResponse = try await api.fetchNext(urlString: nextUrl)
-            self.recommendedManga.append(contentsOf: response.illusts)
+            let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextUrl)
+            self.recommendedManga.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextUrlRecommended = response.nextUrl
             loadingNextUrlRecommended = nil
         } catch {

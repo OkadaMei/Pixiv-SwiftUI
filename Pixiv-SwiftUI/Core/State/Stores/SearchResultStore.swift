@@ -435,8 +435,8 @@ final class SearchResultStore {
                     isLoadingMoreIllusts = false
                     return
                 }
-                let response: IllustsResponse = try await api.fetchNext(urlString: nextURL)
-                self.illustResults = mergeUniqueResults(self.illustResults, with: response.illusts)
+                let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextURL)
+                self.illustResults = mergeUniqueResults(self.illustResults, with: response.illusts.map { $0.toDomain() })
                 self.illustNextURL = response.nextUrl
                 self.illustOffset = nextOffset(from: response.nextUrl) ?? self.illustResults.count
                 self.illustHasMore = response.nextUrl != nil

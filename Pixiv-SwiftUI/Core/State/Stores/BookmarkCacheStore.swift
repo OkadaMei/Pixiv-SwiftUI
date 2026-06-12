@@ -290,8 +290,8 @@ final class BookmarkCacheStore {
             repeat {
                 let illusts: [Illusts]
                 if let url = nextUrl {
-                    let response: IllustsResponse = try await api.fetchNext(urlString: url)
-                    illusts = response.illusts
+                    let response: IllustsResponseDTO = try await api.fetchNext(urlString: url)
+                    illusts = response.illusts.map { $0.toDomain() }
                     nextUrl = response.nextUrl
                 } else {
                     (illusts, nextUrl) = try await api.userAPI.getUserBookmarksIllusts(userId: userId, restrict: "public")
@@ -313,8 +313,8 @@ final class BookmarkCacheStore {
             repeat {
                 let illusts: [Illusts]
                 if let url = privateNextUrl {
-                    let response: IllustsResponse = try await api.fetchNext(urlString: url)
-                    illusts = response.illusts
+                    let response: IllustsResponseDTO = try await api.fetchNext(urlString: url)
+                    illusts = response.illusts.map { $0.toDomain() }
                     privateNextUrl = response.nextUrl
                 } else {
                     (illusts, privateNextUrl) = try await api.userAPI.getUserBookmarksIllusts(userId: userId, restrict: "private")

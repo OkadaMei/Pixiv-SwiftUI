@@ -80,7 +80,7 @@ final class AuthAPI {
         struct AuthResponse: Decodable {
             let accessToken: String
             let refreshToken: String?
-            let user: User
+            let user: UserDTO
             let expiresIn: Int
 
             enum CodingKeys: String, CodingKey {
@@ -103,7 +103,7 @@ final class AuthAPI {
         return (
             response.accessToken,
             response.refreshToken ?? "",
-            response.user,
+            response.user.toDomain(),
             response.expiresIn
         )
     }
@@ -141,7 +141,7 @@ final class AuthAPI {
         struct AuthResponse: Decodable {
             let accessToken: String
             let refreshToken: String?
-            let user: User
+            let user: UserDTO
             let expiresIn: Int
 
             enum CodingKeys: String, CodingKey {
@@ -164,7 +164,7 @@ final class AuthAPI {
         return (
             response.accessToken,
             response.refreshToken ?? refreshToken,
-            response.user,
+            response.user.toDomain(),
             response.expiresIn
         )
     }

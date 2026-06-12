@@ -218,7 +218,7 @@ final class NovelTextParser {
             .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
     }
 
-    private func previewURL(for imageUrls: ImageUrls) -> String? {
+    private func previewURL(for imageUrls: ImageUrlsDTO) -> String? {
         [imageUrls.large, imageUrls.medium, imageUrls.squareMedium].first(where: { !$0.isEmpty })
     }
 

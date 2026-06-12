@@ -36,10 +36,10 @@ final class UserAPI {
         let response = try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 通过 URL 加载更多插画（分页）
@@ -51,10 +51,10 @@ final class UserAPI {
         let response = try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取用户详情
@@ -143,10 +143,10 @@ final class UserAPI {
         let response = try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取用户收藏
@@ -164,10 +164,10 @@ final class UserAPI {
         let response = try await client.get(
             from: url,
             headers: try requireAuthHeaders(),
-            responseType: IllustsResponse.self
+            responseType: IllustsResponseDTO.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取用户小说列表

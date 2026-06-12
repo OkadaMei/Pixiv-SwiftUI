@@ -34,7 +34,7 @@ struct NovelSeriesUser: Codable, Hashable {
     var id: Int
     var name: String
     var account: String
-    var profileImageUrls: ProfileImageUrls
+    var profileImageUrls: ProfileImageUrlsDTO
     var isFollowed: Bool
     var isAccessBlockingUser: Bool
 

@@ -1,13 +1,8 @@
 import Foundation
 
-struct IllustsResponse: Codable {
+struct IllustsResponse {
     let illusts: [Illusts]
     let nextUrl: String?
-
-    enum CodingKeys: String, CodingKey {
-        case illusts
-        case nextUrl = "next_url"
-    }
 }
 
 struct UserPreviewsResponse: Codable {
@@ -22,8 +17,8 @@ struct UserPreviewsResponse: Codable {
 
 struct UserPreviews: Codable, Identifiable {
     var id: String { user.id.stringValue }
-    let user: User
-    let illusts: [Illusts]
+    let user: UserDTO
+    let illusts: [IllustDTO]
     let novels: [UserPreviewsNovel]
     let isMuted: Bool
 
@@ -39,7 +34,7 @@ struct UserPreviewsNovel: Codable, Identifiable {
     let id: Int
     let title: String
     let caption: String?
-    let imageUrls: ImageUrls
+    let imageUrls: ImageUrlsDTO
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -90,7 +85,7 @@ struct TrendTag: Codable, Identifiable {
 struct TrendTagIllust: Codable {
     let id: Int
     let title: String
-    let imageUrls: ImageUrls
+    let imageUrls: ImageUrlsDTO
     let width: Int?
     let height: Int?
 

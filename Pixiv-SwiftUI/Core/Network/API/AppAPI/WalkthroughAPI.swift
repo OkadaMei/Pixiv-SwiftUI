@@ -21,7 +21,7 @@ struct WalkthroughAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -37,7 +37,7 @@ struct WalkthroughAPI {
             isLongContent: true
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 通过 URL 获取公共插画列表（用于分页）
@@ -47,7 +47,7 @@ struct WalkthroughAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -62,7 +62,7 @@ struct WalkthroughAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取热门标签（公开 API，无需认证）
@@ -116,7 +116,7 @@ struct WalkthroughAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -131,7 +131,7 @@ struct WalkthroughAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 通过 URL 获取排行榜插画列表（用于分页，公开 API，无需认证）
@@ -141,7 +141,7 @@ struct WalkthroughAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -156,6 +156,6 @@ struct WalkthroughAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 }

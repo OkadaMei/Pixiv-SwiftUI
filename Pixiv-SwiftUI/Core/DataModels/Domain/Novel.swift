@@ -8,12 +8,12 @@ struct Novel: Codable, Identifiable, Hashable {
     var restrict: Int
     var xRestrict: Int
     var isOriginal: Bool
-    var imageUrls: ImageUrls
+    var imageUrls: ImageUrlsDTO
     var createDate: String
     var tags: [NovelTag]
     var pageCount: Int
     var textLength: Int
-    var user: User
+    var user: UserDTO
     var series: NovelSeries?
     var isBookmarked: Bool
     var bookmarkRestrict: String?

@@ -197,7 +197,7 @@ struct IllustSeriesView: View {
 
             HStack(spacing: 12) {
                 let user = User(
-                    profileImageUrls: detail.user.profileImageUrls,
+                    profileImageUrls: detail.user.profileImageUrls.toDomain(),
                     id: detail.user.id,
                     name: detail.user.name,
                     account: detail.user.account

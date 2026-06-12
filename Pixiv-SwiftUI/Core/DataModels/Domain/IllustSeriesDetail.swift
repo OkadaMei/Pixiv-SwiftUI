@@ -5,7 +5,7 @@ struct IllustSeriesDetail: Codable, Identifiable {
     var id: Int
     var title: String
     var caption: String?
-    var coverImageUrls: ProfileImageUrls?
+    var coverImageUrls: ProfileImageUrlsDTO?
     var seriesWorkCount: Int
     var createDate: String?
     var width: Int?
@@ -32,7 +32,7 @@ struct IllustSeriesUser: Codable {
     var id: StringIntValue
     var name: String
     var account: String
-    var profileImageUrls: ProfileImageUrls
+    var profileImageUrls: ProfileImageUrlsDTO
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -45,7 +45,7 @@ struct IllustSeriesUser: Codable {
 /// 插画系列响应
 struct IllustSeriesResponse: Codable {
     var illustSeriesDetail: IllustSeriesDetail
-    var illusts: [Illusts]
+    var illusts: [IllustDTO]
     var nextUrl: String?
 
     enum CodingKeys: String, CodingKey {

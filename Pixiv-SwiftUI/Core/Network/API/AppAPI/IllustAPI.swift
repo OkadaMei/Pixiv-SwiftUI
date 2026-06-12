@@ -32,7 +32,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -48,7 +48,7 @@ final class IllustAPI {
             isLongContent: true
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取排行榜插画
@@ -74,7 +74,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -89,7 +89,7 @@ final class IllustAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取系列插画列表
@@ -141,7 +141,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illust: Illusts
+            let illust: IllustDTO
         }
 
         let response = try await client.get(
@@ -150,7 +150,7 @@ final class IllustAPI {
             responseType: Response.self
         )
 
-        return response.illust
+        return response.illust.toDomain()
     }
 
     /// 获取相关插画
@@ -172,7 +172,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -187,7 +187,7 @@ final class IllustAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 通过 URL 获取插画列表（用于分页）
@@ -197,7 +197,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -212,7 +212,7 @@ final class IllustAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 获取插画评论
@@ -336,7 +336,7 @@ final class IllustAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -351,7 +351,7 @@ final class IllustAPI {
             responseType: Response.self
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     /// 删除插画或漫画

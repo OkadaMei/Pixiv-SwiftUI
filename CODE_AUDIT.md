@@ -1,8 +1,9 @@
 # Pixiv-SwiftUI 代码审计报告
 
-> 生成日期: 2026-06-10
+> 生成日期: 2026-06-12
 > 审计范围: `Pixiv-SwiftUI/` 主工程（约 296 个 Swift 文件）
 > 审计维度: 架构设计、性能、安全性（基础设施层面）、用户体验
+> 更新说明: 移除已完成的 A-4（DTO 映射层，已于 2026-06-12 完成）
 
 ---
 
@@ -25,30 +26,6 @@
 **建议**:
 - 通过协议（Protocol）定义 Store 间接口，注入而非直接访问 `.shared`
 - 或在 `AppInitializer` 中显式管理依赖图，初始化完成后冻结
-
----
-
-### 问题 A-4: SwiftData 领域模型双重职责
-
-**严重程度**: ★★
-**涉及文件**: `Illust.swift`、`User.swift`、`Tag.swift` 等 Domain 模型
-
-Domain 模型同时充当了：
-1. API 响应 DTO（直接 `Decodable`）
-2. SwiftData 持久化实体（`@Model`）
-
-**影响**:
-- API 响应结构的变化会直接破坏持久化数据兼容性
-- `Codable` + `@Model` 双重注解导致大量样板代码（手动 `CodingKeys`、`init`/`encode`）
-- 无法在不破坏序列化的情况下重构领域逻辑（如将 `Illusts` 拆分为多个子结构）
-- SwiftData 的 `@Attribute(.unique)` 约束与 API 返回数据冲突时处理不明确
-
-**建议**:
-引入 DTO（`Network/`）→ Domain（`Domain/`）→ Persistence（`Persistence/`）三层映射：
-```
-APIResponse → DTO (Decodable) → Domain Model (纯Swift) → SwiftData Entity (@Model)
-```
-当前可先从 `Illusts`、`User` 等核心模型开始渐进式重构。
 
 ---
 
@@ -78,8 +55,6 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 ---
 
 ## 二、性能 (Performance)
-
-
 
 ### 问题 P-2: 双重缓存策略不一致
 
@@ -178,8 +153,6 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 ## 四、用户体验 (UX)
 
-
-
 ### 问题 UX-2: 网络模式切换无状态恢复
 
 **严重程度**: ★★
@@ -195,8 +168,6 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 - 或在切换时提供一个「刷新当前页面」的轻提示
 
 ---
-
-
 
 ### 问题 UX-3: 首次启动缺少引导流程
 
@@ -238,15 +209,28 @@ print("[BookmarksStore] fetchBookmarks: restrict=\(capturedRestrict), userId=\(u
 
 ---
 
+## 已关闭
+
+### ✅ A-4: SwiftData 领域模型双重职责（2026-06-12 完成）
+
+**方案**: 引入 DTO → Domain → Persistence 三层映射，API 响应先解码为 DTO，再映射为 Domain 模型。
+
+**变更**:
+- 新增 `Core/DataModels/Network/DTO/` 目录，包含 8 个 DTO 类型
+- 从 `Illusts`、`Tag`、`ImageUrls`、`MetaPages`、`MetaSinglePage`、`MetaPagesImageUrls`、`IllustSeries` 移除了 `Codable`（~300 行样板代码）
+- 所有 API 端点改为解码 DTO 后再映射到 Domain 模型
+- `User`/`ProfileImageUrls` 标记为 `@Model nonisolated`，移除僵尸 `Codable`
+- 所有 DTO 类型和映射函数标记为 `nonisolated`，避免 actor 隔离泄漏
+
+---
 
 ## 优先级总览
 
 | 优先级 | 分类 | 问题 | 预估工作量 |
 |--------|------|------|-----------|
-| 🟡 P1 | Architecture | A-4 引入 DTO 映射层 | 5-10天 |
 | 🟢 P2 | Architecture | A-3 Store 依赖注入 | 3-5天 |
 | 🟢 P2 | Performance | P-2 统一缓存策略 | 2-3天 |
-| 🟢 P2 | UX | UX-4 首次引导流程 | 3-5天 |
+| 🟢 P2 | UX | UX-3 首次引导流程 | 3-5天 |
 | 🟢 P3 | Architecture | A-5 View 瘦身 | 持续改进 |
 
 ---

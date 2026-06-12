@@ -27,7 +27,7 @@ final class MangaAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -43,7 +43,7 @@ final class MangaAPI {
             isLongContent: true
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     func getRecommendedMangaNoLogin(offset: Int = 0, limit: Int = 30) async throws -> (illusts: [Illusts], nextUrl: String?) {
@@ -61,7 +61,7 @@ final class MangaAPI {
         }
 
         struct Response: Decodable {
-            let illusts: [Illusts]
+            let illusts: [IllustDTO]
             let nextUrl: String?
 
             enum CodingKeys: String, CodingKey {
@@ -77,7 +77,7 @@ final class MangaAPI {
             isLongContent: true
         )
 
-        return (response.illusts, response.nextUrl)
+        return (response.illusts.map { $0.toDomain() }, response.nextUrl)
     }
 
     func getWatchlistManga() async throws -> (series: [MangaSeries], nextUrl: String?) {

@@ -550,7 +550,7 @@ struct NovelDetailView: View {
             restrict: 0,
             xRestrict: 0,
             isOriginal: true,
-            imageUrls: ImageUrls(
+            imageUrls: ImageUrlsDTO(
                 squareMedium: "https://i.pximg.net/c/160x160_90_a2_g5.jpg",
                 medium: "https://i.pximg.net/c/540x540_90/img-master/d/2023/12/15/12/34/56/999999_p0.jpg",
                 large: "https://i.pximg.net/img-master/d/2023/12/15/12/34/56/999999_p0_master1200.jpg"
@@ -563,13 +563,20 @@ struct NovelDetailView: View {
             ],
             pageCount: 1,
             textLength: 15000,
-            user: User(
-                profileImageUrls: ProfileImageUrls(
+            user: UserDTO(
+                profileImageUrls: ProfileImageUrlsDTO(
                     px50x50: "https://i.pximg.net/c/50x50/profile/img/2024/01/01/00/00/00/123456_p0.jpg"
                 ),
                 id: StringIntValue.string("1"),
                 name: "示例作者",
-                account: "test_user"
+                account: "test_user",
+                mailAddress: nil,
+                isPremium: nil,
+                xRestrict: nil,
+                isMailAuthorized: nil,
+                requirePolicyAgreement: nil,
+                isAcceptRequest: nil,
+                isFollowed: nil
             ),
             series: nil,
             isBookmarked: false,

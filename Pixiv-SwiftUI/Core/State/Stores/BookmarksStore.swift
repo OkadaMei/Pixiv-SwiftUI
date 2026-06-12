@@ -109,12 +109,12 @@ class BookmarksStore {
         defer { isLoadingBookmarks = false }
 
         do {
-            let response: IllustsResponse = try await api.fetchNext(urlString: nextUrl)
-            self.bookmarks.append(contentsOf: response.illusts)
+            let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextUrl)
+            self.bookmarks.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextUrlBookmarks = response.nextUrl
             loadingNextUrl = nil
 
-            await syncToBookmarkCache(illusts: response.illusts, userId: AccountStore.shared.currentUserId, restrict: bookmarkRestrict)
+            await syncToBookmarkCache(illusts: response.illusts.map { $0.toDomain() }, userId: AccountStore.shared.currentUserId, restrict: bookmarkRestrict)
         } catch {
             self.error = AppError.unknown(error)
             print("Failed to load more bookmarks: \(error)")

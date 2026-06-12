@@ -83,8 +83,8 @@ class UpdatesStore {
         defer { isLoadingUpdates = false }
 
         do {
-            let response: IllustsResponse = try await api.fetchNext(urlString: nextUrl)
-            self.updates.append(contentsOf: response.illusts)
+            let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextUrl)
+            self.updates.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextUrlUpdates = response.nextUrl
             // 成功后清除，以便下次可以加载新的 nextUrl
             loadingNextUrlUpdates = nil

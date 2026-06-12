@@ -783,7 +783,7 @@ final class DownloadStore {
                                     restrict: novelContent.xRestrict ?? 0,
                                     xRestrict: novelContent.xRestrict ?? 0,
                                     isOriginal: false,
-                                    imageUrls: ImageUrls(
+                                    imageUrls: ImageUrlsDTO(
                                         squareMedium: novelContent.coverUrl ?? "",
                                         medium: novelContent.coverUrl ?? "",
                                         large: novelContent.coverUrl ?? ""
@@ -792,11 +792,18 @@ final class DownloadStore {
                                     tags: novelContent.tags.map { NovelTag(name: $0, translatedName: nil, addedByUploadedUser: false) },
                                     pageCount: 1,
                                     textLength: novelContent.text.count,
-                                    user: User(
-                                        profileImageUrls: ProfileImageUrls(medium: ""),
+                                    user: UserDTO(
+                                        profileImageUrls: ProfileImageUrlsDTO(medium: ""),
                                         id: StringIntValue.int(0),
                                         name: task.authorName,
-                                        account: ""
+                                        account: "",
+                                        mailAddress: nil,
+                                        isPremium: nil,
+                                        xRestrict: nil,
+                                        isMailAuthorized: nil,
+                                        requirePolicyAgreement: nil,
+                                        isAcceptRequest: nil,
+                                        isFollowed: nil
                                     ),
                                     series: nil,
                                     isBookmarked: false,

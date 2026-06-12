@@ -13,7 +13,7 @@ struct UserDetailUser: Codable, Hashable {
     let id: Int
     var name: String
     let account: String
-    let profileImageUrls: ProfileImageUrls
+    let profileImageUrls: ProfileImageUrlsDTO
     let comment: String
     var isFollowed: Bool
 
@@ -116,7 +116,7 @@ struct UserDetailWorkspace: Codable {
 }
 
 /// 用户详情完整缓存数据（包含列表数据）
-struct CachedUserDetailData: Codable {
+struct CachedUserDetailData {
     let detail: UserDetailResponse
     let illusts: [Illusts]
     let mangas: [Illusts]
