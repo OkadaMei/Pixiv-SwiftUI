@@ -77,26 +77,6 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 
 ---
 
-## 四、其他
-
-### 问题 O-1: SwiftLint 配置过于宽松
-
-**文件**: `.swiftlint.yml`
-
-当前配置关闭了多项对代码质量有实质影响的规则：
-
-| 规则 | 状态 | 影响 |
-|------|------|------|
-| `function_body_length` | disabled | 部分函数（如 View body）可无限膨胀 |
-| `type_body_length` | disabled | 单文件可达数千行 |
-| `line_length` | warning: 1000 | 1000 字符的行几乎不可读 |
-| `cyclomatic_complexity` | warning: 20 | 分支复杂度 20 意味着极难测试 |
-
-**建议**:
-逐步收紧规则，至少开启 `function_body_length`（warning: 50, error: 100）和合理的 `line_length`（warning: 120, error: 200）。
-
----
-
 ## 已关闭
 
 ### ✅ A-3: Store 间隐式双向依赖（2026-06-12 完成）
@@ -188,7 +168,6 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 | 🔴 P0 | Performance | ~~P-4 并发下载 Range 回退~~ ✅ | 已完成 |
 | 🟡 P1 | UX | ~~UX-2 网络模式切换无状态恢复~~ ✅ | 已完成 |
 | 🟢 P2 | UX | UX-3 首次引导流程 | 3-5天 |
-| 🟢 P2 | Quality | O-1 SwiftLint 规则收紧 | 0.5天 |
 | 🟢 P3 | Architecture | A-5 View 瘦身 | 持续改进 |
 | ⚪ — | Performance | P-3 CachedAsyncImage 状态复用 | 非问题（SwiftUI 身份系统确保 @State 隔离） |
 
