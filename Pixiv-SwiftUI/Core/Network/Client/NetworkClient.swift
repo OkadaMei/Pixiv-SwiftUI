@@ -161,40 +161,63 @@ final class NetworkClient {
         let finalTotalLength = totalLength
         let sharedProgress = OSAllocatedUnfairLock(initialState: Int64(0))
 
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for i in 0..<concurrency {
-                let start = Int64(i) * chunkSize
-                let end = min(start + chunkSize - 1, finalTotalLength - 1)
-                guard start < finalTotalLength else { break }
+        do {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for i in 0..<concurrency {
+                    let start = Int64(i) * chunkSize
+                    let end = min(start + chunkSize - 1, finalTotalLength - 1)
+                    guard start < finalTotalLength else { break }
 
-                group.addTask {
-                    var chunkHeaders = headers
-                    chunkHeaders["Range"] = "bytes=\(start)-\(end)"
+                    group.addTask {
+                        var chunkHeaders = headers
+                        chunkHeaders["Range"] = "bytes=\(start)-\(end)"
 
-                    let chunkTempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".part")
-                    defer { try? FileManager.default.removeItem(at: chunkTempURL) }
+                        let chunkTempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".part")
+                        defer { try? FileManager.default.removeItem(at: chunkTempURL) }
 
-                    let chunkProgress = OSAllocatedUnfairLock(initialState: Int64(0))
-                    let (downloadedURL, _) = try await self.downloadWithByteProgress(from: url, headers: chunkHeaders, destinationURL: chunkTempURL) { receivedInChunk, _ in
-                        let delta = chunkProgress.withLock {
-                            let delta = receivedInChunk - $0
-                            $0 = receivedInChunk
-                            return delta
+                        let chunkProgress = OSAllocatedUnfairLock(initialState: Int64(0))
+                        let (downloadedURL, chunkResponse) = try await self.downloadWithByteProgress(from: url, headers: chunkHeaders, destinationURL: chunkTempURL) { receivedInChunk, _ in
+                            let delta = chunkProgress.withLock {
+                                let delta = receivedInChunk - $0
+                                $0 = receivedInChunk
+                                return delta
+                            }
+                            sharedProgress.withLock {
+                                $0 += delta
+                                onProgress?($0, finalTotalLength)
+                            }
                         }
-                        sharedProgress.withLock {
-                            $0 += delta
-                            onProgress?($0, finalTotalLength)
+
+                        guard let httpResponse = chunkResponse as? HTTPURLResponse, httpResponse.statusCode == 206 else {
+                            throw NetworkError.rangeNotSupported
                         }
+
+                        let data = try Data(contentsOf: downloadedURL, options: .mappedIfSafe)
+                        let handle = try FileHandle(forWritingTo: tempURL)
+                        try handle.seek(toOffset: UInt64(start))
+                        try handle.write(contentsOf: data)
+                        try handle.close()
                     }
-
-                    let data = try Data(contentsOf: downloadedURL, options: .mappedIfSafe)
-                    let handle = try FileHandle(forWritingTo: tempURL)
-                    try handle.seek(toOffset: UInt64(start))
-                    try handle.write(contentsOf: data)
-                    try handle.close()
                 }
+                try await group.waitForAll()
             }
-            try await group.waitForAll()
+
+            // 4. 校验最终文件完整性：实际大小必须等于预期总长度
+            let attributes = try FileManager.default.attributesOfItem(atPath: tempURL.path(percentEncoded: false))
+            guard let actualSize = attributes[.size] as? Int64, actualSize == finalTotalLength else {
+                throw NetworkError.rangeNotSupported
+            }
+        } catch is CancellationError {
+            if destinationURL == nil {
+                try? FileManager.default.removeItem(at: tempURL)
+            }
+            throw CancellationError()
+        } catch {
+            Logger.network.warning("分段并发下载失败，退化为单线程下载: \(error.localizedDescription, privacy: .public)")
+            if FileManager.default.fileExists(atPath: tempURL.path(percentEncoded: false)) {
+                try? FileManager.default.removeItem(at: tempURL)
+            }
+            return try await downloadWithByteProgress(from: url, headers: headers, destinationURL: tempURL, onProgress: onProgress)
         }
 
         return (tempURL, initialResponse)
@@ -691,6 +714,7 @@ enum NetworkError: LocalizedError {
     case httpError(Int)
     case decodingError(Error)
     case connectionError(String)
+    case rangeNotSupported
 
     var errorDescription: String? {
         switch self {
@@ -704,6 +728,8 @@ enum NetworkError: LocalizedError {
             return "数据解析错误: \(error.localizedDescription)"
         case .connectionError(let message):
             return "连接错误: \(message)"
+        case .rangeNotSupported:
+            return "服务器不支持分段下载"
         }
     }
 }

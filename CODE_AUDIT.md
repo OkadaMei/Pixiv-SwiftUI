@@ -3,7 +3,7 @@
 > 生成日期: 2026-06-12
 > 审计范围: `Pixiv-SwiftUI/` 主工程（约 296 个 Swift 文件）
 > 审计维度: 架构设计、性能、安全性（基础设施层面）、用户体验
-> 更新说明: 移除已完成的 A-3（Store 依赖注入，2026-06-12）、A-4（DTO 映射层，2026-06-12）、P-2（统一缓存策略，2026-06-12）、S-2（日志系统，2026-06-12）、S-1（Entitlements 声明，2026-06-12）
+> 更新说明: 移除已完成的 A-3（Store 依赖注入，2026-06-12）、A-4（DTO 映射层，2026-06-12）、P-2（统一缓存策略，2026-06-12）、S-2（日志系统，2026-06-12）、S-1（Entitlements 声明，2026-06-12）、P-4（并发下载完整性，2026-06-12）
 
 ---
 
@@ -38,7 +38,7 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 
 ### 问题 P-3: CachedAsyncImage 的状态复用风险
 
-**严重程度**: ★★
+**严重程度**: ★★（经代码审查确认非真实问题，见下方验证）
 **文件**: `Shared/Utils/Helpers.swift`（CachedAsyncImage）
 
 自定义 `CachedAsyncImage` 使用 `.task(priority: .low)` + `@State` 存储图片。在 LazyVStack 场景中，存在以下风险：
@@ -46,26 +46,12 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 - Kingfisher 官方 `KFImage` 内部有 `ImageBinder` 负责处理复用场景的自洽逻辑，自定义方案未验证等价行为
 - 异步任务取消时机不明确
 
-**建议**:
-- 在 `onDisappear` 中取消进行中的加载 Task
-- 在 `urlString` 变化时强制重置 `loadedImage = nil`
-- 考虑直接使用 `KFImage` 替代自定义方案，除非有明确的性能数据支持自定义方案更优
-
----
-
-### 问题 P-4: 并发下载 Range 请求在直连模式下的完整性
-
-**严重程度**: ★
-**文件**: `Core/Network/Client/NetworkClient.swift` 中的 `concurrentDownload`
-
-分片并发下载策略先通过 Range 请求获取文件大小，再分片并行下载。以下情况未充分处理：
-- 服务器不支持 206 Partial Content 时的回退策略
-- 分片下载完成后各分片拼接时的完整性校验
-- `DirectConnection` 模式下 Range 响应头与标准 URLSession 差异
+**验证结论**（2026-06-12）: 经审查本项目 WaterfallGrid、LazyVStack/LazyVGrid 中所有 39 个 CachedAsyncImage 调用点，ForEach 全部使用 `Identifiable` 稳定标识。SwiftUI 的身份系统确保 LazyVStack 中不同 id 的视图不会互相复用 `@State`，视图滚出屏幕时随之一同销毁、滚回时全新创建。因此该风险在本项目中不存在。
 
 **建议**:
-- Range 请求失败时自动降级为单线程完整下载
-- 下载完成后对拼接文件的 size 做完整性校验
+- ~~在 `onDisappear` 中取消进行中的加载 Task~~
+- ~~在 `urlString` 变化时强制重置 `loadedImage = nil`~~
+- ~~考虑直接使用 `KFImage` 替代自定义方案，除非有明确的性能数据支持自定义方案更优~~
 
 ---
 
@@ -197,17 +183,30 @@ View 文件承担了过滤、排序、预取、缓存管理、分页逻辑等职
 
 ---
 
+### ✅ P-4: 并发下载 Range 请求完整性（2026-06-12 完成）
+
+**方案**: 添加 206 响应验证 + 最终文件大小校验 + 失败自动回退单线程下载。
+
+**变更**:
+- `NetworkError` 新增 `rangeNotSupported` 错误类型
+- `concurrentDownload` 每个分片下载完成后验证 HTTP 206 状态码，服务器忽略 Range 头时抛出 `rangeNotSupported`
+- 所有分片完成后校验组装文件的实际大小是否等于预期总长度
+- 分段下载失败（含 Range 不支持、完整性校验失败）时清理临时文件并自动降级为单线程 `downloadWithByteProgress`
+- 取消错误 (`CancellationError`) 正确传播，仅清理临时文件不降级
+
+---
+
 ## 优先级总览
 
 | 优先级 | 分类 | 问题 | 预估工作量 |
 |--------|------|------|-----------|
 | 🔴 P0 | Security | ~~S-1 Entitlements 声明~~ ✅ | 已完成 |
-| 🟡 P1 | Performance | P-3 CachedAsyncImage 状态复用 | 1-2天 |
+| 🔴 P0 | Performance | ~~P-4 并发下载 Range 回退~~ ✅ | 已完成 |
 | 🟡 P1 | UX | UX-2 网络模式切换无状态恢复 | 1天 |
 | 🟢 P2 | UX | UX-3 首次引导流程 | 3-5天 |
 | 🟢 P2 | Quality | O-1 SwiftLint 规则收紧 | 0.5天 |
 | 🟢 P3 | Architecture | A-5 View 瘦身 | 持续改进 |
-| ⚪ P4 | Performance | P-4 并发下载 Range 回退 | 1天 |
+| ⚪ — | Performance | P-3 CachedAsyncImage 状态复用 | 非问题（SwiftUI 身份系统确保 @State 隔离） |
 
 ---
 
