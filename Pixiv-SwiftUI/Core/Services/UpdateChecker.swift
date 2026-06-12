@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 struct GitHubRelease: Codable {
     let tagName: String
@@ -109,12 +110,12 @@ final class UpdateChecker {
             }
 
             if httpResponse.statusCode == 403 || httpResponse.statusCode == 429 {
-                print("[UpdateChecker] API rate limited, falling back to HTML parsing")
+                Logger.updater.debug("API rate limited, falling back to HTML parsing")
                 return await checkForUpdateFromHTML()
             }
 
             guard httpResponse.statusCode == 200 else {
-                print("[UpdateChecker] API returned status code: \(httpResponse.statusCode)")
+                Logger.updater.debug("API returned status code: \(httpResponse.statusCode)")
                 return await checkForUpdateFromHTML()
             }
 
@@ -133,7 +134,7 @@ final class UpdateChecker {
 
             return updateInfo
         } catch {
-            print("[UpdateChecker] Failed to check for update: \(error)")
+            Logger.updater.error("Failed to check for update: \(error.localizedDescription, privacy: .public)")
             return await checkForUpdateFromHTML()
         }
     }
@@ -154,12 +155,12 @@ final class UpdateChecker {
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200,
                   let html = String(data: data, encoding: .utf8) else {
-                print("[UpdateChecker] Failed to fetch HTML page")
+                Logger.updater.debug("Failed to fetch HTML page")
                 return nil
             }
 
             guard let redirectURL = httpResponse.url else {
-                print("[UpdateChecker] No redirect URL found")
+                Logger.updater.debug("No redirect URL found")
                 return nil
             }
 
@@ -167,16 +168,15 @@ final class UpdateChecker {
             guard let regex = try? NSRegularExpression(pattern: tagPattern),
                   let match = regex.firstMatch(in: redirectURL.absoluteString, range: NSRange(redirectURL.absoluteString.startIndex..., in: redirectURL.absoluteString)),
                   let range = Range(match.range(at: 1), in: redirectURL.absoluteString) else {
-                print("[UpdateChecker] Could not extract version tag from URL")
+                Logger.updater.debug("Could not extract version tag from URL")
                 return nil
             }
 
             let versionTag = String(redirectURL.absoluteString[range])
             let version = versionTag.trimmingCharacters(in: CharacterSet(charactersIn: "v"))
 
-            let titlePattern = ">([^<]+) Release"
             var releaseNotes = "暂无更新日志"
-            if let titleRegex = try? NSRegularExpression(pattern: titlePattern),
+            if let titleRegex = try? NSRegularExpression(pattern: ">([^<]+) Release"),
                let titleMatch = titleRegex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
                let titleRange = Range(titleMatch.range(at: 1), in: html) {
                 releaseNotes = String(html[titleRange])
@@ -192,7 +192,7 @@ final class UpdateChecker {
 
             return updateInfo
         } catch {
-            print("[UpdateChecker] Failed to parse HTML: \(error)")
+            Logger.updater.error("Failed to parse HTML: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }

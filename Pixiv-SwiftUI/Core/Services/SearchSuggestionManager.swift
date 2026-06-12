@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 @MainActor
 final class SearchSuggestionManager {
@@ -35,7 +36,7 @@ final class SearchSuggestionManager {
                 officialResults.append(suggestion)
             }
         } catch {
-            print("[SearchSuggestionManager] Failed to fetch API suggestions: \(error)")
+            Logger.search.error("Failed to fetch API suggestions: \(error.localizedDescription, privacy: .public)")
         }
 
         let mergedResults = mergeResults(local: localResults, official: officialResults, limit: limit)

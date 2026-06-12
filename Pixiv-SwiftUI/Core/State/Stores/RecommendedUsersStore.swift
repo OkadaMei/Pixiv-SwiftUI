@@ -2,6 +2,7 @@ import Observation
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 
 @MainActor
 @Observable
@@ -47,7 +48,7 @@ class RecommendedUsersStore {
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to fetch recommended users: \(error)")
+            Logger.user.error("Failed to fetch recommended users: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -69,7 +70,7 @@ class RecommendedUsersStore {
             self.nextUrl = response.nextUrl
             loadingNextUrl = nil
         } catch {
-            print("Failed to load more recommended users: \(error)")
+            Logger.user.error("Failed to load more recommended users: \(error.localizedDescription, privacy: .public)")
             loadingNextUrl = nil
         }
     }

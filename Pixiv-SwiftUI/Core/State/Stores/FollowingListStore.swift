@@ -2,6 +2,7 @@ import Observation
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 
 @MainActor
 @Observable
@@ -52,7 +53,7 @@ class FollowingListStore {
             cache.set((users, nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to fetch following: \(error)")
+            Logger.user.error("Failed to fetch following: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -77,7 +78,7 @@ class FollowingListStore {
             loadingNextUrlFollowing = nil
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to load more following: \(error)")
+            Logger.user.error("Failed to load more following: \(error.localizedDescription, privacy: .public)")
             loadingNextUrlFollowing = nil
         }
     }

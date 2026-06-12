@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 // MARK: - PseudoPopular 嵌套类型
 
@@ -832,7 +833,7 @@ extension SearchResultStore {
                 }
             } catch is CancellationError {
             } catch {
-                print("Failed to supplemental search: \(error)")
+                Logger.search.error("Failed to supplemental search: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -887,7 +888,7 @@ extension SearchResultStore {
                 )
             } catch is CancellationError {
             } catch {
-                print("Failed to preload pseudo-popular illusts: \(error)")
+                Logger.search.error("Failed to preload pseudo-popular illusts: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -942,7 +943,7 @@ extension SearchResultStore {
                 )
             } catch is CancellationError {
             } catch {
-                print("Failed to preload pseudo-popular novels: \(error)")
+                Logger.search.error("Failed to preload pseudo-popular novels: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -1075,7 +1076,7 @@ extension SearchResultStore {
                 )
             } catch is CancellationError {
             } catch {
-                print("Failed to preload search entry pseudo-popular results: \(error)")
+                Logger.search.error("Failed to preload search entry pseudo-popular results: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -1161,7 +1162,7 @@ extension SearchResultStore {
                 self.illustHasMore = batch.hasMore
             } catch is CancellationError {
             } catch {
-                print("Failed to enrich pseudo-popular illusts: \(error)")
+                Logger.search.error("Failed to enrich pseudo-popular illusts: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -1225,7 +1226,7 @@ extension SearchResultStore {
                 self.novelHasMore = batch.hasMore
             } catch is CancellationError {
             } catch {
-                print("Failed to enrich pseudo-popular novels: \(error)")
+                Logger.search.error("Failed to enrich pseudo-popular novels: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

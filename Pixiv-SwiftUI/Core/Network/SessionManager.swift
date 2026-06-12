@@ -80,7 +80,7 @@ final class SessionManager {
                 self.setAccessToken(newAccessToken)
                 PixivAPI.shared.setAccessToken(newAccessToken)
 
-                Logger.token.debug("Token 刷新成功，已更新本地存储")
+                Logger.token.info("Token 刷新成功，已更新本地存储")
             } catch {
                 Logger.token.error("Token 刷新失败: \(error.localizedDescription)")
                 AccountStore.shared.tokenRefreshErrorMessage = error.localizedDescription

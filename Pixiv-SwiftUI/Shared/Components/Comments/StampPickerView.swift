@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 struct StampPickerView: View {
     let onSelect: (String) -> Void
@@ -78,6 +79,6 @@ struct StampPickerView: View {
 
 #Preview {
     StampPickerView { stamp in
-        print("Selected: \(stamp)")
+        Logger.general.debug("Selected: \(stamp)")
     }
 }

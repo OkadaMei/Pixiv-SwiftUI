@@ -1,6 +1,7 @@
 import SwiftUI
 import TranslationKit
 import UniformTypeIdentifiers
+import os.log
 
 struct NovelSeriesView: View {
     @Environment(ThemeManager.self) var themeManager
@@ -42,7 +43,7 @@ struct NovelSeriesView: View {
         .navigationTitle(store.seriesDetail?.title ?? String(localized: "系列详情"))
         .id("SeriesScrollView-\(seriesId)")  // 添加稳定的 ID
         .onAppear {
-            print("[NovelSeriesView] onAppear - seriesId: \(seriesId)")
+            Logger.novel.debug("onAppear - seriesId: \(seriesId)")
         }
         .refreshable {
             await store.fetch()
@@ -314,7 +315,7 @@ struct NovelSeriesView: View {
                 await store.loadMore()
             }
 
-            print("[NovelSeriesView] 已加载完整系列，共 \(store.novels.count) 章")
+            Logger.novel.debug("已加载完整系列，共 \(store.novels.count) 章")
 
             // 添加导出任务到下载队列
             await DownloadStore.shared.addNovelSeriesTask(
@@ -332,7 +333,7 @@ struct NovelSeriesView: View {
                 showingExportAlert = false
             }
 
-            print("[NovelSeriesView] 系列导出任务已添加到下载队列")
+            Logger.novel.debug("系列导出任务已添加到下载队列")
         }
     }
 
@@ -354,7 +355,7 @@ struct NovelSeriesView: View {
                 await store.loadMore()
             }
 
-            print("[NovelSeriesView] 已加载完整系列，共 \(store.novels.count) 章")
+            Logger.novel.debug("已加载完整系列，共 \(store.novels.count) 章")
 
             // 添加导出任务到下载队列（指定自定义保存位置）
             await DownloadStore.shared.addNovelSeriesTask(
@@ -372,7 +373,7 @@ struct NovelSeriesView: View {
                 showingExportAlert = false
             }
 
-            print("[NovelSeriesView] 系列导出任务已添加到下载队列（自定义位置）")
+            Logger.novel.debug("系列导出任务已添加到下载队列（自定义位置）")
         }
     }
 
@@ -388,7 +389,7 @@ struct NovelSeriesView: View {
                 await store.loadMore()
             }
 
-            print("[NovelSeriesView] 已加载完整系列，共 \(store.novels.count) 章")
+            Logger.novel.debug("已加载完整系列，共 \(store.novels.count) 章")
 
             // 在 macOS 上，先显示保存对话框让用户选择位置
             let filename = NovelExporter.buildFilename(

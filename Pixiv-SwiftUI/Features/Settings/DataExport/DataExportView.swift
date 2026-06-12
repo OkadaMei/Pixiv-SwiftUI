@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 
 #if os(macOS)
 import AppKit
@@ -96,7 +97,7 @@ struct DataExportView: View {
                     let fileData = try Data(contentsOf: url)
                     try fileData.write(to: saveURL)
                 } catch {
-                    print("Failed to save file: \(error)")
+                    Logger.general.error("Failed to save file: \(error)")
                 }
             }
             viewModel.showShareSheet = false

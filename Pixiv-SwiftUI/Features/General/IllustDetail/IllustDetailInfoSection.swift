@@ -1,5 +1,6 @@
 import SwiftUI
 import TranslationKit
+import os.log
 
 struct IllustDetailInfoSection: View {
     let illust: Illusts
@@ -213,7 +214,7 @@ struct IllustDetailInfoSection: View {
                     let detail = try await PixivAPI.shared.userAPI.getUserDetail(userId: illust.user.id.stringValue)
                     illust.user.isFollowed = detail.user.isFollowed
                 } catch {
-                    print("Failed to fetch user detail: \(error)")
+                    Logger.general.error("Failed to fetch user detail: \(error)")
                 }
             }
         }
@@ -395,7 +396,7 @@ struct IllustDetailInfoSection: View {
                     illust.user.isFollowed = true
                 }
             } catch {
-                print("Follow toggle failed: \(error)")
+                Logger.general.error("Follow toggle failed: \(error)")
             }
         }
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Kingfisher
+import os.log
 
 struct EPUBContentBuilder {
 
@@ -218,7 +219,7 @@ struct EPUBContentBuilder {
                                 )
                                 images.append(image)
                             } catch {
-                                print("[EPUBContentBuilder] Failed to download illust \(illustId): \(error)")
+                                Logger.download.error("Failed to download illust \(illustId): \(error)")
                             }
                         }
                     }
@@ -245,7 +246,7 @@ struct EPUBContentBuilder {
                                 )
                                 images.append(image)
                             } catch {
-                                print("[EPUBContentBuilder] Failed to download uploaded image \(imageKey): \(error)")
+                                Logger.download.error("Failed to download uploaded image \(imageKey): \(error)")
                             }
                         }
                     }
@@ -269,7 +270,7 @@ struct EPUBContentBuilder {
                 data: imageData
             )
         } catch {
-            print("[EPUBContentBuilder] Failed to download cover: \(error)")
+            Logger.download.error("Failed to download cover: \(error)")
             return nil
         }
     }

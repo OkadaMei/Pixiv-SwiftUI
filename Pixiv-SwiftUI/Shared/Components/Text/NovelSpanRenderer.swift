@@ -1,5 +1,6 @@
 import SwiftUI
 import Kingfisher
+import os.log
 
 struct NovelSpanRenderer: View {
     let span: NovelSpan
@@ -144,12 +145,10 @@ struct NovelSpanRenderer: View {
             KFImage.source(.directNetwork(imageURL))
                 .fade(duration: 0.3)
                 .onSuccess { result in
-                    print(
-                        "[NovelSpanRenderer] \(logContext) 加载成功: url=\(imageURL.absoluteString), cache=\(result.cacheType), size=\(Int(result.image.size.width))x\(Int(result.image.size.height))"
-                    )
+                    Logger.novel.info("\(logContext) 加载成功: url=\(imageURL.absoluteString), cache=\(String(describing: result.cacheType)), size=\(Int(result.image.size.width))x\(Int(result.image.size.height))")
                 }
                 .onFailure { error in
-                    print("[NovelSpanRenderer] \(logContext) 加载失败: url=\(imageURL.absoluteString), error=\(error)")
+                    Logger.novel.warning("加载失败: url=\(imageURL.absoluteString), error=\(error)")
                 }
                 .placeholder {
                     ProgressView()
@@ -165,12 +164,10 @@ struct NovelSpanRenderer: View {
                 .fade(duration: 0.3)
                 .requestModifier(PixivImageLoader.shared)
                 .onSuccess { result in
-                    print(
-                        "[NovelSpanRenderer] \(logContext) 加载成功: url=\(imageURL.absoluteString), cache=\(result.cacheType), size=\(Int(result.image.size.width))x\(Int(result.image.size.height))"
-                    )
+                    Logger.novel.info("\(logContext) 加载成功: url=\(imageURL.absoluteString), cache=\(String(describing: result.cacheType)), size=\(Int(result.image.size.width))x\(Int(result.image.size.height))")
                 }
                 .onFailure { error in
-                    print("[NovelSpanRenderer] \(logContext) 加载失败: url=\(imageURL.absoluteString), error=\(error)")
+                    Logger.novel.warning("加载失败: url=\(imageURL.absoluteString), error=\(error)")
                 }
                 .placeholder {
                     ProgressView()
@@ -192,9 +189,7 @@ struct NovelSpanRenderer: View {
 
     private func logImageLoadStart(imageURL: URL, logContext: String, directConnection: Bool) {
         let host = imageURL.host ?? "nil"
-        print(
-            "[NovelSpanRenderer] \(logContext) 开始加载: url=\(imageURL.absoluteString), host=\(host), direct=\(directConnection)"
-        )
+        Logger.novel.debug("\(logContext) 开始加载: url=\(imageURL.absoluteString), host=\(host), direct=\(directConnection)")
     }
 
     private var jumpUriView: some View {

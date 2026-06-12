@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+import os.log
 
 /// 导航请求类型
 enum NavigationRequest: Equatable {
@@ -159,7 +160,7 @@ final class AccountStore {
                 account.webPHPSESSID = phpsessid
             }
         } catch {
-            print("Failed to load tokens from keychain for \(userId): \(error)")
+            Logger.auth.error("Failed to load tokens from keychain for \(userId, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -174,20 +175,16 @@ final class AccountStore {
                 try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .phpsessid))
             }
             // 保存 token 过期时间（使用服务端返回的 expires_in）
-            #if DEBUG
-            print("[Token] 服务端返回 expires_in=\(expiresIn)s (\(Double(expiresIn) / 60) 分钟)")
-            #endif
+            Logger.token.debug("服务端返回 expires_in=\(expiresIn)s (\(Double(expiresIn) / 60) 分钟)")
             let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
-            #if DEBUG
-            print("[Token] token 过期时间: \(ISO8601DateFormatter().string(from: expiryDate))")
-            #endif
+            Logger.token.debug("token 过期时间: \(ISO8601DateFormatter().string(from: expiryDate))")
             try KeychainHelper.save(
                 ISO8601DateFormatter().string(from: expiryDate),
                 service: KeychainHelper.Service.authTokens,
                 account: KeychainHelper.accountKey(userId: userId, type: .tokenExpiry)
             )
         } catch {
-            print("Failed to save tokens to keychain for \(userId): \(error)")
+            Logger.auth.error("Failed to save tokens to keychain for \(userId, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -198,7 +195,7 @@ final class AccountStore {
             try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .phpsessid))
             try KeychainHelper.delete(service: KeychainHelper.Service.authTokens, account: KeychainHelper.accountKey(userId: userId, type: .tokenExpiry))
         } catch {
-            print("Failed to delete tokens from keychain for \(userId): \(error)")
+            Logger.auth.error("Failed to delete tokens from keychain for \(userId, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -214,15 +211,11 @@ final class AccountStore {
     func refreshTokenIfExpired() async {
         guard let account = currentAccount, !account.refreshToken.isEmpty else { return }
         guard isTokenExpired() else {
-            #if DEBUG
-            print("[Token] token 仍有效，跳过主动刷新")
-            #endif
+            Logger.token.debug("token 仍有效，跳过主动刷新")
             return
         }
 
-        #if DEBUG
-        print("[Token] token 已过期，主动刷新...")
-        #endif
+        Logger.token.debug("token 已过期，主动刷新...")
 
         do {
             let (newAccessToken, newRefreshToken, _, expiresIn) = try await PixivAPI.shared.refreshAccessToken(account.refreshToken)
@@ -230,14 +223,10 @@ final class AccountStore {
             account.refreshToken = newRefreshToken
             try updateAccount(account, expiresIn: expiresIn)
             PixivAPI.shared.setAccessToken(newAccessToken)
-            #if DEBUG
-            print("[Token] 主动刷新成功")
-            #endif
+            Logger.token.info("主动刷新成功")
         } catch {
             // 静默失败 — NetworkClient 的失败重试兜底
-            #if DEBUG
-            print("[Token] 主动刷新失败，后续请求将自动重试: \(error)")
-            #endif
+            Logger.token.debug("主动刷新失败，后续请求将自动重试: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -555,7 +544,7 @@ final class AccountStore {
 
             try updateAccount(account, expiresIn: expiresIn)
         } catch {
-            print("刷新账户信息失败: \(error)")
+            Logger.auth.error("刷新账户信息失败: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

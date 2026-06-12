@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 
 #if os(iOS)
 import UIKit
@@ -30,13 +31,13 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            print("[DocumentPicker] 用户已选择保存位置: \(urls.first?.path ?? "unknown")")
+            Logger.download.debug("用户已选择保存位置: \(urls.first?.path ?? "unknown")")
             // 文件已被系统自动保存到选择的位置
             parent.dismiss()
         }
 
         func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            print("[DocumentPicker] 用户取消保存")
+            Logger.download.debug("用户取消保存")
             parent.dismiss()
         }
     }

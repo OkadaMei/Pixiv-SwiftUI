@@ -1,5 +1,6 @@
 import SwiftUI
 import Kingfisher
+import os.log
 import UniformTypeIdentifiers
 #if os(macOS)
 import AppKit
@@ -322,7 +323,7 @@ struct ImageViewerWindowContent: View {
                 }
             }
         } catch {
-            print("[ImageViewer] Failed to save image: \(error)")
+            Logger.general.error("Failed to save image: \(error)")
         }
     }
 
@@ -340,7 +341,7 @@ struct ImageViewerWindowContent: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.writeObjects([nsImage])
         } catch {
-            print("[ImageViewer] Failed to copy image: \(error)")
+            Logger.general.error("Failed to copy image: \(error)")
         }
     }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 struct UserPreviewCard: View {
     let userPreview: UserPreviews
@@ -160,7 +161,7 @@ struct UserPreviewCard: View {
                 await MainActor.run {
                     self.isFollowed = previousState
                 }
-                print("Failed to toggle follow: \(error)")
+                Logger.user.error("Failed to toggle follow: \(error)")
             }
         }
     }

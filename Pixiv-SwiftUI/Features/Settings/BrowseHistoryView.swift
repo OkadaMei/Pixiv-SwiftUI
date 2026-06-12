@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import os.log
 
 enum BrowseHistoryType: String, CaseIterable {
     case illust = "插画"
@@ -252,26 +253,26 @@ struct BrowseHistoryView: View {
     }
 
     private func loadHistory() async {
-        print("[BrowseHistoryView] loadHistory: selectedType=\(selectedType)")
+        Logger.general.debug("loadHistory: selectedType=\(String(describing: selectedType))")
         isLoading = true
         error = nil
 
         do {
             if selectedType == .illust {
                 allHistoryIds = try illustStore.getGlanceHistoryIds(limit: 100)
-                print("[BrowseHistoryView] loadHistory: illustIds=\(allHistoryIds)")
+                Logger.general.debug("loadHistory: illustIds=\(String(describing: allHistoryIds))")
                 loadedCount = 0
                 illusts = []
                 await loadBatch()
             } else {
                 allHistoryIds = try novelStore.getGlanceHistoryIds(limit: 100)
-                print("[BrowseHistoryView] loadHistory: novelIds=\(allHistoryIds)")
+                Logger.general.debug("loadHistory: novelIds=\(String(describing: allHistoryIds))")
                 loadedCount = 0
                 novels = []
                 await loadBatch()
             }
         } catch {
-            print("[BrowseHistoryView] loadHistory error: \(error)")
+            Logger.general.error("loadHistory error: \(error.localizedDescription, privacy: .public)")
             self.error = error
         }
 

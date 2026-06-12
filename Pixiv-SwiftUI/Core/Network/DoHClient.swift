@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 actor DohClient {
     static let shared = DohClient()
@@ -16,10 +17,10 @@ actor DohClient {
     }
 
     func queryDNS(for host: String) async throws -> (ip: String, ttl: Int)? {
-        print("[DoH] 查询域名: \(host)")
+        Logger.network.debug("查询域名: \(host, privacy: .public)")
 
         guard let url = URL(string: "\(dohBaseURL)/resolve") else {
-            print("[DoH] 无效的 URL: \(dohBaseURL)/resolve")
+            Logger.network.error("无效的 URL: \(self.dohBaseURL)/resolve")
             return nil
         }
 
@@ -30,7 +31,7 @@ actor DohClient {
         ]
 
         guard let finalURL = components?.url else {
-            print("[DoH] 无法构建查询 URL")
+            Logger.network.error("无法构建查询 URL")
             return nil
         }
 
@@ -43,19 +44,19 @@ actor DohClient {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
 
             guard statusCode == 200 else {
-                print("[DoH] 请求失败，状态码: \(statusCode)")
+                Logger.network.error("请求失败，状态码: \(statusCode)")
                 return nil
             }
 
             let dohResponse = try JSONDecoder().decode(DohNetworkResponse.self, from: data)
 
             if let status = dohResponse.status, status != 0 {
-                print("[DoH] DNS 查询返回错误状态码: \(status)")
+                Logger.network.error("DNS 查询返回错误状态码: \(status)")
                 return nil
             }
 
             guard let answers = dohResponse.answer, !answers.isEmpty else {
-                print("[DoH] 无 DNS 记录返回")
+                Logger.network.debug("无 DNS 记录返回")
                 return nil
             }
 
@@ -68,16 +69,16 @@ actor DohClient {
             }
 
             guard let firstAnswer = sortedAnswers.first else {
-                print("[DoH] 无有效 IP 地址")
+                Logger.network.debug("无有效 IP 地址")
                 return nil
             }
 
             let ttl = firstAnswer.TTL ?? 300
-            print("[DoH] 选择 IP: \(firstAnswer.data), TTL: \(ttl)")
+            Logger.network.debug("选择 IP: \(firstAnswer.data, privacy: .public), TTL: \(ttl)")
 
             return (firstAnswer.data, ttl)
         } catch {
-            print("[DoH] 查询失败: \(error.localizedDescription)")
+            Logger.network.error("查询失败: \(error.localizedDescription, privacy: .public)")
             throw error
         }
     }

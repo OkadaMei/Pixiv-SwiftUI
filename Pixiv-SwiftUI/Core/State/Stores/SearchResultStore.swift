@@ -1,5 +1,6 @@
 import SwiftUI
 import Observation
+import os.log
 
 protocol BookmarkSortableSearchResult {
     var id: Int { get }
@@ -442,7 +443,7 @@ final class SearchResultStore {
                 self.illustHasMore = response.nextUrl != nil
             }
         } catch {
-            print("Failed to load more illusts: \(error)")
+            Logger.search.error("Failed to load more illusts: \(error.localizedDescription, privacy: .public)")
             illustLoadMoreError = AppError.unknown(error)
         }
         isLoadingMoreIllusts = false
@@ -458,7 +459,7 @@ final class SearchResultStore {
             self.userOffset += more.count
             self.userHasMore = !more.isEmpty
         } catch {
-            print("Failed to load more users: \(error)")
+            Logger.search.error("Failed to load more users: \(error.localizedDescription, privacy: .public)")
         }
         isLoadingMoreUsers = false
     }
@@ -724,7 +725,7 @@ final class SearchResultStore {
                 self.novelHasMore = response.nextUrl != nil
             }
         } catch {
-            print("Failed to load more novels: \(error)")
+            Logger.search.error("Failed to load more novels: \(error.localizedDescription, privacy: .public)")
             novelLoadMoreError = AppError.unknown(error)
         }
         isLoadingMoreNovels = false
@@ -1000,7 +1001,7 @@ final class SearchResultStore {
                 self.novelSearchSignature = prefetchNovelSignature
             } catch is CancellationError {
             } catch {
-                print("Failed to complete supplemental search preload: \(error)")
+                Logger.search.error("Failed to complete supplemental search preload: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

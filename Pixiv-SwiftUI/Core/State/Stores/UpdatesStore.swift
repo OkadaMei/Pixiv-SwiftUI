@@ -2,6 +2,7 @@ import Observation
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 
 @MainActor
 @Observable
@@ -64,7 +65,7 @@ class UpdatesStore {
             cache.set((illusts, nextUrl), forKey: cacheKeyUpdates(restrict: effectiveRestrict), expiration: expiration)
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to fetch updates: \(error)")
+            Logger.general.error("Failed to fetch updates: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -86,12 +87,10 @@ class UpdatesStore {
             let response: IllustsResponseDTO = try await api.fetchNext(urlString: nextUrl)
             self.updates.append(contentsOf: response.illusts.map { $0.toDomain() })
             self.nextUrlUpdates = response.nextUrl
-            // 成功后清除，以便下次可以加载新的 nextUrl
             loadingNextUrlUpdates = nil
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to load more updates: \(error)")
-            // 失败也清除，以便可以重试
+            Logger.general.error("Failed to load more updates: \(error.localizedDescription, privacy: .public)")
             loadingNextUrlUpdates = nil
         }
     }
@@ -104,7 +103,6 @@ class UpdatesStore {
                 return
             }
 
-            // 尝试从缓存加载
             if let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
                 self.following = cached.0
                 self.nextUrlFollowing = cached.1
@@ -127,7 +125,7 @@ class UpdatesStore {
             cache.set((users, nextUrl), forKey: cacheKeyFollowing(userId: userId), expiration: expiration)
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to fetch following: \(error)")
+            Logger.general.error("Failed to fetch following: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -150,7 +148,7 @@ class UpdatesStore {
             loadingNextUrlFollowing = nil
         } catch {
             self.error = AppError.unknown(error)
-            print("Failed to load more following: \(error)")
+            Logger.general.error("Failed to load more following: \(error.localizedDescription, privacy: .public)")
             loadingNextUrlFollowing = nil
         }
     }

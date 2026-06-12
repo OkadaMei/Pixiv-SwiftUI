@@ -1,6 +1,7 @@
 import SwiftUI
 import Kingfisher
 import UniformTypeIdentifiers
+import os.log
 
 #if os(iOS)
 import UIKit
@@ -352,7 +353,7 @@ struct DeletedBookmarkDetailView: View {
                 await MainActor.run {
                     isSaving = false
                 }
-                print("[DeletedBookmarkDetailView] 导出失败: \(error)")
+                Logger.bookmark.error("导出失败: \(error)")
             }
         }
     }

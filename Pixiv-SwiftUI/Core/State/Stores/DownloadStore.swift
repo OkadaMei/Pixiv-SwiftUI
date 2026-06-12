@@ -263,11 +263,11 @@ final class DownloadStore {
 
                 let ext = (urlString as NSString).pathExtension.lowercased()
                 let actualExt = ext.isEmpty ? "jpg" : ext
-                Logger.download.debug("第 \(index + 1) 页下载成功，扩展名: \(actualExt)")
+                Logger.download.info("第 \(index + 1) 页下载成功，扩展名: \(actualExt)")
 
                 #if os(iOS)
                 try await ImageSaver.saveToPhotosAlbum(data: imageData, fileExtension: actualExt)
-                Logger.download.debug("第 \(index + 1) 页保存到相册成功")
+                Logger.download.info
                 // swiftlint:disable:next force_unwrapping
                 savedPaths.append(URL(string: "photos://\(task.illustId)_\(index)")!)  // iOS 保存到相册，没有文件路径
                 #else
@@ -433,7 +433,7 @@ final class DownloadStore {
                 throw DownloadError.ugoiraLoadFailed
             }
 
-            Logger.download.debug("动图数据准备完成，帧数: \(ugoiraStore.frameURLs.count)")
+            Logger.download.info("动图数据准备完成，帧数: \(ugoiraStore.frameURLs.count)")
 
             // 更新进度为导出中
             if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
@@ -452,7 +452,7 @@ final class DownloadStore {
                 outputURL: outputURL
             )
 
-            Logger.download.debug("GIF导出成功: \(outputURL, privacy: .public)")
+            Logger.download.info("GIF导出成功: \(outputURL, privacy: .public)")
 
             // 保存GIF到相册或文件
             var gifData = try Data(contentsOf: outputURL)
@@ -466,7 +466,7 @@ final class DownloadStore {
 
             #if os(iOS)
             try await ImageSaver.saveToPhotosAlbum(data: gifData, fileExtension: "gif")
-            Logger.download.debug("GIF保存到相册成功")
+            Logger.download.info("GIF保存到相册成功")
             // swiftlint:disable:next force_unwrapping
             let savedURL = URL(string: "photos://\(task.illustId)_ugoira")!
             #else
@@ -499,7 +499,7 @@ final class DownloadStore {
             }
 
             try await ImageSaver.saveToFile(data: gifData, url: saveURL)
-            Logger.download.debug("GIF保存到文件成功: \(saveURL, privacy: .public)")
+            Logger.download.info("GIF保存到文件成功: \(saveURL, privacy: .public)")
             let savedURL = saveURL
             #endif
 
@@ -832,7 +832,7 @@ final class DownloadStore {
                     if let content = content, let novel = novel {
                         novelsWithContent.append((novel: novel, content: content))
                         allNovels.append(novel)
-                        Logger.download.debug("第 \(index + 1) 章下载成功")
+                        Logger.download.info("第 \(index + 1) 章下载成功")
                     } else {
                         failedChapters.append(index)
                         Logger.download.error("第 \(index + 1) 章 (\(chapter.title, privacy: .public)) 下载失败，超过最大重试次数")

@@ -1,5 +1,4 @@
 import Foundation
-import os.log
 
 final class CrashReportExportService {
     static let shared = CrashReportExportService()

@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 #if os(iOS)
 import PhotosUI
 #endif
@@ -308,27 +309,7 @@ struct SearchView: View {
                             show404Error = true
                         }
                     } catch {
-                        print("Failed to load illust: \(error)")
-                    }
-                    isLoadingDetail = false
-                }
-            }
-            .task(id: pendingUserId) {
-                if let userId = pendingUserId {
-                    isLoadingDetail = true
-                    defer { pendingUserId = nil }
-                    do {
-                        let userDetail = try await PixivAPI.shared.userAPI.getUserDetail(userId: userId)
-                        await MainActor.run {
-                            path.append(userDetail.user)
-                        }
-                    } catch let error as NetworkError {
-                        if case .httpError(404) = error {
-                            errorMessage = String(localized: "没有找到画师") + " (ID: \(userId))"
-                            show404Error = true
-                        }
-                    } catch {
-                        print("Failed to load user: \(error)")
+                        Logger.search.error("Failed to load illust: \(error.localizedDescription, privacy: .public)")
                     }
                     isLoadingDetail = false
                 }

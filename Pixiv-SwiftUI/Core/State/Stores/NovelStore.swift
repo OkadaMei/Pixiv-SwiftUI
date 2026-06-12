@@ -497,7 +497,7 @@ final class NovelStore {
 
         try enforceGlanceHistoryLimit(context: context)
         try context.save()
-        Logger.novel.debug("recordGlance: success")
+        Logger.novel.info("recordGlance: success")
     }
 
     private func saveNovelToCache(_ novel: Novel) throws {

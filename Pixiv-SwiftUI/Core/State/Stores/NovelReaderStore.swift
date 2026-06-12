@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import TranslationKit
+import os.log
 
 extension Notification.Name {
     static let novelReaderShouldRestorePosition = Notification.Name("novelReaderShouldRestorePosition")
@@ -125,21 +126,21 @@ final class NovelReaderStore {
 
     func fetch() async {
         guard !isLoading else { return }
-        print("[NovelReaderStore] Fetching content for novelId=\(novelId)")
+        Logger.novel.debug("Fetching content for novelId=\(self.novelId, privacy: .public)")
         isLoading = true
         error = nil
         resolvedSeriesNavigation = nil
 
         do {
             let fetchedContent = try await PixivAPI.shared.novelAPI.getNovelContent(novelId: novelId)
-            print("[NovelReaderStore] Fetched content, text length=\(fetchedContent.text.count)")
+            Logger.novel.debug("Fetched content, text length=\(fetchedContent.text.count)")
             content = fetchedContent
             isBookmarked = fetchedContent.isBookmarked ?? false
             resolvedSeriesNavigation = await resolveSeriesNavigation(for: fetchedContent)
 
             let cleanedText = NovelTextParser.shared.cleanHTML(fetchedContent.text)
             spans = NovelTextParser.shared.parse(cleanedText, illusts: fetchedContent.illusts, images: fetchedContent.images)
-            print("[NovelReaderStore] Parsed into \(spans.count) spans")
+            Logger.novel.debug("Parsed into \(self.spans.count) spans")
             logImageDiagnostics(content: fetchedContent, spans: spans)
 
             isLoading = false
@@ -148,11 +149,11 @@ final class NovelReaderStore {
 
             loadProgress()
             if let index = savedIndex {
-                print("[NovelReaderStore] Restoring progress to index \(index)")
+                Logger.novel.debug("Restoring progress to index \(index)")
                 NotificationCenter.default.post(name: .novelReaderShouldRestorePosition, object: nil)
             }
         } catch {
-            print("[NovelReaderStore] Fetch failed: \(error)")
+            Logger.novel.error("Fetch failed: \(error.localizedDescription, privacy: .public)")
             self.error = AppError.unknown(error)
             resolvedSeriesNavigation = nil
             isLoading = false
@@ -161,7 +162,7 @@ final class NovelReaderStore {
 
     private func resolveSeriesNavigation(for content: NovelReaderContent) async -> SeriesNavigation? {
         if let navigation = content.seriesNavigation, navigation.hasAdjacentNovel {
-            print("[NovelReaderStore] Series navigation source: content")
+            Logger.novel.debug("Series navigation source: content")
             return navigation
         }
 
@@ -170,7 +171,7 @@ final class NovelReaderStore {
         }
 
         if let navigation = await fetchSeriesNavigationFromSeries(seriesId: seriesId) {
-            print("[NovelReaderStore] Series navigation source: series fallback")
+            Logger.novel.debug("Series navigation source: series fallback")
             return navigation
         }
 
@@ -205,7 +206,7 @@ final class NovelReaderStore {
 
             return buildSeriesNavigationIfPossible(from: novels, nextURL: nil)
         } catch {
-            print("[NovelReaderStore] Failed to resolve series navigation from series: \(error)")
+            Logger.novel.error("Failed to resolve series navigation from series: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -261,34 +262,26 @@ final class NovelReaderStore {
             return !imageURL.isEmpty
         }
 
-        print(
-            "[NovelReaderStore] Image diagnostics: uploadedAssets=\(uploadedAssets.count), illustAssets=\(illustAssets.count), uploadedSpans=\(uploadedSpans.count), resolvedUploadedSpans=\(resolvedUploadedSpans.count), pixivSpans=\(pixivSpans.count), resolvedPixivSpans=\(resolvedPixivSpans.count)"
-        )
+        Logger.novel.debug("Image diagnostics: uploadedAssets=\(uploadedAssets.count), illustAssets=\(illustAssets.count), uploadedSpans=\(uploadedSpans.count), resolvedUploadedSpans=\(resolvedUploadedSpans.count), pixivSpans=\(pixivSpans.count), resolvedPixivSpans=\(resolvedPixivSpans.count)")
 
         for image in uploadedAssets.prefix(5) {
             let preferredURL = image.preferredDisplayURL ?? "nil"
             let host = URL(string: preferredURL)?.host ?? "nil"
-            print(
-                "[NovelReaderStore] Uploaded asset: id=\(image.id ?? "nil"), host=\(host), preferredURL=\(preferredURL)"
-            )
+            Logger.novel.debug("Uploaded asset: id=\(image.id ?? "nil"), host=\(host), preferredURL=\(preferredURL)")
         }
 
         for illust in illustAssets.prefix(5) {
             let previewURL = [illust.illust.imageUrls.large, illust.illust.imageUrls.medium, illust.illust.imageUrls.squareMedium]
                 .first(where: { !$0.isEmpty }) ?? "nil"
             let host = URL(string: previewURL)?.host ?? "nil"
-            print(
-                "[NovelReaderStore] Pixiv asset: illustId=\(illust.illust.id), host=\(host), previewURL=\(previewURL)"
-            )
+            Logger.novel.debug("Pixiv asset: illustId=\(illust.illust.id), host=\(host), previewURL=\(previewURL)")
         }
 
         for span in uploadedSpans.prefix(5) {
             let imageKey = span.metadata?["imageKey"] as? String ?? "nil"
             let imageURL = span.metadata?["imageUrl"] as? String ?? "nil"
             let host = URL(string: imageURL)?.host ?? "nil"
-            print(
-                "[NovelReaderStore] Uploaded span: spanId=\(span.id), imageKey=\(imageKey), host=\(host), imageURL=\(imageURL)"
-            )
+            Logger.novel.debug("Uploaded span: spanId=\(span.id), imageKey=\(imageKey), host=\(host), imageURL=\(imageURL)")
         }
 
         let unresolvedUploadedKeys = uploadedSpans.prefix(20).compactMap { span -> String? in
@@ -297,7 +290,7 @@ final class NovelReaderStore {
             return span.metadata?["imageKey"] as? String
         }
         if !unresolvedUploadedKeys.isEmpty {
-            print("[NovelReaderStore] Uploaded spans unresolved keys: \(unresolvedUploadedKeys.joined(separator: ", "))")
+            Logger.novel.debug("Uploaded spans unresolved keys: \(unresolvedUploadedKeys.joined(separator: ", "))")
         }
 
         for span in pixivSpans.prefix(5) {
@@ -305,9 +298,7 @@ final class NovelReaderStore {
             let targetIndex = span.metadata?["targetIndex"] as? Int ?? -1
             let imageURL = span.metadata?["imageUrl"] as? String ?? "nil"
             let host = URL(string: imageURL)?.host ?? "nil"
-            print(
-                "[NovelReaderStore] Pixiv span: spanId=\(span.id), illustId=\(illustId), targetIndex=\(targetIndex), host=\(host), imageURL=\(imageURL)"
-            )
+            Logger.novel.debug("Pixiv span: spanId=\(span.id), illustId=\(illustId), targetIndex=\(targetIndex), host=\(host), imageURL=\(imageURL)")
         }
     }
 
@@ -346,7 +337,7 @@ final class NovelReaderStore {
             )
         } catch {
             translationError = "翻译失败，请检查服务配置"
-            print("Translation failed for paragraph \(index): \(error)")
+            Logger.novel.error("Translation failed for paragraph \(index): \(error.localizedDescription, privacy: .public)")
         }
 
         translatingIndices.remove(index)
@@ -589,7 +580,7 @@ final class NovelReaderStore {
 
                 case .failed(let indices, let message):
                     translationError = "批量翻译失败，已回退单段翻译"
-                    print("Batch translation failed: \(message)")
+                    Logger.novel.error("Batch translation failed: \(message)")
 
                     for index in indices {
                         translatingIndices.remove(index)
@@ -730,7 +721,7 @@ private func performTranslation(text: String, serviceId: String, targetLanguage:
             }
             isBookmarked.toggle()
         } catch {
-            print("Failed to toggle bookmark: \(error)")
+            Logger.novel.error("Failed to toggle bookmark: \(error.localizedDescription, privacy: .public)")
         }
     }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import Kingfisher
+import os.log
 import UniformTypeIdentifiers
 
 #if os(macOS)
@@ -305,7 +306,7 @@ struct ExportPanel: View {
             } catch {
                 await MainActor.run {
                     isExporting = false
-                    print("[UgoiraWindow] Export failed: \(error)")
+                    Logger.ugoira.error("Export failed: \(error)")
                 }
             }
         }
@@ -329,7 +330,7 @@ struct ExportPanel: View {
                     }
                     try FileManager.default.moveItem(at: url, to: saveURL)
                 } catch {
-                    print("[UgoiraWindow] Failed to save GIF: \(error)")
+                    Logger.ugoira.error("Failed to save GIF: \(error)")
                 }
             }
             try? FileManager.default.removeItem(at: url)

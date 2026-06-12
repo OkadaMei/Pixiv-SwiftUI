@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 extension View {
     /// 通用的 Pixiv 导航目标
@@ -13,57 +14,43 @@ extension View {
             .navigationDestination(for: Illusts.self) { illust in
                 IllustDetailView(illust: illust)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] Illusts destination triggered: \(illust.id), type=\(illust.type)"
-                        )
+                        Logger.ui.debug("Illusts destination triggered: \(illust.id), type=\(illust.type)")
                     }
             }
             .navigationDestination(for: Novel.self) { novel in
                 NovelDetailView(novel: novel)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] Novel destination triggered: id=\(novel.id), title=\(novel.title)"
-                        )
+                        Logger.ui.debug("Novel destination triggered: id=\(novel.id), title=\(novel.title)")
                     }
             }
             .navigationDestination(for: NovelSeries.self) { series in
                 NovelSeriesView(seriesId: series.id ?? 0)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] NovelSeries destination triggered: seriesId=\(series.id ?? 0)"
-                        )
+                        Logger.ui.debug("NovelSeries destination triggered: seriesId=\(series.id ?? 0)")
                     }
             }
             .navigationDestination(for: IllustSeries.self) { series in
                 IllustSeriesView(seriesId: series.id)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] IllustSeries destination triggered: seriesId=\(series.id)"
-                        )
+                        Logger.ui.debug("IllustSeries destination triggered: seriesId=\(series.id)")
                     }
             }
             .navigationDestination(for: User.self) { user in
                 UserDetailView(userId: user.id.stringValue)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] User destination triggered: \(user.id.stringValue)"
-                        )
+                        Logger.ui.debug("User destination triggered: \(user.id.stringValue)")
                     }
             }
             .navigationDestination(for: UserDetailUser.self) { userDetailUser in
                 UserDetailView(userId: String(userDetailUser.id))
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] UserDetailUser destination triggered: \(userDetailUser.id)"
-                        )
+                        Logger.ui.debug("UserDetailUser destination triggered: \(userDetailUser.id)")
                     }
             }
             .navigationDestination(for: SearchResultTarget.self) { target in
                 SearchResultView(word: target.word, preloadToken: target.preloadToken)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] SearchResultTarget destination triggered: \(target.word)"
-                        )
+                        Logger.ui.debug("SearchResultTarget destination triggered: \(target.word)")
                     }
             }
             .navigationDestination(for: RecommendByTagTarget.self) { target in
@@ -72,17 +59,13 @@ extension View {
             .navigationDestination(for: NovelRankingType.self) { _ in
                 NovelRankingPage()
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] NovelRankingPage destination triggered"
-                        )
+                        Logger.ui.debug("NovelRankingPage destination triggered")
                     }
             }
             .navigationDestination(for: IllustRankingType.self) { type in
                 IllustRankingPage(initialMode: type.mode)
                     .onAppear {
-                        print(
-                            "[pixivNavigationDestinations] IllustRankingPage destination triggered with mode: \(type.mode.title)"
-                        )
+                        Logger.ui.debug("IllustRankingPage destination triggered with mode: \(type.mode.title)")
                     }
             }
             .navigationDestination(for: SpotlightListTarget.self) { _ in

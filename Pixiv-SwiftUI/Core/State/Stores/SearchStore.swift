@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import Observation
+import os.log
 
 @MainActor
 @Observable
@@ -124,13 +125,13 @@ class SearchStore {
         let cacheKey = CacheManager.trendTagsKey()
 
         if let cached: [TrendTag] = cache.get(forKey: cacheKey) {
-            print("[SearchStore] Use cached trend tags for key: \(cacheKey)")
+            Logger.search.debug("Use cached trend tags for key: \(cacheKey)")
             self.trendTags = cached
             return
         }
 
         guard AccountStore.shared.isLoggedIn else {
-            print("[SearchStore] Skip fetching trend tags in guest mode")
+            Logger.search.debug("Skip fetching trend tags in guest mode")
             return
         }
 
@@ -142,7 +143,7 @@ class SearchStore {
             self.trendTags = tags
             cache.set(tags, forKey: cacheKey, expiration: trendTagsExpiration)
         } catch {
-            print("Failed to fetch trend tags: \(error)")
+            Logger.search.error("Failed to fetch trend tags: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -150,7 +151,7 @@ class SearchStore {
         // 推荐标签 / 为你推荐标签依赖 Pixiv Web Ajax 会话（cookies）。
         // 没有有效的 Web 登录时不要请求，也不要用热门标签兜底，避免“推荐=热门”的错乱。
         guard AccountStore.shared.isWebLoggedIn else {
-            print("[SearchStore] Skip fetching recommended tags: Web(Ajax) not logged in")
+            Logger.search.debug("Skip fetching recommended tags: Web(Ajax) not logged in")
             return
         }
 
@@ -160,7 +161,7 @@ class SearchStore {
         if !forceRefresh,
            let cachedTags: [TrendTag] = cache.get(forKey: tagsKey),
            let cachedGroups: [RecommendByTagGroup] = cache.get(forKey: groupsKey) {
-            print("[SearchStore] Use cached recommended tags and groups")
+            Logger.search.debug("Use cached recommended tags and groups")
             self.recommendedSearchTags = cachedTags
             self.recommendByTagGroups = cachedGroups
             return
@@ -259,8 +260,8 @@ class SearchStore {
         } catch {
             // Ajax 失败时不做热门标签兜底：避免推荐内容错误地变成热门标签。
             // 保留当前内存中的推荐数据（可能来自上一次成功或缓存命中）。
-            print("[SearchStore] Failed to fetch recommended tags via Ajax: \(error)")
-            print("[SearchStore] Ajax state: isLoggedIn=\(AccountStore.shared.isLoggedIn), isWebLoggedIn=\(AccountStore.shared.isWebLoggedIn), hasAjaxSession=\(AccountStore.shared.hasAjaxSession)")
+            Logger.search.error("Failed to fetch recommended tags via Ajax: \(error.localizedDescription, privacy: .public)")
+            Logger.search.debug("Ajax state: isLoggedIn=\(AccountStore.shared.isLoggedIn), isWebLoggedIn=\(AccountStore.shared.isWebLoggedIn), hasAjaxSession=\(AccountStore.shared.hasAjaxSession)")
         }
     }
 
@@ -272,6 +273,6 @@ class SearchStore {
         self.trendTags = []
         self.recommendedSearchTags = []
         self.suggestions = []
-        print("[SearchStore] Memory cache cleared")
+        Logger.search.debug("Memory cache cleared")
     }
 }

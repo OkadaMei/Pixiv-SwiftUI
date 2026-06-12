@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import Combine
+import os.log
 
 struct SauceNaoResultListView: View {
     let requestId: UUID
@@ -186,7 +187,7 @@ private final class SauceNaoResultListStore {
                 items.append(item)
             } catch {
                 failedDetailCount += 1
-                print("[SauceNaoResultListView] load illust failed: \(match.illustId), error: \(error.localizedDescription)")
+                Logger.search.error("load illust failed: \(match.illustId), error: \(error.localizedDescription)")
             }
         }
     }

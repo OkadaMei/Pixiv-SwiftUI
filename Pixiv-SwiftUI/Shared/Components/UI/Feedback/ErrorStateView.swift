@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 /// 统一错误状态展示组件，替代各 View 中散落的 errorView 实现。
 ///
@@ -27,7 +28,7 @@ struct ErrorStateView: View {
 #Preview("带重试") {
     ErrorStateView(
         message: "网络连接失败，请检查网络设置",
-        retryAction: { print("重试") }
+        retryAction: { Logger.general.debug("重试") }
     )
     .frame(height: 300)
 }

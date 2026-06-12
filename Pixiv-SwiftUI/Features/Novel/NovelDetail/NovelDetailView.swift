@@ -1,6 +1,7 @@
 import SwiftUI
 import TranslationKit
 import UniformTypeIdentifiers
+import os.log
 
 #if os(macOS)
 import AppKit
@@ -438,7 +439,7 @@ struct NovelDetailView: View {
                     self.isFollowed = detail.user.isFollowed
                 }
             } catch {
-                print("Failed to fetch user detail: \(error)")
+                Logger.novel.error("Failed to fetch user detail: \(error)")
             }
         }
     }
@@ -451,7 +452,7 @@ struct NovelDetailView: View {
                     self.totalComments = comments.comments.count
                 }
             } catch {
-                print("Failed to fetch comments: \(error)")
+                Logger.novel.error("Failed to fetch comments: \(error)")
             }
         }
     }
@@ -482,7 +483,7 @@ struct NovelDetailView: View {
                     isExporting = false
                 }
             } catch {
-                print("[NovelDetailView] 导出小说失败: \(error)")
+                Logger.novel.error("导出小说失败: \(error)")
                 await MainActor.run {
                     isExporting = false
                 }

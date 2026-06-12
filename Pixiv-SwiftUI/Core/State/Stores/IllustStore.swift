@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftData
 import SwiftUI
+import os.log
 
 /// 插画内容状态管理
 @MainActor
@@ -370,7 +371,7 @@ final class IllustStore {
 
         guard AccountStore.shared.isLoggedIn else {
             if mode == .day {
-                print("[IllustStore] Skip loading daily ranking in guest mode")
+                Logger.illust.debug("Skip loading daily ranking in guest mode")
             }
             return
         }
@@ -385,7 +386,7 @@ final class IllustStore {
             self.nextUrlsByRankingMode[mode] = result.nextUrl
             cache.set(IllustRankingResponseDTO(illusts: result.illusts.map { IllustDTO.fromDomain($0) }, nextUrl: result.nextUrl), forKey: cacheKey, expiration: expiration)
         } catch {
-            print("Failed to load \(mode.rawValue) ranking illusts: \(error)")
+            Logger.illust.error("Failed to load \(mode.rawValue) ranking illusts: \(error.localizedDescription, privacy: .public)")
         }
     }
 

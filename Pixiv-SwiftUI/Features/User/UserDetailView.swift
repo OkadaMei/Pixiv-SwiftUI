@@ -1,5 +1,6 @@
 import SwiftUI
 import TranslationKit
+import os.log
 
 struct UserDetailView: View {
     let userId: String
@@ -327,7 +328,7 @@ struct UserDetailView: View {
                 store.userDetail?.user.isFollowed = true
             }
         } catch {
-            print("Follow toggle failed: \(error)")
+            Logger.user.error("Follow toggle failed: \(error)")
         }
     }
 
@@ -342,7 +343,7 @@ struct UserDetailView: View {
             isFollowed = true
             store.userDetail?.user.isFollowed = true
         } catch {
-            print("Follow user failed: \(error)")
+            Logger.user.error("Follow user failed: \(error)")
         }
     }
 
@@ -357,7 +358,7 @@ struct UserDetailView: View {
             isFollowed = false
             store.userDetail?.user.isFollowed = false
         } catch {
-            print("Unfollow user failed: \(error)")
+            Logger.user.error("Unfollow user failed: \(error)")
         }
     }
 

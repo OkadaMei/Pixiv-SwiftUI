@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 
 #if os(macOS)
 struct AppIconView: View {
@@ -68,9 +69,9 @@ struct IconExportView: View {
             if response == .OK, let url = savePanel.url {
                 do {
                     try pngData.write(to: url)
-                    print("✅ 成功导出到: \(url.path)")
+                    Logger.download.info("✅ 成功导出到: \(url.path)")
                 } catch {
-                    print("❌ 保存失败: \(error)")
+                    Logger.download.debug("❌ 保存失败: \(error)")
                 }
             }
         }

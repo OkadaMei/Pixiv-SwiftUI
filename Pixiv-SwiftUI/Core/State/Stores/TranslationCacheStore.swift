@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import CryptoKit
+import os.log
 
 final class TranslationCacheStore {
     static let shared = TranslationCacheStore()
@@ -41,7 +42,7 @@ final class TranslationCacheStore {
                         continuation.resume(returning: nil)
                     }
                 } catch {
-                    print("TranslationCacheStore: Failed to get cache - \(error)")
+                    Logger.cache.warning("TranslationCacheStore: Failed to get cache - \(error.localizedDescription, privacy: .public)")
                     continuation.resume(returning: nil)
                 }
             }
@@ -89,7 +90,7 @@ final class TranslationCacheStore {
                     self.performCleanup()
                 }
             } catch {
-                print("TranslationCacheStore: Failed to save cache - \(error)")
+                Logger.cache.warning("TranslationCacheStore: Failed to save cache - \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -112,9 +113,9 @@ final class TranslationCacheStore {
                 }
 
                 try self.backgroundContext.save()
-                print("TranslationCacheStore: Cleaned up \(toDelete.count) old cache entries")
+                Logger.cache.debug("TranslationCacheStore: Cleaned up \(toDelete.count) old cache entries")
             } catch {
-                print("TranslationCacheStore: Failed to cleanup - \(error)")
+                Logger.cache.warning("TranslationCacheStore: Failed to cleanup - \(error.localizedDescription, privacy: .public)")
             }
         }
     }

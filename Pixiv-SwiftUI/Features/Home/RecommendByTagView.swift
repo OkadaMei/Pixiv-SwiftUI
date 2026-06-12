@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 struct RecommendByTagView: View {
     let target: RecommendByTagTarget
@@ -185,7 +186,7 @@ struct RecommendByTagView: View {
             hasMoreData = fetchIndex < target.illustIds.count
         } catch {
             errorMessage = error.localizedDescription
-            print("Failed to fetch recommended illusts for tag \(target.tag): \(error)")
+            Logger.illust.error("Failed to fetch recommended illusts for tag \(target.tag): \(error)")
         }
     }
 
@@ -217,7 +218,7 @@ struct RecommendByTagView: View {
             fetchIndex = nextIndex
             hasMoreData = fetchIndex < target.illustIds.count
         } catch {
-            print("Failed to load more recommended illusts for tag \(target.tag): \(error)")
+            Logger.illust.error("Failed to load more recommended illusts for tag \(target.tag): \(error)")
         }
     }
 }

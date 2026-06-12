@@ -73,7 +73,7 @@ struct ImageSaver {
         } catch {
             throw ImageSaverError.writeFailed(error.localizedDescription)
         }
-        Logger.download.debug("保存到相册成功")
+        Logger.download.info("保存到相册成功")
         #else
         throw ImageSaverError.permissionDenied
         #endif

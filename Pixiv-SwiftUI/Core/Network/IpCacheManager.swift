@@ -7,7 +7,6 @@ actor IpCacheManager {
     private let memoryCache = NSCache<NSString, NSString>()
     private let userDefaults = UserDefaults.standard
     private let dohClient = DohClient.shared
-    private nonisolated let logger = Logger(subsystem: "com.pixiv.app", category: "Cache")
 
     private let kIPCachePrefix = "pixiv_ip_cache_"
     private let kTTLPrefix = "pixiv_ttl_cache_"
@@ -29,17 +28,17 @@ actor IpCacheManager {
 
     func loadCachedIP(for host: String) -> String? {
         if let cached = memoryCache.object(forKey: cacheKey(for: host) as NSString) as String? {
-            logger.debug("内存缓存命中: \(host, privacy: .public) -> \(cached, privacy: .public)")
+            Logger.cache.debug("内存缓存命中: \(host, privacy: .public) -> \(cached, privacy: .public)")
             return cached
         }
 
         if let userDefaultsIP = userDefaults.string(forKey: cacheKey(for: host)) {
             memoryCache.setObject(userDefaultsIP as NSString, forKey: cacheKey(for: host) as NSString)
-            logger.debug("磁盘缓存命中: \(host, privacy: .public) -> \(userDefaultsIP, privacy: .public)")
+            Logger.cache.debug("磁盘缓存命中: \(host, privacy: .public) -> \(userDefaultsIP, privacy: .public)")
             return userDefaultsIP
         }
 
-        logger.debug("缓存未命中: \(host, privacy: .public)")
+        Logger.cache.debug("缓存未命中: \(host, privacy: .public)")
         return nil
     }
 
@@ -51,7 +50,7 @@ actor IpCacheManager {
         expiryTime[host] = expiry
         userDefaults.set(expiry.timeIntervalSince1970, forKey: ttlKey(for: host))
 
-        logger.debug("更新缓存: \(host, privacy: .public) -> \(ip, privacy: .public), TTL: \(ttl)s, 过期时间: \(expiry)")
+        Logger.cache.debug("更新缓存: \(host, privacy: .public) -> \(ip, privacy: .public), TTL: \(ttl)s, 过期时间: \(expiry)")
     }
 
     func getIP(for host: String) -> String? {
@@ -62,9 +61,9 @@ actor IpCacheManager {
         if let expiry = expiryTime[host] {
             let should = Date() >= expiry
             if should {
-                logger.debug("缓存已过期 (内存): \(host, privacy: .public)")
+                Logger.cache.debug("缓存已过期 (内存): \(host, privacy: .public)")
             } else {
-                logger.debug("缓存有效 (内存): \(host, privacy: .public), 剩余: \(expiry.timeIntervalSinceNow)s")
+                Logger.cache.debug("缓存有效 (内存): \(host, privacy: .public), 剩余: \(expiry.timeIntervalSinceNow)s")
             }
             return should
         }
@@ -76,9 +75,9 @@ actor IpCacheManager {
             expiryTime[host] = expiry
             let should = Date() >= expiry
             if should {
-                logger.debug("缓存已过期 (磁盘): \(host, privacy: .public)")
+                Logger.cache.debug("缓存已过期 (磁盘): \(host, privacy: .public)")
             } else {
-                logger.debug("缓存有效 (磁盘): \(host, privacy: .public), 剩余: \(expiry.timeIntervalSinceNow)s")
+                Logger.cache.debug("缓存有效 (磁盘): \(host, privacy: .public), 剩余: \(expiry.timeIntervalSinceNow)s")
             }
             return should
         }
@@ -87,9 +86,9 @@ actor IpCacheManager {
     }
 
     func queryAndCacheIP(for host: String) async -> String? {
-        logger.debug("发起 DoH 查询: \(host, privacy: .public)")
+        Logger.cache.debug("发起 DoH 查询: \(host, privacy: .public)")
         guard let result = try? await dohClient.queryDNS(for: host) else {
-            logger.error("DoH 查询失败: \(host, privacy: .public)")
+            Logger.cache.error("DoH 查询失败: \(host, privacy: .public)")
             return nil
         }
 
@@ -106,16 +105,16 @@ actor IpCacheManager {
     }
 
     func refreshAllIfNeeded() async {
-        logger.debug("检查是否需要刷新 DNS 缓存")
+        Logger.cache.debug("检查是否需要刷新 DNS 缓存")
         let hosts = PixivEndpoint.imageHosts
         for host in hosts where shouldRefresh(for: host) {
-            logger.debug("需要刷新: \(host, privacy: .public)")
+            Logger.cache.debug("需要刷新: \(host, privacy: .public)")
             _ = await queryAndCacheIP(for: host)
         }
     }
 
     func refreshAll() async {
-        logger.debug("刷新所有 DNS 缓存")
+        Logger.cache.debug("刷新所有 DNS 缓存")
         let hosts = PixivEndpoint.imageHosts
         for host in hosts {
             _ = await queryAndCacheIP(for: host)
@@ -127,7 +126,7 @@ actor IpCacheManager {
         userDefaults.removeObject(forKey: cacheKey(for: host))
         userDefaults.removeObject(forKey: ttlKey(for: host))
         expiryTime.removeValue(forKey: host)
-        logger.debug("清除缓存: \(host, privacy: .public)")
+        Logger.cache.debug("清除缓存: \(host, privacy: .public)")
     }
 
     func clearAllCache() {

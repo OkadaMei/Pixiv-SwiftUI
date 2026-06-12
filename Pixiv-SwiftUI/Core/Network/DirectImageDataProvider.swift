@@ -1,5 +1,6 @@
 import Foundation
 import Kingfisher
+import os.log
 
 final class DirectImageDataProvider: ImageDataProvider {
     let url: URL
@@ -20,12 +21,12 @@ final class DirectImageDataProvider: ImageDataProvider {
         loadingQueue.async {
             Task {
                 do {
-                    print("[DirectImageDataProvider] 开始加载: \(self.url.absoluteString)")
+                    Logger.network.debug("开始加载: \(self.url.absoluteString)")
                     let data = try await self.downloadImageData()
-                    print("[DirectImageDataProvider] 加载成功: \(self.url.absoluteString), bytes=\(data.count)")
+                    Logger.network.info("加载成功: \(self.url.absoluteString), bytes=\(data.count)")
                     handler(.success(data))
                 } catch {
-                    print("[DirectImageDataProvider] 加载失败: \(self.url.absoluteString), error=\(error.localizedDescription)")
+                    Logger.network.error("加载失败: \(self.url.absoluteString), error=\(error.localizedDescription)")
                     handler(.failure(error))
                 }
             }

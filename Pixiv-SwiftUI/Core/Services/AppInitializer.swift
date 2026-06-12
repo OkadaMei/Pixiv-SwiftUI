@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Observation
+import os.log
 
 /// 应用启动初始化器，负责协调启动过程中的各种任务
 @MainActor
@@ -68,7 +69,7 @@ final class AppInitializer {
 
         Task {
             if let updateInfo = await UpdateChecker.shared.checkForUpdate() {
-                print("[Update] Current: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"), Latest: \(updateInfo.version), Newer: \(updateInfo.isNewerThanCurrent)")
+                Logger.updater.debug("Current: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"), Latest: \(updateInfo.version), Newer: \(updateInfo.isNewerThanCurrent)")
                 await MainActor.run {
                     if updateInfo.isNewerThanCurrent {
                         NotificationCenter.default.post(

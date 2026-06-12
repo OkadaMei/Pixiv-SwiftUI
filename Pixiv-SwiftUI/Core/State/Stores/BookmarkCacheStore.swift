@@ -94,7 +94,7 @@ final class BookmarkCacheStore {
             Logger.bookmark.debug("加载缓存记录: \(self.cachedBookmarks.count) 条")
             #endif
         } catch {
-            Logger.bookmark.error("加载缓存失败: \(error)")
+            Logger.bookmark.warning("加载缓存失败: \(error)")
             cachedBookmarks = []
         }
     }
@@ -149,7 +149,7 @@ final class BookmarkCacheStore {
             try context.save()
             loadCachedBookmarks(for: ownerId)
         } catch {
-            Logger.bookmark.error("添加/更新缓存失败: \(error)")
+            Logger.bookmark.warning("添加/更新缓存失败: \(error)")
         }
     }
 
@@ -179,7 +179,7 @@ final class BookmarkCacheStore {
             Logger.bookmark.debug("批量更新缓存: \(illusts.count) 条")
             #endif
         } catch {
-            Logger.bookmark.error("批量更新缓存失败: \(error)")
+            Logger.bookmark.warning("批量更新缓存失败: \(error)")
         }
     }
 
@@ -201,7 +201,7 @@ final class BookmarkCacheStore {
                 }
             }
         } catch {
-            Logger.bookmark.error("删除缓存失败: \(error)")
+            Logger.bookmark.warning("删除缓存失败: \(error)")
         }
     }
 
@@ -227,7 +227,7 @@ final class BookmarkCacheStore {
             Logger.bookmark.debug("标记 \(illustIds.count) 个作品为已删除")
             #endif
         } catch {
-            Logger.bookmark.error("标记删除失败: \(error)")
+            Logger.bookmark.warning("标记删除失败: \(error)")
         }
     }
 
@@ -246,7 +246,7 @@ final class BookmarkCacheStore {
                 loadCachedBookmarks(for: ownerId)
             }
         } catch {
-            Logger.bookmark.error("恢复删除标记失败: \(error)")
+            Logger.bookmark.warning("恢复删除标记失败: \(error)")
         }
     }
 
@@ -265,7 +265,7 @@ final class BookmarkCacheStore {
                 try context.save()
             }
         } catch {
-            Logger.bookmark.error("更新预取状态失败: \(error)")
+            Logger.bookmark.warning("更新预取状态失败: \(error)")
         }
     }
 
@@ -333,7 +333,7 @@ final class BookmarkCacheStore {
             } while privateNextUrl != nil
 
             #if DEBUG
-            Logger.bookmark.debug("获取完成，共 \(allIllusts.count) 个收藏")
+            Logger.bookmark.info("获取完成，共 \(allIllusts.count) 个收藏")
             #endif
 
             await MainActor.run {
@@ -374,7 +374,7 @@ final class BookmarkCacheStore {
                             allPages: allPages
                         )
                     } catch {
-                        Logger.bookmark.error("预取图片失败: \(illust.id) - \(error)")
+                        Logger.bookmark.warning("预取图片失败: \(illust.id) - \(error)")
                         updatePreloadStatus(
                             illustId: illust.id,
                             ownerId: ownerId,
@@ -400,14 +400,14 @@ final class BookmarkCacheStore {
             }
 
             #if DEBUG
-            Logger.bookmark.debug("全量同步完成")
+            Logger.bookmark.info("全量同步完成")
             #endif
 
         } catch {
             await MainActor.run {
                 syncState = .failed(error.localizedDescription)
             }
-            Logger.bookmark.error("全量同步失败: \(error)")
+            Logger.bookmark.warning("全量同步失败: \(error)")
         }
     }
 
@@ -438,7 +438,7 @@ final class BookmarkCacheStore {
         do {
             try dataContainer.mainContext.save()
         } catch {
-            Logger.bookmark.error("更新预取状态失败: \(error)")
+            Logger.bookmark.warning("更新预取状态失败: \(error)")
         }
     }
 
@@ -462,7 +462,7 @@ final class BookmarkCacheStore {
                 await calculateCacheSize()
             }
         } catch {
-            Logger.bookmark.error("清理缓存失败: \(error)")
+            Logger.bookmark.warning("清理缓存失败: \(error)")
         }
     }
 }

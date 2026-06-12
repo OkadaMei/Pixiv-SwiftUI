@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Observation
+import os.log
 
 @MainActor
 @Observable
@@ -55,7 +56,7 @@ final class MangaStore {
             self.nextUrlRecommended = result.nextUrl
             cache.set((result.illusts, result.nextUrl), forKey: cacheKeyRecommended, expiration: expiration)
         } catch {
-            print("Failed to load recommended manga: \(error)")
+            Logger.general.error("Failed to load recommended manga: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -94,7 +95,7 @@ final class MangaStore {
             self.nextUrlWatchlist = result.nextUrl
             cache.set((result.series, result.nextUrl), forKey: cacheKeyWatchlist, expiration: expiration)
         } catch {
-            print("Failed to load watchlist manga: \(error)")
+            Logger.general.error("Failed to load watchlist manga: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -123,7 +124,7 @@ final class MangaStore {
                 watchlistSeries[index].isFollowed = true
             }
         } catch {
-            print("Failed to add series: \(error)")
+            Logger.general.error("Failed to add series: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -134,7 +135,7 @@ final class MangaStore {
                 watchlistSeries[index].isFollowed = false
             }
         } catch {
-            print("Failed to remove series: \(error)")
+            Logger.general.error("Failed to remove series: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

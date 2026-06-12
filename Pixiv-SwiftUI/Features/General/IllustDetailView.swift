@@ -2,6 +2,7 @@ import SwiftUI
 import Kingfisher
 import TranslationKit
 import UniformTypeIdentifiers
+import os.log
 
 #if os(iOS)
 import UIKit
@@ -642,7 +643,7 @@ struct IllustDetailView: View {
     }
 
     private func saveUgoira() async {
-        print("[IllustDetailView] 开始保存动图: \(illust.id)")
+        Logger.illust.debug("开始保存动图: \(illust.id)")
         await DownloadStore.shared.addUgoiraTask(illust)
     }
 
@@ -758,7 +759,7 @@ struct IllustDetailView: View {
                     preloadAllImages()
                 }
             } catch {
-                print("[fetchDetail] FAILED: \(error)")
+                Logger.illust.debug("[fetchDetail] FAILED: \(error)")
             }
         }
     }

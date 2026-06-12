@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import os.log
 
 final class DataContainer {
     static let shared = DataContainer()
@@ -51,7 +52,7 @@ final class DataContainer {
             self.mainContext = ModelContext(modelContainer)
         } catch {
             // 如果初始化失败，尝试使用内存存储作为回退，避免应用直接崩溃
-            print("警告: 无法初始化持久化 SwiftData 容器: \(error)。尝试使用内存模式。")
+            Logger.database.error("警告: 无法初始化持久化 SwiftData 容器: \(error.localizedDescription, privacy: .public)。尝试使用内存模式。")
             let memConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             do {
                 self.modelContainer = try ModelContainer(for: schema, configurations: [memConfig])

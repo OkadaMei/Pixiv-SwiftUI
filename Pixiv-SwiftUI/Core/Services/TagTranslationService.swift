@@ -5,8 +5,6 @@ import os.log
 final class TagTranslationService {
     static let shared = TagTranslationService()
 
-    private let logger = Logger(subsystem: "com.pixiv.app", category: "TagTranslation")
-
     /// [tagName: [languageCode: translation]]
     private var translations: [String: [String: String]] = [:]
     private(set) var timestamp: String = ""
@@ -32,7 +30,7 @@ final class TagTranslationService {
     private func loadTranslations() {
         guard let url = Bundle.main.url(forResource: "tags", withExtension: "json"),
               let data = try? Data(contentsOf: url) else {
-            logger.error("Failed to load tags.json from Bundle")
+            Logger.tagTranslation.error("Failed to load tags.json from Bundle")
             return
         }
 
@@ -41,9 +39,9 @@ final class TagTranslationService {
             self.translations = tagTranslations.tags
             self.timestamp = tagTranslations.timestamp
             self.isLoaded = true
-            logger.info("Successfully loaded \(self.translations.count) tag translations")
+            Logger.tagTranslation.info("Successfully loaded \(self.translations.count) tag translations")
         } catch {
-            logger.error("Failed to decode tags.json: \(error.localizedDescription)")
+            Logger.tagTranslation.error("Failed to decode tags.json: \(error.localizedDescription)")
         }
     }
 

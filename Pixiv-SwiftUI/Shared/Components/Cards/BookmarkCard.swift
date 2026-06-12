@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 /// 收藏卡片组件（支持显示已删除标记和缓存状态）
 struct BookmarkCard: View, Equatable {
@@ -366,7 +367,7 @@ struct BookmarkCard: View, Equatable {
                                     )
                                 }
                             } catch {
-                                print("预取图片失败: \(error)")
+                                Logger.cache.warning("预取图片失败: \(error)")
                             }
                         }
                     }
@@ -396,7 +397,7 @@ struct BookmarkCard: View, Equatable {
                                     )
                                 }
                             } catch {
-                                print("预取图片失败: \(error)")
+                                Logger.cache.warning("预取图片失败: \(error)")
                             }
                         }
                     }

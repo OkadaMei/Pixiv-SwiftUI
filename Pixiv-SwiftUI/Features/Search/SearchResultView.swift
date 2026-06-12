@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 private struct SearchFilterState: Equatable {
     var bookmarkFilter: BookmarkFilterOption = .none
@@ -618,7 +619,7 @@ struct SearchResultView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 8)
                     .onChange(of: selectedTab) { _, newValue in
-                        print("[SearchResultView] selectedTab changed to \(newValue)")
+                        Logger.search.debug("selectedTab changed to \(newValue)")
                     }
 
                     resultContent(columnCount: dynamicColumnCount, waterfallWidth: waterfallWidth, userColumnCount: userColumnCount)
@@ -651,7 +652,7 @@ struct SearchResultView: View {
                 recalculateShouldBlurFlags()
             }
             .onChange(of: selectedTab) { _, newValue in
-                print("[SearchResultView] selectedTab changed to \(newValue)")
+                Logger.search.debug("selectedTab changed to \(newValue)")
                 if newValue == 1 {
                     Task {
                         await performNovelSearch()
@@ -659,20 +660,20 @@ struct SearchResultView: View {
                 }
             }
             .onAppear {
-                print("[SearchResultView] Appeared: word='\(word)', viewId=\(viewId)")
+                Logger.search.debug("Appeared: word='\(word)', viewId=\(viewId)")
             }
             .task {
-                print("[SearchResultView] task started: word='\(word)', viewId=\(viewId)")
+                Logger.search.debug("task started: word='\(word)', viewId=\(viewId)")
                 if store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
-                    print("[SearchResultView] performing search")
+                    Logger.search.debug("performing search")
                     await performIllustSearch()
                 } else {
-                    print("[SearchResultView] skipping search - results already exist")
+                    Logger.search.debug("skipping search - results already exist")
                 }
             }
             .onDisappear {
                 store.cancelBackgroundTasks()
-                print("[SearchResultView] disappeared: word='\(word)', viewId=\(viewId)")
+                Logger.search.debug("disappeared: word='\(word)', viewId=\(viewId)")
             }
             .onFilterSettingsChange(from: settingStore, perform: recalculateShouldBlurFlags)
         }

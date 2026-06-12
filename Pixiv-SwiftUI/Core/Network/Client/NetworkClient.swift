@@ -272,7 +272,7 @@ final class NetworkClient {
                 try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
-                Logger.token.debug("Token 刷新成功，重试请求")
+                Logger.token.info("Token 刷新成功，重试请求")
                 #endif
 
                 if retryCount < 1 {
@@ -328,7 +328,7 @@ final class NetworkClient {
                 try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
-                Logger.token.debug("[直连] Token 刷新成功，重试请求")
+                Logger.token.info("[直连] Token 刷新成功，重试请求")
                 #endif
 
                 if retryCount < 1 {
@@ -388,7 +388,7 @@ final class NetworkClient {
                 try await SessionManager.shared.refreshTokenIfNeeded()
 
                 #if DEBUG
-                Logger.token.debug("[直连][POST] Token 刷新成功，重试请求")
+                Logger.token.info("[直连][POST] Token 刷新成功，重试请求")
                 #endif
 
                 if retryCount < 1 {
@@ -583,17 +583,17 @@ final class NetworkClient {
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     if let illusts = json["illusts"] as? [Any] {
-                        Logger.network.debug("成功获取 \(illusts.count) 个插画")
+                        Logger.network.info("成功获取 \(illusts.count) 个插画")
                     } else if let userPreviews = json["user_previews"] as? [Any] {
                         Logger.network.debug("成功获取 \(userPreviews.count) 个用户预览")
                     } else {
-                        Logger.network.debug("请求成功")
+                        Logger.network.info("请求成功")
                     }
                 } else {
-                    Logger.network.debug("请求成功")
+                    Logger.network.info("请求成功")
                 }
             } catch {
-                Logger.network.debug("请求成功")
+                Logger.network.info("请求成功")
             }
         #endif
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import os.log
 import Security
 import Gzip
 
@@ -88,13 +89,13 @@ final class DirectConnection: Sendable {
         // 根据健康度对 IP 进行排序
         let ips = await health.rankIPs(rawIPs)
         let requestTimeout = timeout ?? defaultTimeout
-        print("[DirectConnection] 开始请求: \(method) \(host)\(path)")
+        Logger.network.debug("开始请求: \(method) \(host)\(path)")
 
         var lastError: Error?
         for ip in ips {
             try Task.checkCancellation()
             do {
-                print("[DirectConnection] 正在尝试 IP: \(ip)")
+                Logger.network.debug("正在尝试 IP: \(ip, privacy: .public)")
                 let result = try await performRequest(
                     ip: ip,
                     port: endpoint.port,
@@ -108,25 +109,25 @@ final class DirectConnection: Sendable {
                 )
                 // 成功则汇报健康
                 await health.reportSuccess(ip: ip)
-                print("[DirectConnection] IP \(ip) 请求成功")
+                Logger.network.info("IP \(ip, privacy: .public) 请求成功")
                 return result
             } catch {
                 if error is CancellationError || (error as? DirectConnectionError) == .cancelled {
                     throw error
                 }
 
-                print("[DirectConnection] IP \(ip) 失败，错误: \(error.localizedDescription)")
+                Logger.network.warning("IP \(ip, privacy: .public) 失败，错误: \(error.localizedDescription, privacy: .public)")
                 // 失败则降级
                 await health.reportFailure(ip: ip)
                 lastError = error
 
                 if let dcError = error as? DirectConnectionError {
-                    print("[DirectConnection] DirectConnectionError: \(dcError)")
+                    Logger.network.warning("DirectConnectionError: \(dcError)")
                 }
 
                 // 如果是证书错误或协议错误，可能不是 IP 的锅，但通常这里是网络连接超时或彻底断开
                 if let nwError = error as? NWError {
-                    print("[DirectConnection] NWError Details: \(nwError)")
+                    Logger.network.warning("NWError Details: \(nwError)")
                 }
                 continue
             }
@@ -164,13 +165,13 @@ final class DirectConnection: Sendable {
         let rawIPs = await endpoint.getIPList()
         let ips = await health.rankIPs(rawIPs)
         let requestTimeout = timeout ?? defaultTimeout
-        print("[DirectConnection] 开始下载: \(host)\(path)")
+        Logger.network.debug("开始下载: \(host)\(path)")
 
         var lastError: Error?
         for ip in ips {
             try Task.checkCancellation()
             do {
-                print("[DirectConnection] 正在尝试下载 IP: \(ip)")
+                Logger.network.debug("正在尝试下载 IP: \(ip, privacy: .public)")
                 let response = try await performDownload(
                     ip: ip,
                     port: endpoint.port,
@@ -183,23 +184,23 @@ final class DirectConnection: Sendable {
                     onProgress: onProgress
                 )
                 await health.reportSuccess(ip: ip)
-                print("[DirectConnection] IP \(ip) 下载成功")
+                Logger.network.info("IP \(ip, privacy: .public) 下载成功")
                 return response
             } catch {
                 if error is CancellationError || (error as? DirectConnectionError) == .cancelled {
                     throw error
                 }
 
-                print("[DirectConnection] IP \(ip) 下载失败，错误: \(error.localizedDescription)")
+                Logger.network.warning("IP \(ip, privacy: .public) 下载失败，错误: \(error.localizedDescription, privacy: .public)")
                 await health.reportFailure(ip: ip)
                 lastError = error
 
                 if let dcError = error as? DirectConnectionError {
-                    print("[DirectConnection] DirectConnectionError: \(dcError)")
+                    Logger.network.warning("DirectConnectionError: \(dcError)")
                 }
 
                 if let nwError = error as? NWError {
-                    print("[DirectConnection] NWError Details: \(nwError)")
+                    Logger.network.warning("NWError Details: \(nwError)")
                 }
                 continue
             }
@@ -283,7 +284,7 @@ final class DirectConnection: Sendable {
                 }
 
                 timeoutTimer.setEventHandler {
-                    print("[DirectConnection] \(ip) 请求超时")
+                    Logger.network.warning("\\(ip, privacy: .public) 请求超时")
                     finish(with: .failure(DirectConnectionError.timeout))
                 }
                 timeoutTimer.resume()
@@ -324,7 +325,7 @@ final class DirectConnection: Sendable {
 
                     connection.send(content: requestData, completion: .contentProcessed { sendError in
                         if let error = sendError {
-                            print("[DirectConnection] \(ip) 发送失败: \(error)")
+                            Logger.network.warning("发送失败: \(error)")
                             finish(with: .failure(error))
                         }
                     })
@@ -355,7 +356,7 @@ final class DirectConnection: Sendable {
                         }
 
                         if let error = error {
-                            print("[DirectConnection] \(ip) 接收错误: \(error)")
+                            Logger.network.warning("接收错误: \(error)")
                             finish(with: .failure(error))
                             return
                         }
@@ -458,7 +459,7 @@ final class DirectConnection: Sendable {
                 }
 
                 timeoutTimer.setEventHandler {
-                    print("[DirectConnection] \(ip) 下载超时")
+                    Logger.network.warning("\\(ip, privacy: .public) 下载超时")
                     finish(with: .failure(DirectConnectionError.timeout))
                 }
                 timeoutTimer.resume()
@@ -493,7 +494,7 @@ final class DirectConnection: Sendable {
                     let requestData = Data(request.utf8)
                     connection.send(content: requestData, completion: .contentProcessed { sendError in
                         if let error = sendError {
-                            print("[DirectConnection] \(ip) 下载请求发送失败: \(error)")
+                            Logger.network.warning("下载请求发送失败: \(error)")
                             finish(with: .failure(error))
                         }
                     })
@@ -527,7 +528,7 @@ final class DirectConnection: Sendable {
                         }
 
                         if let error = error {
-                            print("[DirectConnection] \(ip) 下载接收错误: \(error)")
+                            Logger.network.warning("下载接收错误: \(error)")
                             finish(with: .failure(error))
                             return
                         }
@@ -624,7 +625,7 @@ final class DirectConnection: Sendable {
                     bodyData = try bodyData.gunzipped()
                 }
             } catch {
-                print("[DirectConnection] Gzip Error: \(error), size: \(bodyData.count)")
+                Logger.network.error("Gzip Error: \(error), size: \(bodyData.count)")
                 throw DirectConnectionError.gzipError
             }
         }

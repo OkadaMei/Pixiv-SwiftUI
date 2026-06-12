@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 struct IllustDetailRelatedSection: View {
     let illustId: Int
@@ -105,7 +106,7 @@ struct IllustDetailRelatedSection: View {
         }
         .onAppear {
             recalculateCaches()
-            print("[IllustDetailRelatedSection] onAppear - relatedCount: \(relatedIllusts.count), isLoggedIn: \(isLoggedIn)")
+            Logger.illust.debug("onAppear - relatedCount: \(relatedIllusts.count), isLoggedIn: \(isLoggedIn)")
             if isLoggedIn && relatedIllusts.isEmpty && !isLoadingRelated {
                 fetchRelatedIllusts()
             }
@@ -208,7 +209,7 @@ struct IllustDetailRelatedSection: View {
                             ProgressView()
                                 .id(relatedNextUrl)
                                 .onAppear {
-                                    print("[IllustDetailRelatedSection] loadMore triggered - nextUrl: \(relatedNextUrl ?? "nil")")
+                                    Logger.illust.debug("loadMore triggered - nextUrl: \(relatedNextUrl ?? "nil")")
                                     loadMoreRelatedIllusts()
                                 }
                         }
@@ -230,7 +231,7 @@ struct IllustDetailRelatedSection: View {
     }
 
     private func fetchRelatedIllusts() {
-        print("[IllustDetailRelatedSection] fetchInitial called for id: \(illustId)")
+        Logger.illust.debug("fetchInitial called for id: \(illustId)")
         isLoadingRelated = true
         relatedIllustError = nil
         relatedNextUrl = nil
@@ -239,7 +240,7 @@ struct IllustDetailRelatedSection: View {
         Task {
             do {
                 let result = try await PixivAPI.shared.illustAPI.getRelatedIllusts(illustId: illustId)
-                print("[IllustDetailRelatedSection] API returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
+                Logger.illust.debug("API returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
                 await MainActor.run {
                     // 过滤掉当前插画
                     self.relatedIllusts = result.illusts.filter { $0.id != illustId }
@@ -248,7 +249,7 @@ struct IllustDetailRelatedSection: View {
                     self.isLoadingRelated = false
                 }
             } catch {
-                print("[IllustDetailRelatedSection] API Error: \(error.localizedDescription)")
+                Logger.illust.error("\(error.localizedDescription)")
                 await MainActor.run {
                     self.relatedIllustError = error.localizedDescription
                     self.isLoadingRelated = false
@@ -259,25 +260,25 @@ struct IllustDetailRelatedSection: View {
 
     private func loadMoreRelatedIllusts() {
         guard let nextUrl = relatedNextUrl, !isFetchingMoreRelated && hasMoreRelated else {
-            print("[IllustDetailRelatedSection] loadMore skipped: nextUrl=\(relatedNextUrl ?? "nil"), isFetching=\(isFetchingMoreRelated), hasMore=\(hasMoreRelated)")
+            Logger.illust.debug("loadMore skipped: nextUrl=\(relatedNextUrl ?? "nil"), isFetching=\(isFetchingMoreRelated), hasMore=\(hasMoreRelated)")
             return
         }
 
-        print("[IllustDetailRelatedSection] loadMore starting for nextUrl: \(nextUrl)")
+        Logger.illust.debug("loadMore starting for nextUrl: \(nextUrl)")
         isFetchingMoreRelated = true
         loadMoreError = nil
 
         Task {
             do {
                 let result = try await PixivAPI.shared.illustAPI.getIllustsByURL(nextUrl)
-                print("[IllustDetailRelatedSection] loadMore returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
+                Logger.illust.debug("loadMore returned \(result.illusts.count) items, nextUrl: \(result.nextUrl ?? "nil")")
                 await MainActor.run {
                     // 过滤掉已存在的和当前的插画
                     let newIllusts = result.illusts.filter { new in
                         !self.relatedIllusts.contains(where: { $0.id == new.id }) && new.id != illustId
                     }
                     if newIllusts.isEmpty && result.nextUrl != nil {
-                        print("[IllustDetailRelatedSection] all filtered, retrying next page")
+                        Logger.illust.debug("all filtered, retrying next page")
                         self.relatedNextUrl = result.nextUrl
                         self.isFetchingMoreRelated = false
                         loadMoreRelatedIllusts()
@@ -286,11 +287,11 @@ struct IllustDetailRelatedSection: View {
                         self.relatedNextUrl = result.nextUrl
                         self.hasMoreRelated = result.nextUrl != nil
                         self.isFetchingMoreRelated = false
-                        print("[IllustDetailRelatedSection] Added \(newIllusts.count) items, total: \(relatedIllusts.count), nextUrl exists: \(hasMoreRelated)")
+                        Logger.illust.debug("Added \(newIllusts.count) items, total: \(relatedIllusts.count), nextUrl exists: \(hasMoreRelated)")
                     }
                 }
             } catch {
-                print("[IllustDetailRelatedSection] loadMore Error: \(error.localizedDescription)")
+                Logger.illust.error("loadMore Error: \(error.localizedDescription)")
                 await MainActor.run {
                     self.loadMoreError = error.localizedDescription
                     self.isFetchingMoreRelated = false

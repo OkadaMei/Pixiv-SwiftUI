@@ -1,5 +1,6 @@
 import Foundation
 import Kingfisher
+import os.log
 
 /// 收藏缓存图片服务
 actor BookmarkCacheService {
@@ -47,9 +48,7 @@ actor BookmarkCacheService {
 
         // 检查是否已缓存
         if bookmarkCache.isCached(forKey: key) {
-            #if DEBUG
-            print("[BookmarkCacheService] 已缓存，跳过: \(urlString.suffix(50))")
-            #endif
+            Logger.cache.debug("已缓存，跳过: \(urlString.suffix(50))")
             return
         }
 
@@ -73,13 +72,9 @@ actor BookmarkCacheService {
                 with: source,
                 options: options
             )
-            #if DEBUG
-            print("[BookmarkCacheService] 预取成功: \(urlString.suffix(50))")
-            #endif
+            Logger.cache.info("预取成功: \(urlString.suffix(50))")
         } catch {
-            #if DEBUG
-            print("[BookmarkCacheService] 预取失败: \(error.localizedDescription)")
-            #endif
+            Logger.cache.error("预取失败: \(error.localizedDescription)")
             throw error
         }
     }
@@ -172,9 +167,7 @@ actor BookmarkCacheService {
 
     /// 删除指定作品的图片缓存
     func removeImageCache(for illustId: Int) async {
-        #if DEBUG
-        print("[BookmarkCacheService] 删除作品 \(illustId) 的图片缓存")
-        #endif
+        Logger.cache.debug("删除作品 \(illustId) 的图片缓存")
     }
 
     /// 计算缓存大小
@@ -199,9 +192,7 @@ actor BookmarkCacheService {
                 continuation.resume()
             }
         }
-        #if DEBUG
-        print("[BookmarkCacheService] 已清理所有图片缓存")
-        #endif
+        Logger.cache.debug("已清理所有图片缓存")
     }
 
     /// 获取缓存实例（用于 CachedAsyncImage）

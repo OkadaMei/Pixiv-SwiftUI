@@ -1,5 +1,5 @@
 import Foundation
-import ImageIO
+import os.log
 import UniformTypeIdentifiers
 import Kingfisher
 
@@ -58,7 +58,7 @@ struct GIFExporter {
 
             } catch {
                 failedFrames += 1
-                print("[GIFExporter] 帧 \(index) 处理失败: \(error)")
+                Logger.download.debug("帧 \(index) 处理失败: \(error)")
             }
         }
 
@@ -66,7 +66,7 @@ struct GIFExporter {
             throw GIFExportError.allFramesFailed
         }
 
-        print("[GIFExporter] 成功处理 \(processedFrames.count) 帧，失败 \(failedFrames) 帧")
+        Logger.download.info("成功处理 \(processedFrames.count) 帧，失败 \(failedFrames) 帧")
 
         guard let destination = CGImageDestinationCreateWithURL(
             outputURL as CFURL,
@@ -99,7 +99,7 @@ struct GIFExporter {
             throw GIFExportError.finalizationFailed
         }
 
-        print("[GIFExporter] GIF 导出成功: \(outputURL)")
+        Logger.download.info("GIF 导出成功: \(outputURL)")
     }
 
     private static func getImageData(from url: URL) throws -> Data {
@@ -115,7 +115,7 @@ struct GIFExporter {
             do {
                 return try Data(contentsOf: fileURL)
             } catch {
-                print("[GIFExporter] 从磁盘缓存读取失败: \(error)")
+                Logger.download.debug("从磁盘缓存读取失败: \(error)")
                 throw GIFExportError.imageLoadFailed
             }
         } else {

@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// Pixiv Ajax API 实现
 /// 
@@ -110,11 +111,9 @@ final class AjaxAPI {
             return
         }
 
-        #if DEBUG
         let prefix = String(html.prefix(240))
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-        print("[AjaxAPI] Failed to extract CSRF token. htmlLength=\(html.count), hasNextData=\(html.contains("__NEXT_DATA__")), prefix=\(prefix)")
-        #endif
+        Logger.network.debug("Failed to extract CSRF token. htmlLength=\(html.count), hasNextData=\(html.contains("__NEXT_DATA__")), prefix=\(prefix)")
 
         throw NetworkError.invalidResponse
     }
@@ -146,7 +145,8 @@ final class AjaxAPI {
             throw NetworkError.invalidURL
         }
 
-        print("[AjaxAPI] Fetching search suggestion with cookies: \(cookieHeaderValue ?? "None")")
+        let cookieValue = cookieHeaderValue ?? "None"
+        Logger.network.debug("Fetching search suggestion with cookies: \(cookieValue, privacy: .public)")
 
         let response = try await client.get(
             from: url,

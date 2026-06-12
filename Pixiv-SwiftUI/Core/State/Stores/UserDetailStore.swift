@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Observation
+import os.log
 
 @MainActor
 @Observable
@@ -113,7 +114,7 @@ final class UserDetailStore {
             cache.set(fetchedDetail, forKey: detailCacheKey, expiration: expiration)
         } catch {
             self.error = AppError.unknown(error)
-            print("Error fetching user detail: \(error)")
+            Logger.user.error("Error fetching user detail: \(error.localizedDescription, privacy: .public)")
         }
 
         isLoadingDetail = false
@@ -135,7 +136,7 @@ final class UserDetailStore {
             self.nextIllustsUrl = nextUrl
         } catch {
             self.error = AppError.unknown(error)
-            print("Error loading more illusts: \(error)")
+            Logger.user.error("Error loading more illusts: \(error.localizedDescription, privacy: .public)")
         }
 
         isLoadingMoreIllusts = false
@@ -153,7 +154,7 @@ final class UserDetailStore {
             self.nextMangasUrl = nextUrl
         } catch {
             self.error = AppError.unknown(error)
-            print("Error loading more mangas: \(error)")
+            Logger.user.error("Error loading more mangas: \(error.localizedDescription, privacy: .public)")
         }
 
         isLoadingMoreMangas = false
@@ -171,7 +172,7 @@ final class UserDetailStore {
             self.nextBookmarksUrl = response.nextUrl
         } catch {
             self.error = AppError.unknown(error)
-            print("Error loading more bookmarks: \(error)")
+            Logger.user.error("Error loading more bookmarks: \(error.localizedDescription, privacy: .public)")
         }
 
         isLoadingMoreBookmarks = false
@@ -189,7 +190,7 @@ final class UserDetailStore {
             self.nextNovelsUrl = nextUrl
         } catch {
             self.error = AppError.unknown(error)
-            print("Error loading more novels: \(error)")
+            Logger.user.error("Error loading more novels: \(error.localizedDescription, privacy: .public)")
         }
 
         isLoadingMoreNovels = false
