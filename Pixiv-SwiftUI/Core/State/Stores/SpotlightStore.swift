@@ -7,7 +7,7 @@ final class SpotlightStore {
     static let shared = SpotlightStore()
 
     private let api = SpotlightAPI()
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let userDefaults = UserDefaults.standard
     private let expiration: CacheExpiration = .hours(23)
 

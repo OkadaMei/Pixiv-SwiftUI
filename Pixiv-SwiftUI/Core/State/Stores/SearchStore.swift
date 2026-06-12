@@ -24,18 +24,24 @@ class SearchStore {
     private var cancellables = Set<AnyCancellable>()
     private let searchTextSubject = PassthroughSubject<String, Never>()
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol
+    private let authSession: AuthSessionProtocol
     private let suggestionManager = SearchSuggestionManager.shared
 
     private let trendTagsExpiration: CacheExpiration = .hours(1)
     private let recommendedTagsExpiration: CacheExpiration = .hours(1)
 
     private var historyKey: String {
-        let userId = AccountStore.shared.currentUserId
+        let userId = authSession.currentUserId
         return "SearchHistoryTags_\(userId)"
     }
 
-    init() {
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        cache: CacheStorageProtocol = CacheManager.shared
+    ) {
+        self.authSession = authSession
+        self.cache = cache
         loadSearchHistory()
 
         searchTextSubject
@@ -51,6 +57,15 @@ class SearchStore {
                 }
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.addObserver(
+            forName: .accountDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.clearMemoryCache()
+            self?.loadSearchHistory()
+        }
     }
 
     func loadSearchHistory() {
@@ -130,7 +145,7 @@ class SearchStore {
             return
         }
 
-        guard AccountStore.shared.isLoggedIn else {
+        guard authSession.isLoggedIn else {
             Logger.search.debug("Skip fetching trend tags in guest mode")
             return
         }
@@ -150,7 +165,7 @@ class SearchStore {
     func fetchRecommendedTags(forceRefresh: Bool = false) async {
         // 推荐标签 / 为你推荐标签依赖 Pixiv Web Ajax 会话（cookies）。
         // 没有有效的 Web 登录时不要请求，也不要用热门标签兜底，避免“推荐=热门”的错乱。
-        guard AccountStore.shared.isWebLoggedIn else {
+        guard authSession.isWebLoggedIn else {
             Logger.search.debug("Skip fetching recommended tags: Web(Ajax) not logged in")
             return
         }
@@ -261,7 +276,7 @@ class SearchStore {
             // Ajax 失败时不做热门标签兜底：避免推荐内容错误地变成热门标签。
             // 保留当前内存中的推荐数据（可能来自上一次成功或缓存命中）。
             Logger.search.error("Failed to fetch recommended tags via Ajax: \(error.localizedDescription, privacy: .public)")
-            Logger.search.debug("Ajax state: isLoggedIn=\(AccountStore.shared.isLoggedIn), isWebLoggedIn=\(AccountStore.shared.isWebLoggedIn), hasAjaxSession=\(AccountStore.shared.hasAjaxSession)")
+            Logger.search.debug("Ajax state: isLoggedIn=\(self.authSession.isLoggedIn), isWebLoggedIn=\(self.authSession.isWebLoggedIn), hasAjaxSession=\(self.authSession.hasAjaxSession)")
         }
     }
 

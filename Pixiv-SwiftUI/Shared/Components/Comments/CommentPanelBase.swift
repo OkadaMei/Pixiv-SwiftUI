@@ -18,7 +18,7 @@ final class CommentPanelBase {
     var showDeleteAlert = false
     var commentToDelete: Comment?
 
-    let cache: CacheManager
+    let cache: CacheStorageProtocol
     let expiration: CacheExpiration
     let maxCommentLength: Int
     let cacheKeyProvider: (Int) -> String
@@ -27,7 +27,7 @@ final class CommentPanelBase {
     let deleteCommentAPI: (Int) async throws -> Void
 
     init(
-        cache: CacheManager? = nil,
+        cache: CacheStorageProtocol? = nil,
         expiration: CacheExpiration = .minutes(10),
         maxCommentLength: Int = 140,
         cacheKeyProvider: @escaping (Int) -> String,

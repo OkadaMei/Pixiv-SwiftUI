@@ -17,12 +17,20 @@ class BookmarksStore {
     private var currentFetchTask: Task<Void, Never>?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol
+    private let authSession: AuthSessionProtocol
+    private let settings: AppSettingsProtocol
 
     private let expiration: CacheExpiration = .minutes(5)
 
-    var hasCachedBookmarks: Bool {
-        !bookmarks.isEmpty
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        settings: AppSettingsProtocol = UserSettingStore.shared,
+        cache: CacheStorageProtocol = CacheManager.shared
+    ) {
+        self.authSession = authSession
+        self.settings = settings
+        self.cache = cache
     }
 
     func cancelCurrentFetch() {
@@ -39,11 +47,6 @@ class BookmarksStore {
         Logger.bookmark.debug("fetchBookmarks: restrict=\(capturedRestrict, privacy: .public), userId=\(userId, privacy: .public), forceRefresh=\(forceRefresh)")
 
         if !forceRefresh {
-            if hasCachedBookmarks && cache.isValid(forKey: cacheKey) {
-                Logger.bookmark.debug("使用有效缓存: key=\(cacheKey, privacy: .public), count=\(self.bookmarks.count)")
-                return
-            }
-
             if let cached: ([Illusts], String?) = cache.get(forKey: cacheKey) {
                 Logger.bookmark.debug("从缓存加载: key=\(cacheKey, privacy: .public), count=\(cached.0.count)")
                 self.bookmarks = cached.0
@@ -99,7 +102,7 @@ class BookmarksStore {
             self.nextUrlBookmarks = response.nextUrl
             loadingNextUrl = nil
 
-            await syncToBookmarkCache(illusts: response.illusts.map { $0.toDomain() }, userId: AccountStore.shared.currentUserId, restrict: bookmarkRestrict)
+            await syncToBookmarkCache(illusts: response.illusts.map { $0.toDomain() }, userId: authSession.currentUserId, restrict: bookmarkRestrict)
         } catch {
             self.error = AppError.unknown(error)
             Logger.bookmark.error("Failed to load more bookmarks: \(error.localizedDescription, privacy: .public)")
@@ -108,7 +111,7 @@ class BookmarksStore {
     }
 
     private func syncToBookmarkCache(illusts: [Illusts], userId: String, restrict: String) async {
-        guard UserSettingStore.shared.userSetting.bookmarkCacheEnabled else { return }
+        guard settings.bookmarkCacheEnabled else { return }
 
         await MainActor.run {
             BookmarkCacheStore.shared.batchAddOrUpdateCache(

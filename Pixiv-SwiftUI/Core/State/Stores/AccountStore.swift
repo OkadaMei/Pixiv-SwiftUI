@@ -3,6 +3,12 @@ import Observation
 import SwiftData
 import os.log
 
+extension Notification.Name {
+    /// 账号变更通知（切换、登入、登出）
+    /// 各 Store 监听此通知以清理自身内存状态并重新加载数据
+    static let accountDidChange = Notification.Name("PixivAccountDidChange")
+}
+
 /// 导航请求类型
 enum NavigationRequest: Equatable {
     case userDetail(String)
@@ -12,7 +18,7 @@ enum NavigationRequest: Equatable {
 /// 账户状态管理
 @MainActor
 @Observable
-final class AccountStore {
+final class AccountStore: AuthSessionProtocol {
     static let shared = AccountStore()
 
     var currentAccount: AccountPersist?
@@ -427,17 +433,10 @@ final class AccountStore {
         // 1. 清理内存缓存
         CacheManager.shared.clearAll()
 
-        // 2. 清理全局 Store 的内存状态
-        IllustStore.shared.clearMemoryCache()
-        NovelStore.shared.clearMemoryCache()
-        SearchStore.shared.clearMemoryCache()
-        SearchStore.shared.loadSearchHistory()
+        // 2. 通知各 Store 清理内存状态并重新加载数据
+        NotificationCenter.default.post(name: .accountDidChange, object: nil)
 
-        // 3. 重新加载当前账号的数据
-        await UserSettingStore.shared.loadUserSettingAsync()
-        DownloadStore.shared.loadTasks()
-
-        // 4. 重置导航或其他全局状态
+        // 3. 重置导航或其他全局状态
         self.navigationRequest = nil
     }
 

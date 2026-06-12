@@ -22,17 +22,21 @@ final class WebDAVSyncStore {
 
     @ObservationIgnored
     private let service = WebDAVSyncService.shared
+    private let authSession: AuthSessionProtocol
 
-    private init() {
+    private init(
+        authSession: AuthSessionProtocol = AccountStore.shared
+    ) {
+        self.authSession = authSession
         reloadConfiguration()
     }
 
     var accountScopeDescription: String {
         let basePath = remoteDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
         if basePath.isEmpty {
-            return AccountStore.shared.currentUserId
+            return authSession.currentUserId
         }
-        return basePath + "/" + AccountStore.shared.currentUserId
+        return basePath + "/" + authSession.currentUserId
     }
 
     var hasConfiguration: Bool {
@@ -128,7 +132,7 @@ final class WebDAVSyncStore {
     }
 
     private func updateLastOperationDescription() {
-        if let operation = WebDAVSyncPreferences.loadLastOperation(ownerId: AccountStore.shared.currentUserId) {
+        if let operation = WebDAVSyncPreferences.loadLastOperation(ownerId: authSession.currentUserId) {
             let operationText = switch operation.kind {
             case .upload:
                 "最近一次上传"

@@ -18,14 +18,27 @@ final class DownloadStore {
 
     private var runningTasks: [UUID: Task<Void, Never>] = [:]
     private let maxConcurrentTasks: Int
+    private let authSession: AuthSessionProtocol
+    private let settings: AppSettingsProtocol
     private var persistenceKey: String {
-        "download_tasks_\(AccountStore.shared.currentUserId)"
+        "download_tasks_\(authSession.currentUserId)"
     }
 
-    private init() {
-        let settingStore = UserSettingStore.shared
-        self.maxConcurrentTasks = settingStore.userSetting.maxRunningTask
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        settings: AppSettingsProtocol = UserSettingStore.shared
+    ) {
+        self.authSession = authSession
+        self.settings = settings
+        self.maxConcurrentTasks = settings.maxRunningTask
         loadTasks()
+        NotificationCenter.default.addObserver(
+            forName: .accountDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.loadTasks()
+        }
     }
 
     var downloadingTasks: [DownloadTask] {
@@ -255,7 +268,7 @@ final class DownloadStore {
                 }
 
                 // 注入元数据
-                if UserSettingStore.shared.userSetting.saveMetadata {
+                if settings.saveMetadata {
                     if let processedData = try? ImageMetadataProcessor.inject(data: imageData, task: task, pageIndex: index) {
                         imageData = processedData
                     }
@@ -458,7 +471,7 @@ final class DownloadStore {
             var gifData = try Data(contentsOf: outputURL)
 
             // 注入元数据
-            if UserSettingStore.shared.userSetting.saveMetadata {
+            if settings.saveMetadata {
                 if let processedData = try? ImageMetadataProcessor.inject(data: gifData, task: task) {
                     gifData = processedData
                 }

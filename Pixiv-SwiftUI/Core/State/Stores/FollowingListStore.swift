@@ -18,28 +18,18 @@ class FollowingListStore {
     private var loadingNextUrlFollowing: String?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
-
-    var hasCachedFollowing: Bool {
-        !following.isEmpty
-    }
 
     func fetchFollowing(userId: String, restrict: String? = nil, forceRefresh: Bool = false) async {
         let effectiveRestrict = restrict ?? currentRestrict
 
         let cacheKey = "user_following_\(userId)_\(effectiveRestrict)"
 
-        if !forceRefresh {
-            if hasCachedFollowing && cache.isValid(forKey: cacheKey) {
-                return
-            }
-
-            if let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
-                self.following = cached.0
-                self.nextUrlFollowing = cached.1
-                return
-            }
+        if !forceRefresh, let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
+            self.following = cached.0
+            self.nextUrlFollowing = cached.1
+            return
         }
 
         guard !isLoadingFollowing else { return }

@@ -53,7 +53,7 @@ private enum NovelKeywordBlockMatcher {
 /// 用户设置管理
 @MainActor
 @Observable
-final class UserSettingStore {
+final class UserSettingStore: AppSettingsProtocol {
     static let shared = UserSettingStore()
 
     var userSetting: UserSetting = UserSetting()
@@ -76,11 +76,33 @@ final class UserSettingStore {
 
     private let dataContainer = DataContainer.shared
 
+    // MARK: - AppSettingsProtocol
+
+    var defaultPrivateLike: Bool { userSetting.defaultPrivateLike }
+    var bookmarkCacheEnabled: Bool { userSetting.bookmarkCacheEnabled }
+    var saveMetadata: Bool { userSetting.saveMetadata }
+    var maxRunningTask: Int { userSetting.maxRunningTask }
+    var translatePrimaryServiceId: String { userSetting.translatePrimaryServiceId }
+    var translateTargetLanguage: String { userSetting.translateTargetLanguage }
+    var isCustomTheme: Bool { userSetting.isCustomTheme }
+    var customThemeColor: Int { userSetting.customThemeColor }
+    var seedColor: Int { userSetting.seedColor }
+    var colorSchemeMode: Int { userSetting.colorSchemeMode }
+
     private var blockedTagsSet: Set<String> {
         Set(blockedTags)
     }
 
     init() {
+        NotificationCenter.default.addObserver(
+            forName: .accountDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.loadUserSettingAsync()
+            }
+        }
     }
 
     @MainActor

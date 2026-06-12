@@ -48,7 +48,7 @@ final class UserDetailStore {
 
     private let userId: String
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
 
     private let expiration: CacheExpiration = .minutes(5)
 

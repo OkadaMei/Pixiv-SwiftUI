@@ -24,7 +24,7 @@ struct CommentsPanelInlineView: View {
     var hasInternalScroll: Bool = true
     var internalScrollMaxHeight: CGFloat? = .zero
 
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(10)
     private let maxCommentLength = 140
 

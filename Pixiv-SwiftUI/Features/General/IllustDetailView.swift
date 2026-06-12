@@ -87,7 +87,7 @@ struct IllustDetailView: View {
         return 0.1
     }
 
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let commentsExpiration: CacheExpiration = .minutes(10)
 
     init(illust: Illusts) {

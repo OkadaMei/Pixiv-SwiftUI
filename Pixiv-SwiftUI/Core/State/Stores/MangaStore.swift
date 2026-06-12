@@ -21,8 +21,17 @@ final class MangaStore {
     private var loadingNextUrlWatchlist: String?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol
+    private let authSession: AuthSessionProtocol
     private let expiration: CacheExpiration = .minutes(5)
+
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        cache: CacheStorageProtocol = CacheManager.shared
+    ) {
+        self.authSession = authSession
+        self.cache = cache
+    }
 
     var cacheKeyRecommended: String { "manga_recommended" }
     var cacheKeyWatchlist: String { "manga_watchlist" }
@@ -47,7 +56,7 @@ final class MangaStore {
 
         do {
             let result: (illusts: [Illusts], nextUrl: String?)
-            if AccountStore.shared.isLoggedIn {
+            if authSession.isLoggedIn {
                 result = try await api.mangaAPI.getRecommendedManga()
             } else {
                 result = try await api.mangaAPI.getRecommendedMangaNoLogin()

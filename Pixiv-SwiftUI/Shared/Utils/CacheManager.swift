@@ -11,7 +11,7 @@ import Foundation
 /// - **过期淘汰**: 在 `get` / `isValid` 时惰性检查时间戳
 /// - **系统淘汰**: NSCache 在内存压力下自动驱逐低优先级条目
 @MainActor
-final class CacheManager {
+final class CacheManager: CacheStorageProtocol {
     static let shared = CacheManager()
 
     private let cache: NSCache<NSString, CacheEntry>

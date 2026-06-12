@@ -25,8 +25,24 @@ final class IllustStore {
 
     private let dataContainer = DataContainer.shared
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol
+    private let authSession: AuthSessionProtocol
     private let expiration: CacheExpiration = .minutes(5)
+
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        cache: CacheStorageProtocol = CacheManager.shared
+    ) {
+        self.authSession = authSession
+        self.cache = cache
+        NotificationCenter.default.addObserver(
+            forName: .accountDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.clearMemoryCache()
+        }
+    }
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -70,7 +86,7 @@ final class IllustStore {
     }
 
     private var currentUserId: String {
-        AccountStore.shared.currentUserId
+        authSession.currentUserId
     }
 
     /// 清空内存缓存的数据
@@ -369,7 +385,7 @@ final class IllustStore {
             return
         }
 
-        guard AccountStore.shared.isLoggedIn else {
+        guard authSession.isLoggedIn else {
             if mode == .day {
                 Logger.illust.debug("Skip loading daily ranking in guest mode")
             }
@@ -417,7 +433,7 @@ final class IllustStore {
     }
 
     func loadMoreRanking(mode: IllustRankingMode) async {
-        guard AccountStore.shared.isLoggedIn else { return }
+        guard authSession.isLoggedIn else { return }
         guard let url = nextUrlsByRankingMode[mode], !isLoadingRanking else { return }
         guard loadingNextUrlsByRankingMode[mode] != url else { return }
 

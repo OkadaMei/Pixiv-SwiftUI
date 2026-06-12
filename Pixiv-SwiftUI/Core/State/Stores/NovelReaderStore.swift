@@ -44,6 +44,7 @@ final class NovelReaderStore {
     private var debounceTask: Task<Void, Never>?
 
     private let cacheStore = NovelTranslationCacheStore.shared
+    private let appSettings: AppSettingsProtocol
     private let progressKey = "novel_reader_progress_"
     private let settingsKey = "novel_reader_settings"
 
@@ -70,8 +71,9 @@ final class NovelReaderStore {
         resolvedSeriesNavigation?.hasAdjacentNovel == true
     }
 
-    init(novelId: Int) {
+    init(novelId: Int, appSettings: AppSettingsProtocol = UserSettingStore.shared) {
         self.novelId = novelId
+        self.appSettings = appSettings
         loadSettings()
         loadProgress()
     }
@@ -307,9 +309,9 @@ final class NovelReaderStore {
 
         translatingIndices.insert(index)
 
-        let serviceId = UserSettingStore.shared.userSetting.translatePrimaryServiceId
-        let targetLang = UserSettingStore.shared.resolveTargetLanguage(
-            UserSettingStore.shared.userSetting.translateTargetLanguage
+        let serviceId = appSettings.translatePrimaryServiceId
+        let targetLang = appSettings.resolveTargetLanguage(
+            appSettings.translateTargetLanguage
         )
 
         if let cached = await cacheStore.get(
@@ -362,9 +364,9 @@ final class NovelReaderStore {
     }
 
     private func startTranslationForVisibleParagraphs() async {
+        let serviceId = appSettings.translatePrimaryServiceId
+        let targetLanguage = appSettings.resolveTargetLanguage(appSettings.translateTargetLanguage)
         let setting = UserSettingStore.shared.userSetting
-        let serviceId = setting.translatePrimaryServiceId
-        let targetLanguage = UserSettingStore.shared.resolveTargetLanguage(setting.translateTargetLanguage)
         let sortedIndices = visibleParagraphIndices.sorted()
         let pendingIndices = await collectPendingParagraphIndices(
             from: sortedIndices,
@@ -711,7 +713,7 @@ private func performTranslation(text: String, serviceId: String, targetLanguage:
     }
 
     func toggleBookmark() async {
-        let defaultRestrict = UserSettingStore.shared.userSetting.defaultPrivateLike ? "private" : "public"
+        let defaultRestrict = appSettings.defaultPrivateLike ? "private" : "public"
 
         do {
             if isBookmarked {

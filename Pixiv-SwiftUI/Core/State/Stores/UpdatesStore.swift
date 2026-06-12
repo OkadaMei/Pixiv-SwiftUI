@@ -25,27 +25,17 @@ class UpdatesStore {
     private var loadingNextUrlFollowing: String?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
 
     private let expiration: CacheExpiration = .minutes(5)
-
-    var hasCachedUpdates: Bool {
-        !updates.isEmpty
-    }
-
-    var hasCachedFollowing: Bool {
-        !following.isEmpty
-    }
 
     func fetchUpdates(forceRefresh: Bool = false, restrict: String? = nil) async {
         let effectiveRestrict = restrict ?? currentRestrict
 
         if !forceRefresh {
-            if cache.isValid(forKey: cacheKeyUpdates(restrict: effectiveRestrict)) {
-                if let cached: ([Illusts], String?) = cache.get(forKey: cacheKeyUpdates(restrict: effectiveRestrict)) {
-                    self.updates = cached.0
-                    self.nextUrlUpdates = cached.1
-                }
+            if let cached: ([Illusts], String?) = cache.get(forKey: cacheKeyUpdates(restrict: effectiveRestrict)) {
+                self.updates = cached.0
+                self.nextUrlUpdates = cached.1
                 hasFetchedUpdates = true
                 return
             }
@@ -98,11 +88,6 @@ class UpdatesStore {
     func fetchFollowing(userId: String, forceRefresh: Bool = false) async {
         let cacheKey = cacheKeyFollowing(userId: userId)
         if !forceRefresh {
-            if hasCachedFollowing && cache.isValid(forKey: cacheKey) {
-                hasFetchedFollowing = true
-                return
-            }
-
             if let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
                 self.following = cached.0
                 self.nextUrlFollowing = cached.1

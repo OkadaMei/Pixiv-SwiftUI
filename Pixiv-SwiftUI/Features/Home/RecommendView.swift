@@ -30,7 +30,7 @@ struct RecommendView: View {
     /// 预取进度追踪器（引用类型，避免 @State 触发不必要的视图重绘）
     @State private var prefetchTracker = PrefetchTracker()
 
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
 
     /// 重新计算 filteredIllusts + shouldBlurMap 缓存

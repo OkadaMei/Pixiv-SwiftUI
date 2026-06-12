@@ -15,25 +15,15 @@ class RecommendedUsersStore {
     private var loadingNextUrl: String?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol = CacheManager.shared
     private let expiration: CacheExpiration = .minutes(5)
     private let cacheKey = "recommended_users_list"
 
-    var hasCachedUsers: Bool {
-        !users.isEmpty
-    }
-
     func fetchUsers(forceRefresh: Bool = false) async {
-        if !forceRefresh {
-            if hasCachedUsers && cache.isValid(forKey: cacheKey) {
-                return
-            }
-
-            if let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
-                self.users = cached.0
-                self.nextUrl = cached.1
-                return
-            }
+        if !forceRefresh, let cached: ([UserPreviews], String?) = cache.get(forKey: cacheKey) {
+            self.users = cached.0
+            self.nextUrl = cached.1
+            return
         }
 
         guard !isLoading else { return }

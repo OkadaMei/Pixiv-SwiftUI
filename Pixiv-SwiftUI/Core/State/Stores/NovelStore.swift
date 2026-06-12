@@ -41,14 +41,33 @@ final class NovelStore {
     private var loadingNextUrlWeeklyRanking: String?
 
     private let api = PixivAPI.shared
-    private let cache = CacheManager.shared
+    private let cache: CacheStorageProtocol
+    private let authSession: AuthSessionProtocol
+    private let settings: AppSettingsProtocol
     private let dataContainer = DataContainer.shared
     private let expiration: CacheExpiration = .minutes(5)
+
+    init(
+        authSession: AuthSessionProtocol = AccountStore.shared,
+        settings: AppSettingsProtocol = UserSettingStore.shared,
+        cache: CacheStorageProtocol = CacheManager.shared
+    ) {
+        self.authSession = authSession
+        self.settings = settings
+        self.cache = cache
+        NotificationCenter.default.addObserver(
+            forName: .accountDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.clearMemoryCache()
+        }
+    }
 
     private let maxGlanceHistoryCount = 100
 
     private var currentUserId: String {
-        AccountStore.shared.currentUserId
+        authSession.currentUserId
     }
 
     var cacheKeyRecom: String { "novel_recom" }
@@ -215,7 +234,7 @@ final class NovelStore {
     func toggleBookmark(_ novel: Novel) async {
         let wasBookmarked = novel.isBookmarked
         let novelId = novel.id
-        let defaultRestrict = UserSettingStore.shared.userSetting.defaultPrivateLike ? "private" : "public"
+        let defaultRestrict = settings.defaultPrivateLike ? "private" : "public"
 
         var updatedNovel = novel
         updatedNovel.isBookmarked = !wasBookmarked
