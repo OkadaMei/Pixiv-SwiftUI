@@ -280,7 +280,7 @@ final class DownloadStore {
 
                 #if os(iOS)
                 try await ImageSaver.saveToPhotosAlbum(data: imageData, fileExtension: actualExt)
-                Logger.download.info
+                Logger.download.info("第 \(index + 1) 页保存到相册成功")
                 // swiftlint:disable:next force_unwrapping
                 savedPaths.append(URL(string: "photos://\(task.illustId)_\(index)")!)  // iOS 保存到相册，没有文件路径
                 #else

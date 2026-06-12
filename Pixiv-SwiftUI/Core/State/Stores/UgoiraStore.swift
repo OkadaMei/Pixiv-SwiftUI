@@ -393,7 +393,8 @@ final class UgoiraStore {
                 let fileData = data.subdata(in: dataStart..<dataEnd)
                 try fileData.write(to: fileURL)
                 extractedCount += 1
-Logger.ugoira.info            } else if compressionMethod == 8 {
+                Logger.ugoira.info("成功提取: \(fileName, privacy: .public)")
+            } else if compressionMethod == 8 {
                 Logger.ugoira.debug("使用 Deflate 解压: \(fileName, privacy: .public)")
                 let compressedData = data.subdata(in: dataStart..<dataEnd)
                 if let decompressedData = try? decompressDeflate(compressedData, size: Int(uncompressedSize)) {
