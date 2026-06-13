@@ -38,7 +38,7 @@ struct FollowingHorizontalList: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(store.following.prefix(10)) { preview in
-                            NavigationLink(value: preview.user) {
+                            NavigationLink(value: preview.user.toDomain()) {
                                 VStack(spacing: 4) {
                                     AnimatedAvatarImage(
                                         urlString: preview.user.profileImageUrls?.medium,
