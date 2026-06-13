@@ -217,7 +217,7 @@ final class IllustAPI {
 
     /// 获取插画评论
     func getIllustComments(illustId: Int) async throws -> CommentResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + APIEndpoint.illustComments)
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v3/illust/comments")
         components?.queryItems = [
             URLQueryItem(name: "illust_id", value: String(illustId))
         ]
@@ -235,7 +235,7 @@ final class IllustAPI {
 
     /// 获取评论的回复列表
     func getIllustCommentsReplies(commentId: Int) async throws -> CommentResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/comment/replies")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v2/illust/comment/replies")
         components?.queryItems = [
             URLQueryItem(name: "comment_id", value: String(commentId))
         ]
@@ -313,7 +313,7 @@ final class IllustAPI {
 
     /// 获取动图元数据
     func getUgoiraMetadata(illustId: Int) async throws -> UgoiraMetadataResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/illust/ugoira/metadata")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/ugoira/metadata")
         components?.queryItems = [
             URLQueryItem(name: "illust_id", value: String(illustId))
         ]

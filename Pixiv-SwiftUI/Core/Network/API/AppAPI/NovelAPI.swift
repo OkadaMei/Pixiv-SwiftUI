@@ -96,7 +96,7 @@ final class NovelAPI {
 
     /// 获取小说评论
     func getNovelComments(novelId: Int) async throws -> CommentResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/novel/comment")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v3/novel/comments")
         components?.queryItems = [
             URLQueryItem(name: "novel_id", value: String(novelId)),
         ]
@@ -252,7 +252,7 @@ final class NovelAPI {
 
     /// 收藏小说
     func bookmarkNovel(novelId: Int, restrict: String = "public") async throws {
-        guard let url = URL(string: APIEndpoint.baseURL + "/v1/novel/bookmark/add") else {
+        guard let url = URL(string: APIEndpoint.baseURL + "/v2/novel/bookmark/add") else {
             throw NetworkError.invalidResponse
         }
 
@@ -305,9 +305,10 @@ final class NovelAPI {
 
     /// 获取小说系列信息
     func getNovelSeries(seriesId: Int) async throws -> NovelSeriesResponse {
-        var components = URLComponents(string: APIEndpoint.baseURL + "/v1/novel/series")
+        var components = URLComponents(string: APIEndpoint.baseURL + "/v2/novel/series")
         components?.queryItems = [
             URLQueryItem(name: "series_id", value: String(seriesId)),
+            URLQueryItem(name: "filter", value: "for_ios"),
         ]
 
         guard let url = components?.url else {
