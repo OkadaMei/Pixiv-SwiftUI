@@ -464,7 +464,6 @@ struct BrowseHistoryCard: View {
                         }
                         .padding(6)
                     }
-                    .glassEffectContainerIfAvailable(spacing: 8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 

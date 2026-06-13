@@ -154,7 +154,6 @@ struct BookmarkCard: View, Equatable {
                         .padding(6)
                     }
                 }
-                .glassEffectContainerIfAvailable(spacing: 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if illust.pageCount > 1 {

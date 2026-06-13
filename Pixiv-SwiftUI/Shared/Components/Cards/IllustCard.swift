@@ -142,7 +142,6 @@ struct IllustCard: View, Equatable {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .glassEffectContainerIfAvailable(spacing: 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if illust.pageCount > 1 {
