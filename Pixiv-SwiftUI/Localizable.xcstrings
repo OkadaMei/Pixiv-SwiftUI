@@ -271,17 +271,6 @@
         }
       }
     },
-    "%lldP" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lldP"
-          }
-        }
-      }
-    },
     "%lldpt" : {
       "localizations" : {
         "en" : {
@@ -3318,9 +3307,6 @@
         }
       }
     },
-    "屏蔽此用户" : {
-
-    },
     "工作环境" : {
       "localizations" : {
         "en" : {
@@ -3750,10 +3736,24 @@
       }
     },
     "当前：公开收藏，点击切换为非公开" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currently: Public bookmarks. Click to switch to private."
+          }
+        }
+      }
     },
     "当前：非公开收藏，点击切换为公开" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currently: Private bookmarks. Click to switch to public."
+          }
+        }
+      }
     },
     "当前实现按 Pixiv 账号分目录保存远端备份，避免不同账号互相覆盖。" : {
       "localizations" : {
@@ -3998,7 +3998,14 @@
       }
     },
     "排行模式" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranking Mode"
+          }
+        }
+      }
     },
     "排行类别" : {
       "localizations" : {
@@ -4031,7 +4038,14 @@
       }
     },
     "推荐画师" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended Users"
+          }
+        }
+      }
     },
     "提示词设置" : {
       "localizations" : {
@@ -4170,7 +4184,14 @@
       }
     },
     "收录特辑" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Included in"
+          }
+        }
+      }
     },
     "收藏" : {
       "localizations" : {
@@ -4332,17 +4353,6 @@
         }
       }
     },
-    "日期" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Date"
-          }
-        }
-      }
-    },
     "日期筛选" : {
       "localizations" : {
         "en" : {
@@ -4441,17 +4451,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pause"
-          }
-        }
-      }
-    },
-    "暂停播放" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pause Playback"
           }
         }
       }
@@ -4787,7 +4786,14 @@
       }
     },
     "查看最新作品" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View newest works"
+          }
+        }
+      }
     },
     "查看最新章节" : {
       "localizations" : {
@@ -4977,17 +4983,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Downloading"
-          }
-        }
-      }
-    },
-    "正在以图搜图..." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading以图搜图..."
           }
         }
       }
@@ -5190,16 +5185,6 @@
         }
       }
     },
-    "没有加载到推荐内容" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No recommended content loaded"
-          }
-        }
-      }
-    },
     "没有可显示的结果" : {
       "localizations" : {
         "en" : {
@@ -5236,6 +5221,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No artists found"
+          }
+        }
+      }
+    },
+    "没有找到相关内容" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No relevant content found"
           }
         }
       }
@@ -6399,7 +6394,14 @@
       }
     },
     "系统语言" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Language"
+          }
+        }
+      }
     },
     "纯文本 (TXT)" : {
       "localizations" : {
@@ -6463,17 +6465,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Clicking \"Continue Loading\" will search for more illustrations to display"
-          }
-        }
-      }
-    },
-    "继续播放" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue Playback"
           }
         }
       }
@@ -7390,16 +7381,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Configure OpenAI or compatible LLM service. API Key is required, this service cannot be used without configuration."
-          }
-        }
-      }
-    },
-    "重新加载" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reload"
           }
         }
       }
