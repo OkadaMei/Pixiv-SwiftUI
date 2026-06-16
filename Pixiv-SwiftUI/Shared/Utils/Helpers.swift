@@ -110,6 +110,8 @@ public struct CachedAsyncImage: View {
             with: source,
             options: options
         ) {
+            // 视图可能已在 Kingfisher 缓存命中时消失，检查 Task 取消避免更新已释放的 @State
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 loadedImage = result.image
             }
