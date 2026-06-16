@@ -87,7 +87,7 @@ struct NovelDetailInfoSection: View {
         HStack(spacing: 12) {
             Group {
                 if isLoggedIn {
-                    NavigationLink(value: novel.user) {
+                    NavigationLink(value: novel.user.toDomain()) {
                         authorInfo
                     }
                 } else {

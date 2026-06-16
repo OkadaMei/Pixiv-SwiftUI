@@ -36,7 +36,7 @@ struct RecommendedUsersListView: View {
                 } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount), spacing: 16) {
                         ForEach(store.users) { preview in
-                            NavigationLink(value: preview.user) {
+                            NavigationLink(value: preview.user.toDomain()) {
                                 UserPreviewCard(userPreview: preview, accentColor: themeManager.currentColor)
                             }
                             .buttonStyle(.plain)

@@ -548,7 +548,7 @@ struct SearchResultView: View {
         } else {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount), spacing: 12) {
                 ForEach(filteredUsers, id: \.id) { userPreview in
-                    NavigationLink(value: userPreview.user) {
+                    NavigationLink(value: userPreview.user.toDomain()) {
                         UserPreviewCard(userPreview: userPreview, accentColor: themeManager.currentColor)
                     }
                     .buttonStyle(.plain)
