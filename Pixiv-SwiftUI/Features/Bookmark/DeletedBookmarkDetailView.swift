@@ -170,7 +170,7 @@ struct DeletedBookmarkDetailView: View {
         KFImage(URL(string: urlString))
             .setProcessor(DefaultImageProcessor.default)
             .cacheOriginalImage()
-            .targetCache(BookmarkCacheService.shared.getCache())
+            .targetCache(BookmarkCacheService.shared.getCache() ?? .default)
             .requestModifier(PixivImageRequestModifier())
             .fade(duration: 0.3)
             .placeholder {

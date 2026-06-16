@@ -122,7 +122,7 @@ struct PixivApp: App {
     /// 收到内存警告时清理 Kingfisher 等内存缓存
     private func handleMemoryWarning() {
         ImageCache.default.clearMemoryCache()
-        BookmarkCacheService.shared.getCache().clearMemoryCache()
+        BookmarkCacheService.shared.getCache()?.clearMemoryCache()
         IllustStore.shared.clearMemoryCache()
         NovelStore.shared.clearMemoryCache()
         SearchStore.shared.clearMemoryCache()

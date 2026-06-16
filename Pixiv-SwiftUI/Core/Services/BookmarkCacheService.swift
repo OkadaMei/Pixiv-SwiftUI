@@ -6,28 +6,32 @@ import os.log
 actor BookmarkCacheService {
     static let shared = BookmarkCacheService()
 
-    /// 独立的图片缓存命名空间
-    private let bookmarkCache: ImageCache
+    /// 独立的图片缓存命名空间，nil 时回退到 Kingfisher 默认缓存
+    private let bookmarkCache: ImageCache?
 
     /// 缓存目录名称
     private let cacheName = "BookmarkImageCache"
 
     private init() {
-        guard let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
-            fatalError("无法获取缓存目录")
+        let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+        if let cacheDirectory {
+            let bookmarkCacheDirectory = cacheDirectory.appendingPathComponent(cacheName)
+            try? FileManager.default.createDirectory(at: bookmarkCacheDirectory, withIntermediateDirectories: true)
+
+            if let cache = try? ImageCache(name: cacheName, cacheDirectoryURL: bookmarkCacheDirectory) {
+                cache.memoryStorage.config.totalCostLimit = 50 * 1024 * 1024
+                cache.diskStorage.config.sizeLimit = 0
+                cache.diskStorage.config.expiration = .never
+                self.bookmarkCache = cache
+                return
+            }
+            Logger.cache.error("无法创建图片缓存目录: \(bookmarkCacheDirectory.path)")
+        } else {
+            Logger.cache.error("无法获取缓存目录")
         }
-        let bookmarkCacheDirectory = cacheDirectory.appendingPathComponent(cacheName)
 
-        try? FileManager.default.createDirectory(at: bookmarkCacheDirectory, withIntermediateDirectories: true)
-
-        guard let cache = try? ImageCache(name: cacheName, cacheDirectoryURL: bookmarkCacheDirectory) else {
-            fatalError("无法创建图片缓存")
-        }
-        bookmarkCache = cache
-
-        bookmarkCache.memoryStorage.config.totalCostLimit = 50 * 1024 * 1024
-        bookmarkCache.diskStorage.config.sizeLimit = 0
-        bookmarkCache.diskStorage.config.expiration = .never
+        // 回退到 Kingfisher 默认缓存，避免 fatalError 导致崩溃
+        self.bookmarkCache = nil
     }
 
     // MARK: - 预取图片
@@ -47,18 +51,20 @@ actor BookmarkCacheService {
         let key = resource.cacheKey
 
         // 检查是否已缓存
-        if bookmarkCache.isCached(forKey: key) {
+        if let cache = bookmarkCache, cache.isCached(forKey: key) {
             Logger.cache.debug("已缓存，跳过: \(urlString.suffix(50))")
             return
         }
 
-        let options: KingfisherOptionsInfo = [
-            .targetCache(bookmarkCache),
+        var options: KingfisherOptionsInfo = [
+            .requestModifier(PixivImageRequestModifier()),
             .cacheOriginalImage,
             .diskCacheExpiration(.never),
             .memoryCacheExpiration(.never),
-            .requestModifier(PixivImageRequestModifier())
         ]
+        if let cache = bookmarkCache {
+            options.append(.targetCache(cache))
+        }
 
         let source: Source
         if await shouldUseDirectConnection(url: url) {
@@ -130,18 +136,18 @@ actor BookmarkCacheService {
 
     /// 检查图片是否已缓存
     func isImageCached(urlString: String) -> Bool {
-        guard let url = URL(string: urlString) else { return false }
+        guard let cache = bookmarkCache, let url = URL(string: urlString) else { return false }
         let key = url.cacheKey
-        return bookmarkCache.isCached(forKey: key)
+        return cache.isCached(forKey: key)
     }
 
     /// 获取缓存的图片
     func getCachedImage(urlString: String) async -> KFCrossPlatformImage? {
-        guard let url = URL(string: urlString) else { return nil }
+        guard let cache = bookmarkCache, let url = URL(string: urlString) else { return nil }
         let key = url.cacheKey
 
         return await withCheckedContinuation { continuation in
-            bookmarkCache.retrieveImage(forKey: key) { result in
+            cache.retrieveImage(forKey: key) { result in
                 switch result {
                 case .success(let imageResult):
                     continuation.resume(returning: imageResult.image)
@@ -154,13 +160,16 @@ actor BookmarkCacheService {
 
     /// 获取缓存图片的 Kingfisher 选项
     func cacheOptions() -> KingfisherOptionsInfo {
-        return [
-            .targetCache(bookmarkCache),
+        var options: KingfisherOptionsInfo = [
             .cacheOriginalImage,
             .diskCacheExpiration(.never),
             .memoryCacheExpiration(.never),
             .requestModifier(PixivImageRequestModifier()),
         ]
+        if let cache = bookmarkCache {
+            options.append(.targetCache(cache))
+        }
+        return options
     }
 
     // MARK: - 缓存管理
@@ -172,8 +181,9 @@ actor BookmarkCacheService {
 
     /// 计算缓存大小
     func calculateCacheSize() async -> Int64 {
+        guard let cache = bookmarkCache else { return 0 }
         return await withCheckedContinuation { continuation in
-            bookmarkCache.calculateDiskStorageSize { result in
+            cache.calculateDiskStorageSize { result in
                 switch result {
                 case .success(let size):
                     continuation.resume(returning: Int64(size))
@@ -186,17 +196,19 @@ actor BookmarkCacheService {
 
     /// 清理所有图片缓存
     func clearAllImageCache() async {
-        bookmarkCache.clearMemoryCache()
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            bookmarkCache.clearDiskCache {
-                continuation.resume()
+        if let cache = bookmarkCache {
+            cache.clearMemoryCache()
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                cache.clearDiskCache {
+                    continuation.resume()
+                }
             }
         }
         Logger.cache.debug("已清理所有图片缓存")
     }
 
     /// 获取缓存实例（用于 CachedAsyncImage）
-    nonisolated func getCache() -> ImageCache {
+    nonisolated func getCache() -> ImageCache? {
         return bookmarkCache
     }
 }
