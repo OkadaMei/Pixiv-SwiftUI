@@ -230,14 +230,11 @@ struct UpdatesPage: View {
                 ProfilePanelView(accountStore: accountStore, isPresented: $showProfilePanel)
                 #endif
             }
-            .onAppear {
-                if isLoggedIn {
-                    let userId = accountStore.currentAccount?.userId ?? ""
-                    Task {
-                        await store.fetchFollowing(userId: userId)
-                        await store.fetchUpdates(restrict: restrictString)
-                    }
-                }
+            .task {
+                guard isLoggedIn else { return }
+                let userId = accountStore.currentAccount?.userId ?? ""
+                await store.fetchFollowing(userId: userId)
+                await store.fetchUpdates(restrict: restrictString)
             }
             .sheet(isPresented: $showAuthView) {
                 AuthView(accountStore: accountStore, onGuestMode: nil)

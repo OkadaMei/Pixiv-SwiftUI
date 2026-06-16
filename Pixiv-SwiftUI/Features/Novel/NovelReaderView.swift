@@ -152,10 +152,8 @@ struct NovelReaderView: View {
                 illustAIType: 0
             ))
         }
-        .onAppear {
-            Task {
-                await store.fetch()
-            }
+        .task {
+            await store.fetch()
         }
         .onDisappear {
             if let firstVisible = scrollPositionID {

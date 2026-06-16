@@ -361,12 +361,12 @@ struct IllustDetailView: View {
             .onAppear {
                 vm.showToast = { toast.show($0) }
                 vm.fetchDetailIfNeeded()
-                Task {
-                    try? illustStore.recordGlance(illust.id, illust: illust)
-                }
                 if vm.isUgoira && vm.ugoiraStore == nil {
                     vm.ugoiraStore = UgoiraStore(illustId: illust.id, expiration: .hours(1))
                 }
+            }
+            .task {
+                try? illustStore.recordGlance(illust.id, illust: illust)
             }
             .task {
                 await vm.ugoiraStore?.loadIfNeeded()

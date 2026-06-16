@@ -352,14 +352,13 @@ ScrollView {
                 if let initialRestrict = initialRestrict {
                     store.bookmarkRestrict = initialRestrict
                 }
-                if isLoggedIn {
-                    Task {
-                        await store.fetchBookmarks(userId: accountStore.currentAccount?.userId ?? "")
-                    }
-                    if isCacheEnabled {
-                        bookmarkCacheStore.loadCachedBookmarks(for: accountStore.currentUserId)
-                    }
+                if isLoggedIn, isCacheEnabled {
+                    bookmarkCacheStore.loadCachedBookmarks(for: accountStore.currentUserId)
                 }
+            }
+            .task {
+                guard isLoggedIn else { return }
+                await store.fetchBookmarks(userId: accountStore.currentAccount?.userId ?? "")
             }
             .sheet(isPresented: $showAuthView) {
                 AuthView(accountStore: accountStore, onGuestMode: nil)

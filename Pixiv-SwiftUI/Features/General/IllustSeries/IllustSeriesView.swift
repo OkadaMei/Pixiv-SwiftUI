@@ -34,10 +34,8 @@ struct IllustSeriesView: View {
                 .animation(.easeInOut(duration: 0.25), value: store.isLoading && store.seriesDetail == nil)
             }
             .navigationTitle(store.seriesDetail?.title ?? String(localized: "系列详情"))
-            .onAppear {
-                Task {
-                    await store.fetch()
-                }
+            .task {
+                await store.fetch()
             }
             .refreshable {
                 await store.fetch()
