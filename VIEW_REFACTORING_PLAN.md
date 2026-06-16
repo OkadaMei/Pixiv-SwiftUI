@@ -3,7 +3,7 @@
 > 创建日期: 2026-06-16
 > 关联审计问题: CODE_AUDIT.md → A-5 View 层过重，业务逻辑内联
 > 预估总工时: 10-14 天
-> 最后更新: 2026-06-16（Phase 1 + Phase 6 已完成）
+> 最后更新: 2026-06-16（Phase 1-4 + Phase 6 已完成）
 
 ---
 
@@ -14,10 +14,10 @@
 | 文件 | 行数 | `@State` 数 | 核心问题 |
 |------|------|:-----------:|----------|
 | `IllustDetailView.swift` | 789 ✅ | **~10 UI** | ~~22 个 `@State`~~ → 已抽取至 `IllustDetailViewModel`（378 行） |
-| `SearchResultView.swift` | 872 | **10+** | 搜索过滤/排序/分页逻辑全部内联，自定义 `SearchFilterState` 结构体 |
-| `SearchView.swift` | 657 | **15** | SauceNAO 图片搜索完整流程（文件读取→安全作用域→编码→导航） |
-| `RecommendView.swift` | 583 | **13** | 直接调用 `PixivAPI.shared` + `CacheManager.shared`，绕过 Store 层 |
-| `IllustCard.swift` | 467 | 0 | 创建私有 `IllustStore()` 实例，内联书签切换逻辑 |
+| `SearchResultView.swift` | 650 ✅ | **~5 UI** | ~~10+ 个 `@State`~~ → 已抽取至 `SearchResultViewModel`（220 行） |
+| `SearchView.swift` | 503 ✅ | **~10 UI** | ~~15 个 `@State`~~ → 已抽取至 `SearchViewModel`（214 行） |
+| `RecommendView.swift` | 348 ✅ | **~6 UI** | ~~13 个 `@State`~~ → 已抽取至 `RecommendViewModel`（190 行） |
+| `IllustCard.swift` | 467 | 0 | 创建私有 `IllustStore()` 实例，内联书签切换逻辑（低优先级，39 个调用点） |
 | `NovelDetailView.swift` | 444 ✅ | **~10 UI** | ~~15 个 `@State`~~ → 已抽取至 `NovelDetailViewModel`（189 行） |
 
 **对比标杆**：`NovelReaderStore`（763 行）将所有业务逻辑收归 Store，View 仅 468 行且 `@State` 只有 6 个。
@@ -251,9 +251,9 @@ Phase 1 ──► Phase 2 ──► Phase 3
 | Phase | 文件 | 新增文件 | 预估工时 | 风险 | 状态 |
 |-------|------|---------|---------|------|------|
 | **1** | `IllustDetailView` | `IllustDetailViewModel.swift` | 3-4 天 | 低 — 纯逻辑抽取，View 不改签名 | ✅ 已完成 |
-| **2** | `SearchView` | `SearchViewModel.swift` | 1.5-2 天 | 中 — SauceNAO 流程涉及安全作用域资源 | 待实施 |
-| **3** | `SearchResultView` | `SearchResultViewModel.swift` | 2-3 天 | 高 — 与已有 `SearchResultStore` 职责边界需仔细划分 | 待实施 |
-| **4** | `RecommendView` | `RecommendViewModel.swift` | 2 天 | 中 — 需消除对 `PixivAPI.shared` 的直接引用 | 待实施 |
+| **2** | `SearchView` | `SearchViewModel.swift` | 1.5-2 天 | 中 — SauceNAO 流程涉及安全作用域资源 | ✅ 已完成 |
+| **3** | `SearchResultView` | `SearchResultViewModel.swift` | 2-3 天 | 高 — 与已有 `SearchResultStore` 职责边界需仔细划分 | ✅ 已完成 |
+| **4** | `RecommendView` | `RecommendViewModel.swift` | 2 天 | 中 — 需消除对 `PixivAPI.shared` 的直接引用 | ✅ 已完成 |
 | **5** | `IllustCard` | 无（修改现有） | 0.5 天 | 低 — 但影响 39 个调用点，需全量回归 | 待实施 |
 | **6** | `NovelDetailView` | `NovelDetailViewModel.swift` | 1-1.5 天 | 低 — 标准抽取 | ✅ 已完成 |
 
@@ -266,21 +266,21 @@ Phase 1 ──► Phase 2 ──► Phase 3
 | PR | 包含 Phase | 预估工时 | 说明 | 状态 |
 |----|-----------|---------|------|------|
 | **PR 1** | 1 + 6 | 4-5.5 天 | 详情页重构（IllustDetail + NovelDetail） | ✅ 已完成 |
-| **PR 2** | 2 + 3 | 3.5-5 天 | 搜索模块重构（SearchView + SearchResultView） | 待实施 |
-| **PR 3** | 4 + 5 | 2.5 天 | 首页 + 卡片组件重构（RecommendView + IllustCard） | 待实施 |
+| **PR 2** | 2 + 3 | 3.5-5 天 | 搜索模块重构（SearchView + SearchResultView） | ✅ 已完成 |
+| **PR 3** | 4 + 5 | 2.5 天 | 首页 + 卡片组件重构（RecommendView + IllustCard） | ✅ Phase 4 已完成 |
 
 ---
 
 ## 六、重构后目标状态
 
-| 指标 | 重构前 | 重构后（Phase 1+6 完成） | 最终目标 |
-|------|--------|------------------------|---------|
+| 指标 | 重构前 | 重构后（Phase 1-4+6 完成） | 最终目标 |
+|------|--------|--------------------------|---------|
 | View 最大行数 | 1128 (`IllustDetailView`) | **789** | ~550 |
 | View 最大 `@State` 数 | 22 | **~10**（纯 UI/导航） | ≤ 8 |
 | View 中的 `Task {}` 业务逻辑 | 8+ 处 | **0 处** | 0 处 |
-| View 直接 API 调用 | 3 处 | **0 处** | 0 处 |
-| View 直接 CacheManager 调用 | 1 处 | **0 处** | 0 处 |
-| 新增 ViewModel 文件 | 0 | **2**（`IllustDetailVM`, `NovelDetailVM`） | 5 |
+| View 直接 API 调用 | 3+ 处 | **0 处** | 0 处 |
+| View 直接 CacheManager 调用 | 1+ 处 | **0 处** | 0 处 |
+| 新增 ViewModel 文件 | 0 | **5**（`IllustDetailVM`, `SearchVM`, `SearchResultVM`, `RecommendVM`, `NovelDetailVM`） | 5 |
 | 新增 ViewModel 文件 | 0 | 5（`IllustDetailVM`, `SearchVM`, `SearchResultVM`, `RecommendVM`, `NovelDetailVM`） |
 
 ---

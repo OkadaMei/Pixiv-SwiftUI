@@ -33,6 +33,8 @@ struct PixivApp: App {
                         .environment(initializer.illustStore ?? IllustStore.shared)
                         .environment(initializer.userSettingStore ?? UserSettingStore.shared)
                         .environment(ThemeManager.shared)
+                        .environment(BookmarkActionService.shared)
+                        .environment(BookmarkActionService.shared)
                         .modelContainer(initializer.modelContainer ?? DataContainer.shared.modelContainer)
                 }
             }
@@ -78,6 +80,7 @@ struct PixivApp: App {
                     .environment(IllustStore.shared)
                     .environment(UserSettingStore.shared)
                     .environment(ThemeManager.shared)
+                        .environment(BookmarkActionService.shared)
                     .modelContainer(DataContainer.shared.modelContainer)
                     .withGlobalToast()
             }
@@ -92,6 +95,7 @@ struct PixivApp: App {
                     .environment(IllustStore.shared)
                     .environment(UserSettingStore.shared)
                     .environment(ThemeManager.shared)
+                        .environment(BookmarkActionService.shared)
                     .modelContainer(DataContainer.shared.modelContainer)
                     .withGlobalToast()
             }
@@ -104,6 +108,7 @@ struct PixivApp: App {
                 .environment(AccountStore.shared)
                 .environment(UserSettingStore.shared)
                 .environment(ThemeManager.shared)
+                        .environment(BookmarkActionService.shared)
                 .modelContainer(DataContainer.shared.modelContainer)
                 .withGlobalToast()
                 .frame(minWidth: 600, minHeight: 500)
