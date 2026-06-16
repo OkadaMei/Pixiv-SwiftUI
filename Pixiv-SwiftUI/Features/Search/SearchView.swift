@@ -7,6 +7,7 @@ import PhotosUI
 
 struct SearchView: View {
     @State private var store = SearchStore.shared
+    @State private var vm = SearchViewModel()
     @State private var selectedTag: String = ""
     @State private var showClearHistoryConfirmation = false
     @State private var showBlockToast = false
@@ -15,19 +16,9 @@ struct SearchView: View {
 
     @State private var pendingIllustId: Int?
     @State private var pendingUserId: String?
-    @State private var isLoadingDetail = false
-    @State private var show404Error = false
-    @State private var errorMessage = ""
     @State private var showProfilePanel = false
-    @State private var showSauceToast = false
-    @State private var sauceToastMessage = ""
-    @State private var showImageFileImporter = false
     @State private var isSearchPresented = false
     @State private var isHistoryExpanded = false
-    #if os(iOS)
-    @State private var showPhotosPicker = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    #endif
     var accountStore: AccountStore = AccountStore.shared
 
     private var columnCount: Int {
@@ -36,34 +27,6 @@ struct SearchView: View {
         #else
         userSettingStore.userSetting.hCrossCount
         #endif
-    }
-
-    private func trendTagHeight(_ tag: TrendTag) -> CGFloat {
-        guard let ratio = tag.illust.aspectRatio, ratio > 0 else { return 1.0 }
-        return 1.0 / ratio
-    }
-
-    private var trendTagColumns: [[TrendTag]] {
-        var result = Array(repeating: [TrendTag](), count: columnCount)
-        var columnHeights = Array(repeating: CGFloat(0), count: columnCount)
-
-        guard columnCount > 0 else { return result }
-
-        for item in store.trendTags {
-            if let minIndex = columnHeights.indices.min(by: { columnHeights[$0] < columnHeights[$1] }) {
-                result[minIndex].append(item)
-                columnHeights[minIndex] += trendTagHeight(item)
-            }
-        }
-        return result
-    }
-
-    private var recommendedSearchTagColumns: [[TrendTag]] {
-        var result = Array(repeating: [TrendTag](), count: columnCount)
-        for (index, item) in store.recommendedSearchTags.enumerated() {
-            result[index % columnCount].append(item)
-        }
-        return result
     }
 
     private func copyToClipboard(_ text: String) {
@@ -80,123 +43,6 @@ struct SearchView: View {
         #if os(iOS)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
-    }
-
-    private func startSauceNaoSearch() {
-        guard accountStore.isLoggedIn else {
-            showSauceToastMessage(String(localized: "请先登录"))
-            return
-        }
-        #if os(iOS)
-        showPhotosPicker = true
-        #else
-        showImageFileImporter = true
-        #endif
-    }
-
-    private func showSauceToastMessage(_ message: String) {
-        sauceToastMessage = message
-        showSauceToast = true
-    }
-
-    private func handleImportedImage(_ result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            Task {
-                await searchWithImageURL(url)
-            }
-        case .failure(let error):
-            showSauceToastMessage("读取图片失败: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    private func searchWithImageURL(_ url: URL) async {
-        do {
-            // 在后台线程读取文件，避免阻塞主线程
-            let data = try await Task.detached {
-                let hasAccess = url.startAccessingSecurityScopedResource()
-                defer {
-                    if hasAccess {
-                        url.stopAccessingSecurityScopedResource()
-                    }
-                }
-                return try Data(contentsOf: url)
-            }.value
-            let fileName = url.lastPathComponent.isEmpty ? "image.jpg" : url.lastPathComponent
-            await searchWithImageData(data, fileName: fileName)
-        } catch {
-            showSauceToastMessage("读取图片失败: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    private func searchWithImageData(_ data: Data, fileName: String) async {
-        let requestId = SauceNaoSearchRequestStore.shared.enqueue(imageData: data, fileName: fileName)
-        path.append(SauceNaoResultTarget(requestId: requestId))
-    }
-
-    #if os(iOS)
-    private func handleSelectedPhotoItem(_ item: PhotosPickerItem?) {
-        guard let item else { return }
-        Task {
-            do {
-                guard let imageData = try await item.loadTransferable(type: Data.self) else {
-                    await MainActor.run {
-                        showSauceToastMessage(String(localized: "读取图片失败"))
-                    }
-                    return
-                }
-                await searchWithImageData(imageData, fileName: "photo.jpg")
-                await MainActor.run {
-                    selectedPhotoItem = nil
-                }
-            } catch {
-                await MainActor.run {
-                    showSauceToastMessage("读取图片失败: \(error.localizedDescription)")
-                    selectedPhotoItem = nil
-                }
-            }
-        }
-    }
-    #endif
-
-    private var searchPrompt: String {
-        accountStore.isLoggedIn ? String(localized: "搜索插画、小说和画师") : String(localized: "请先登录以使用搜索")
-    }
-
-    private func normalizedSearchQuery(_ text: String) -> String {
-        text
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
-
-    private func isSingleSearchTerm(_ query: String) -> Bool {
-        !query.contains(where: \.isWhitespace)
-    }
-
-    @MainActor
-    private func performSearch(word: String, translatedName: String? = nil) {
-        let normalizedWord = normalizedSearchQuery(word)
-        guard !normalizedWord.isEmpty else { return }
-
-        isSearchPresented = false
-        store.addHistory(SearchTag(name: normalizedWord, translatedName: translatedName))
-        store.searchText = normalizedWord
-        selectedTag = normalizedWord
-
-        let preloadToken = UUID()
-        SearchResultStore.scheduleSearchEntryPseudoPopularPreload(
-            word: normalizedWord,
-            token: preloadToken,
-            isPremium: accountStore.currentAccount?.isPremium == 1,
-            defaultSort: SearchSortOption(rawValue: userSettingStore.userSetting.defaultSearchSort) ?? .dateDesc
-        )
-
-        path = NavigationPath()
-        path.append(SearchResultTarget(word: normalizedWord, preloadToken: preloadToken))
     }
 
     var body: some View {
@@ -218,7 +64,7 @@ struct SearchView: View {
                 text: $store.searchText,
                 isPresented: $isSearchPresented,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: searchPrompt
+                prompt: vm.searchPrompt
             )
             .searchSuggestions {
                 SearchSuggestionView(
@@ -237,7 +83,7 @@ struct SearchView: View {
             #else
             .searchable(
                 text: $store.searchText,
-                prompt: searchPrompt
+                prompt: vm.searchPrompt
             ) {
                 SearchSuggestionView(
                     store: store,
@@ -258,7 +104,7 @@ struct SearchView: View {
                 if accountStore.isLoggedIn {
                     ToolbarItem {
                         Button(action: {
-                            startSauceNaoSearch()
+                            vm.startSauceNaoSearch()
                         }) {
                             Image(systemName: "photo.badge.magnifyingglass")
                         }
@@ -280,7 +126,9 @@ struct SearchView: View {
             .onSubmit(of: .search) {
                 guard accountStore.isLoggedIn else { return }
                 if !store.searchText.isEmpty {
-                    performSearch(word: store.searchText)
+                    isSearchPresented = false
+                    vm.performSearch(word: store.searchText, path: $path)
+                    selectedTag = store.searchText
                 }
             }
             .task {
@@ -296,26 +144,12 @@ struct SearchView: View {
             }
             .task(id: pendingIllustId) {
                 if let illustId = pendingIllustId {
-                    isLoadingDetail = true
                     defer { pendingIllustId = nil }
-                    do {
-                        let illust = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illustId)
-                        await MainActor.run {
-                            path.append(illust)
-                        }
-                    } catch let error as NetworkError {
-                        if case .httpError(404) = error {
-                            errorMessage = String(localized: "没有找到插画") + " (ID: \(illustId))"
-                            show404Error = true
-                        }
-                    } catch {
-                        Logger.search.error("Failed to load illust: \(error.localizedDescription, privacy: .public)")
-                    }
-                    isLoadingDetail = false
+                    await vm.loadIllustDetail(illustId: illustId, path: $path)
                 }
             }
             .overlay {
-                if isLoadingDetail {
+                if vm.isLoadingDetail {
                     ZStack {
                         Color.black.opacity(0.3)
                         ProgressView()
@@ -327,29 +161,41 @@ struct SearchView: View {
                 }
             }
             .toast(isPresented: $showBlockToast, message: String(localized: "已屏蔽 Tag"))
-            .toast(isPresented: $show404Error, message: errorMessage)
-            .toast(isPresented: $showSauceToast, message: sauceToastMessage)
+            .toast(isPresented: $vm.show404Error, message: vm.errorMessage)
+            .toast(isPresented: $vm.showSauceToast, message: vm.sauceToastMessage)
             .sheet(isPresented: $showProfilePanel) {
                 #if os(iOS)
                 ProfilePanelView(accountStore: accountStore, isPresented: $showProfilePanel)
                 #endif
             }
             .fileImporter(
-                isPresented: $showImageFileImporter,
+                isPresented: $vm.showImageFileImporter,
                 allowedContentTypes: [.image],
                 allowsMultipleSelection: false,
-                onCompletion: handleImportedImage
+                onCompletion: vm.handleImportedImage
             )
             #if os(iOS)
             .photosPicker(
-                isPresented: $showPhotosPicker,
-                selection: $selectedPhotoItem,
+                isPresented: Binding(
+                    get: { vm.selectedPhotoItem != nil || false },
+                    set: { if !$0 { vm.selectedPhotoItem = nil } }
+                ),
+                selection: Binding(
+                    get: { vm.selectedPhotoItem },
+                    set: { vm.selectedPhotoItem = $0 }
+                ),
                 matching: .images
             )
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                handleSelectedPhotoItem(newItem)
+            .onChange(of: vm.selectedPhotoItem) { _, newItem in
+                vm.handleSelectedPhotoItem(newItem)
             }
             #endif
+            .onChange(of: vm.pendingSauceNaoTarget) { _, target in
+                if let target {
+                    path.append(target)
+                    vm.pendingSauceNaoTarget = nil
+                }
+            }
             .onChange(of: accountStore.navigationRequest) { _, newValue in
                 if let request = newValue {
                     switch request {
@@ -455,7 +301,7 @@ struct SearchView: View {
                             Group {
                                 if accountStore.isLoggedIn {
                                     Button(action: {
-                                        performSearch(word: tag.name, translatedName: tag.translatedName)
+                                        vm.performSearch(word: tag.name, translatedName: tag.translatedName, path: $path)
                                     }) {
                                         TagChip(searchTag: tag)
                                     }
@@ -471,7 +317,7 @@ struct SearchView: View {
                                     Label(String(localized: "复制 tag"), systemImage: "doc.on.doc")
                                 }
 
-                                if accountStore.isLoggedIn && isSingleSearchTerm(tag.name) {
+                                if accountStore.isLoggedIn && vm.isSingleSearchTerm(tag.name) {
                                     Button(action: {
                                         triggerHaptic()
                                         try? userSettingStore.addBlockedTagWithInfo(tag.name, translatedName: tag.translatedName)
@@ -529,7 +375,7 @@ struct SearchView: View {
                                     HStack(spacing: 12) {
                                         ForEach(store.recommendedSearchTags) { tag in
                                             Button(action: {
-                                                performSearch(word: tag.tag, translatedName: tag.translatedName)
+                                                vm.performSearch(word: tag.tag, translatedName: tag.translatedName, path: $path)
                                             }) {
                                                 trendTagContent(tag)
                                                     .frame(width: 140, height: 140)
@@ -589,11 +435,11 @@ struct SearchView: View {
                         HStack(alignment: .top, spacing: 10) {
                             ForEach(0..<columnCount, id: \.self) { columnIndex in
                                 LazyVStack(spacing: 10) {
-                                    ForEach(trendTagColumns[columnIndex]) { tag in
+                                    ForEach(vm.trendTagColumns(columnCount: columnCount)[columnIndex]) { tag in
                                         Group {
                                             if accountStore.isLoggedIn {
                                                 Button(action: {
-                                                    performSearch(word: tag.tag, translatedName: tag.translatedName)
+                                                    vm.performSearch(word: tag.tag, translatedName: tag.translatedName, path: $path)
                                                 }) {
                                                     trendTagContent(tag)
                                                 }

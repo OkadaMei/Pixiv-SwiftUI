@@ -1,67 +1,21 @@
 import SwiftUI
 import os.log
 
-private struct SearchFilterState: Equatable {
-    var bookmarkFilter: BookmarkFilterOption = .none
-    var searchTarget: SearchTargetOption = .partialMatchForTags
-    var showsAIGeneratedWorks = true
-    var startDate: Date?
-    var endDate: Date?
-
-    var hasDateRange: Bool {
-        startDate != nil || endDate != nil
-    }
-
-    var hasActiveFilters: Bool {
-        bookmarkFilter != .none
-            || searchTarget != .partialMatchForTags
-            || !showsAIGeneratedWorks
-            || hasDateRange
-    }
-}
-
 struct SearchResultView: View {
-    private let novelAutoLoadBurstLimit = 5
-
     let word: String
     let preloadToken: UUID?
     @State var store = SearchResultStore()
+    @State private var vm: SearchResultViewModel
     @State private var selectedTab = 0
-    @State private var sortOption: SearchSortOption = SearchSortOption(rawValue: UserSettingStore.shared.userSetting.defaultSearchSort) ?? .dateDesc
-    @State private var novelSortOption: SearchSortOption = SearchSortOption(rawValue: UserSettingStore.shared.userSetting.defaultSearchSort) ?? .dateDesc
-    @State private var filterState = SearchFilterState()
-    @State private var isResolvingNovelLoadMore = false
-    @State private var isNovelLoadMorePaused = false
-    @State private var isResolvingIllustLoadMore = false
-    @State private var isIllustLoadMorePaused = false
+    @State private var prefetchTracker = PrefetchTracker()
     @Environment(UserSettingStore.self) var settingStore
     @Environment(AccountStore.self) var accountStore
     @Environment(ThemeManager.self) var themeManager
     @Environment(\.dismiss) private var dismiss
-    @State private var prefetchTracker = PrefetchTracker()
-    /// 预计算 shouldBlur 标志，避免在 WaterfallGrid 内容闭包中重复读取 settingStore
-    @State private var cachedShouldBlurFlags: [Bool] = []
     let instanceId = UUID()
 
     private var viewId: String {
         "\(instanceId)"
-    }
-
-    private var filteredIllusts: [Illusts] {
-        settingStore.filterIllusts(store.illustResults)
-    }
-
-    /// 在 store.illustResults 变化时重新计算 shouldBlurFlags
-    private func recalculateShouldBlurFlags() {
-        cachedShouldBlurFlags = filteredIllusts.map { settingStore.userSetting.shouldBlurIllust($0) }
-    }
-
-    private var filteredUsers: [UserPreviews] {
-        settingStore.filterUserPreviews(store.userResults)
-    }
-
-    private var filteredNovels: [Novel] {
-        settingStore.filterNovels(store.novelResults)
     }
 
     private var skeletonItemCount: Int {
@@ -72,141 +26,67 @@ struct SearchResultView: View {
         #endif
     }
 
-    private var shouldShowIllustBookmarkCount: Bool {
-        sortOption == .popularDesc && settingStore.userSetting.showSearchPopularBookmarkCount
-    }
-
-    private var shouldShowNovelBookmarkCount: Bool {
-        novelSortOption != .popularDesc || settingStore.userSetting.showSearchPopularBookmarkCount
-    }
-
-    /// 从预计算的 shouldBlurFlags 中查找对应 illust 的模糊标志
-    private func shouldBlurFromCache(for illust: Illusts) -> Bool {
-        guard let index = filteredIllusts.firstIndex(where: { $0.id == illust.id }),
-              index < cachedShouldBlurFlags.count
-        else { return false }
-        return cachedShouldBlurFlags[index]
-    }
-
-    private func performIllustSearch() async {
-        await store.search(
+    init(word: String, preloadToken: UUID?) {
+        self.word = word
+        self.preloadToken = preloadToken
+        let storeInstance = SearchResultStore()
+        _store = State(initialValue: storeInstance)
+        _vm = State(initialValue: SearchResultViewModel(
             word: word,
-            sort: sortOption.rawValue,
-            preferLocalPopularSort: sortOption == .popularDesc && accountStore.currentAccount?.isPremium != 1,
-            prefetchNovelSort: novelSortOption.rawValue,
-            prefetchNovelPreferLocalPopularSort: novelSortOption == .popularDesc && accountStore.currentAccount?.isPremium != 1,
-            allowsPseudoPopularPreload: accountStore.currentAccount?.isPremium != 1,
             preloadToken: preloadToken,
-            showsAIGenerated: filterState.showsAIGeneratedWorks,
-            bookmarkFilter: filterState.bookmarkFilter,
-            searchTarget: filterState.searchTarget,
-            startDate: filterState.startDate,
-            endDate: filterState.endDate
-        )
+            store: storeInstance,
+            settingStore: UserSettingStore.shared,
+            accountStore: AccountStore.shared
+        ))
     }
 
-    private func performNovelSearch() async {
-        isNovelLoadMorePaused = false
-        await store.searchNovels(
-            word: word,
-            sort: novelSortOption.rawValue,
-            preferLocalPopularSort: novelSortOption == .popularDesc && accountStore.currentAccount?.isPremium != 1,
-            allowsPseudoPopularPreload: accountStore.currentAccount?.isPremium != 1,
-            showsAIGenerated: filterState.showsAIGeneratedWorks,
-            bookmarkFilter: filterState.bookmarkFilter,
-            searchTarget: filterState.searchTarget,
-            startDate: filterState.startDate,
-            endDate: filterState.endDate
-        )
-    }
+    @ViewBuilder
+    private var illustLoadMoreFooter: some View {        if let errorMessage = store.illustLoadMoreError {
+            VStack(spacing: 8) {
+                Text("加载更多失败")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
 
-    private func performCurrentTabSearch() async {
-        if selectedTab == 0 {
-            await performIllustSearch()
-        } else if selectedTab == 1 {
-            await performNovelSearch()
-        }
-    }
+                Text(errorMessage.localizedDescription ?? "未知错误")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
 
-    private func loadMoreIllustResults() async {
-        await store.loadMoreIllusts(
-            word: word,
-            sort: sortOption.rawValue,
-            preferLocalPopularSort: sortOption == .popularDesc && accountStore.currentAccount?.isPremium != 1,
-            showsAIGenerated: filterState.showsAIGeneratedWorks,
-            bookmarkFilter: filterState.bookmarkFilter,
-            searchTarget: filterState.searchTarget,
-            startDate: filterState.startDate,
-            endDate: filterState.endDate
-        )
-    }
-
-    private func loadMoreNovelResults() async {
-        await store.loadMoreNovels(
-            word: word,
-            sort: novelSortOption.rawValue,
-            preferLocalPopularSort: novelSortOption == .popularDesc && accountStore.currentAccount?.isPremium != 1,
-            showsAIGenerated: filterState.showsAIGeneratedWorks,
-            bookmarkFilter: filterState.bookmarkFilter,
-            searchTarget: filterState.searchTarget,
-            startDate: filterState.startDate,
-            endDate: filterState.endDate
-        )
-    }
-
-    @MainActor
-    private func loadMoreNovelResultsRespectingFilters(forceManualContinuation: Bool = false) async {
-        if forceManualContinuation {
-            isNovelLoadMorePaused = false
-        }
-
-        guard !isResolvingNovelLoadMore, !isNovelLoadMorePaused else { return }
-
-        // 取消后台 enrichment，防止其异步修改 novelHasMore 干扰重试判断
-        store.cancelNovelBackgroundTasks()
-
-        let initialVisibleCount = filteredNovels.count
-        isResolvingNovelLoadMore = true
-        defer {
-            isResolvingNovelLoadMore = false
-        }
-
-        var attempts = 0
-
-        while store.novelHasMore && attempts < novelAutoLoadBurstLimit {
-            let totalCountBeforeLoad = store.novelResults.count
-            await loadMoreNovelResults()
-            // 取消刚被 rescheduled 的 enrichment，防止其在下次检查前修改 novelHasMore
-            store.cancelNovelBackgroundTasks()
-            attempts += 1
-
-            if store.novelLoadMoreError != nil {
-                return
+                Button("重试") {
+                    Task {
+                        await vm.loadMoreIllustResults()
+                    }
+                }
+                .buttonStyle(.bordered)
             }
+            .padding()
+        } else if vm.isIllustLoadMorePaused {
+            VStack(spacing: 8) {
+                Text("已连续跳过多页被屏蔽内容")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
 
-            if !store.novelHasMore {
-                return
+                Text("继续加载会再向后查找可显示的插画")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("继续加载") {
+                    Task {
+                        await vm.loadMoreIllustResultsRespectingFilters(forceManualContinuation: true)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
             }
-
-            // 计算新加载页中可见项的比例
-            let newlyFetchedCount = store.novelResults.count - totalCountBeforeLoad
-            let newlyVisibleCount = filteredNovels.count - initialVisibleCount
-
-            if newlyFetchedCount > 0 && newlyVisibleCount * 2 >= newlyFetchedCount {
-                // 至少一半的结果是可见的 → 正常滚动加载即可，退出重试
-                return
-            }
-
-            if store.novelResults.count <= totalCountBeforeLoad {
-                break
-            }
-        }
-
-        // 尝试了 novelAutoLoadBurstLimit 次后仍无足够可见内容 + 仍有更多 → 进入暂停态
-        store.cancelNovelBackgroundTasks()
-
-        if store.novelHasMore && store.novelLoadMoreError == nil {
-            isNovelLoadMorePaused = true
+            .padding()
+        } else {
+            ProgressView()
+                .padding()
+                .onAppear {
+                    Task {
+                        await vm.loadMoreIllustResultsRespectingFilters()
+                    }
+                }
         }
     }
 
@@ -225,13 +105,13 @@ struct SearchResultView: View {
 
                 Button("重试") {
                     Task {
-                        await loadMoreNovelResults()
+                        await vm.loadMoreNovelResultsRespectingFilters()
                     }
                 }
                 .buttonStyle(.bordered)
             }
             .padding()
-        } else if isNovelLoadMorePaused {
+        } else if vm.isNovelLoadMorePaused {
             VStack(spacing: 8) {
                 Text("已连续跳过多页被屏蔽内容")
                     .font(.subheadline)
@@ -244,7 +124,7 @@ struct SearchResultView: View {
 
                 Button("继续加载") {
                     Task {
-                        await loadMoreNovelResultsRespectingFilters(forceManualContinuation: true)
+                        await vm.loadMoreNovelResultsRespectingFilters(forceManualContinuation: true)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -255,109 +135,7 @@ struct SearchResultView: View {
                 .padding()
                 .onAppear {
                     Task {
-                        await loadMoreNovelResultsRespectingFilters()
-                    }
-                }
-        }
-    }
-
-    @MainActor
-    private func loadMoreIllustResultsRespectingFilters(forceManualContinuation: Bool = false) async {
-        if forceManualContinuation {
-            isIllustLoadMorePaused = false
-        }
-
-        guard !isResolvingIllustLoadMore, !isIllustLoadMorePaused else { return }
-
-        store.cancelIllustBackgroundTasks()
-
-        let initialVisibleCount = filteredIllusts.count
-        let initialStoreCount = store.illustResults.count
-        isResolvingIllustLoadMore = true
-        defer {
-            isResolvingIllustLoadMore = false
-        }
-
-        var attempts = 0
-
-        while store.illustHasMore && attempts < novelAutoLoadBurstLimit {
-            let totalCountBeforeLoad = store.illustResults.count
-            await loadMoreIllustResults()
-            store.cancelIllustBackgroundTasks()
-            attempts += 1
-
-            if store.illustLoadMoreError != nil {
-                return
-            }
-
-            if !store.illustHasMore {
-                return
-            }
-
-            let newlyFetchedCount = store.illustResults.count - totalCountBeforeLoad
-            let newlyVisibleCount = filteredIllusts.count - initialVisibleCount
-
-            if newlyFetchedCount > 0 && newlyVisibleCount * 2 >= newlyFetchedCount {
-                continue
-            }
-        }
-
-        store.cancelIllustBackgroundTasks()
-
-        // 暂停条件：可见项增长极少（不到总量的10%）
-        let totalFetched = store.illustResults.count - initialStoreCount
-        let visibleGain = filteredIllusts.count - initialVisibleCount
-        if store.illustHasMore && visibleGain * 10 < totalFetched && store.illustLoadMoreError == nil {
-            isIllustLoadMorePaused = true
-        }
-    }
-
-    @ViewBuilder
-    private var illustLoadMoreFooter: some View {
-        if let errorMessage = store.illustLoadMoreError {
-            VStack(spacing: 8) {
-                Text("加载更多失败")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-
-                Text(errorMessage.localizedDescription ?? "未知错误")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-
-                Button("重试") {
-                    Task {
-                        await loadMoreIllustResults()
-                    }
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding()
-        } else if isIllustLoadMorePaused {
-            VStack(spacing: 8) {
-                Text("已连续跳过多页被屏蔽内容")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-
-                Text("继续加载会再向后查找可显示的插画")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-
-                Button("继续加载") {
-                    Task {
-                        await loadMoreIllustResultsRespectingFilters(forceManualContinuation: true)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-        } else {
-            ProgressView()
-                .padding()
-                .onAppear {
-                    Task {
-                        await loadMoreIllustResultsRespectingFilters()
+                        await vm.loadMoreNovelResultsRespectingFilters()
                     }
                 }
         }
@@ -386,7 +164,7 @@ struct SearchResultView: View {
 
     @ViewBuilder
     private func illustTabContent(columnCount: Int, waterfallWidth: CGFloat?) -> some View {
-        if filteredIllusts.isEmpty && !store.illustResults.isEmpty && settingStore.blockedTags.contains(word) {
+        if vm.filteredIllusts.isEmpty && !store.illustResults.isEmpty && settingStore.blockedTags.contains(word) {
             VStack(spacing: 20) {
                 Spacer()
 
@@ -418,7 +196,7 @@ struct SearchResultView: View {
             }
             .padding()
             .frame(minHeight: 300)
-        } else if filteredIllusts.isEmpty && !store.isLoading {
+        } else if vm.filteredIllusts.isEmpty && !store.isLoading {
             if store.illustHasMore {
                 VStack(spacing: 12) {
                     Text("正在加载更多结果")
@@ -434,28 +212,28 @@ struct SearchResultView: View {
             }
         } else {
             LazyVStack(spacing: 12) {
-                WaterfallGrid(data: filteredIllusts, columnCount: columnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
+                WaterfallGrid(data: vm.filteredIllusts, columnCount: columnCount, width: waterfallWidth, aspectRatio: { $0.safeAspectRatio }) { illust, columnWidth in
                     NavigationLink(value: illust) {
                         IllustCard(
                             illust: illust,
                             columnCount: columnCount,
                             columnWidth: columnWidth,
-                            showsBookmarkCount: shouldShowIllustBookmarkCount,
+                            showsBookmarkCount: vm.shouldShowIllustBookmarkCount,
                             feedPreviewQuality: settingStore.userSetting.feedPreviewQuality,
-                            shouldBlur: shouldBlurFromCache(for: illust),
+                            shouldBlur: vm.shouldBlurFromCache(for: illust),
                             accentColor: themeManager.currentColor
                         )
                         .equatable()
                     }
                     .buttonStyle(.plain)
                     .onAppear {
-                        prefetchIllustsIfNeeded(from: illust, in: filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
+                        prefetchIllustsIfNeeded(from: illust, in: vm.filteredIllusts, quality: settingStore.userSetting.feedPreviewQuality, tracker: prefetchTracker)
                     }
                 }
 
                 if store.illustHasMore && !store.isLoading {
                     illustLoadMoreFooter
-                } else if !filteredIllusts.isEmpty {
+                } else if !vm.filteredIllusts.isEmpty {
                     Text(String(localized: "已经到底了"))
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -468,7 +246,7 @@ struct SearchResultView: View {
 
     @ViewBuilder
     private var novelTabContent: some View {
-        if filteredNovels.isEmpty && !store.novelResults.isEmpty && !store.isLoading {
+        if vm.filteredNovels.isEmpty && !store.novelResults.isEmpty && !store.isLoading {
             if store.novelHasMore {
                 VStack(spacing: 12) {
                     Text("正在加载更多结果")
@@ -502,16 +280,16 @@ struct SearchResultView: View {
             }
         } else {
             LazyVStack(spacing: 12) {
-                ForEach(filteredNovels) { novel in
+                ForEach(vm.filteredNovels) { novel in
                     NavigationLink(value: novel) {
-                        NovelListCard(novel: novel, showsBookmarkCount: shouldShowNovelBookmarkCount)
+                        NovelListCard(novel: novel, showsBookmarkCount: vm.shouldShowNovelBookmarkCount)
                     }
                     .buttonStyle(.plain)
                 }
 
                 if store.novelHasMore {
                     novelLoadMoreFooter
-                } else if !filteredNovels.isEmpty {
+                } else if !vm.filteredNovels.isEmpty {
                     Text(String(localized: "已经到底了"))
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -524,7 +302,7 @@ struct SearchResultView: View {
 
     @ViewBuilder
     private func userTabContent(columnCount: Int) -> some View {
-        if filteredUsers.isEmpty && !store.userResults.isEmpty && !store.isLoading {
+        if vm.filteredUsers.isEmpty && !store.userResults.isEmpty && !store.isLoading {
             VStack(spacing: 20) {
                 Spacer()
 
@@ -547,7 +325,7 @@ struct SearchResultView: View {
             .frame(minHeight: 300)
         } else {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount), spacing: 12) {
-                ForEach(filteredUsers, id: \.id) { userPreview in
+                ForEach(vm.filteredUsers, id: \.id) { userPreview in
                     NavigationLink(value: userPreview.user.toDomain()) {
                         UserPreviewCard(userPreview: userPreview, accentColor: themeManager.currentColor)
                     }
@@ -567,7 +345,7 @@ struct SearchResultView: View {
                             await store.loadMoreUsers(word: word)
                         }
                     }
-            } else if !filteredUsers.isEmpty {
+            } else if !vm.filteredUsers.isEmpty {
                 Text(String(localized: "已经到底了"))
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -580,18 +358,18 @@ struct SearchResultView: View {
     private var searchToolbar: some ToolbarContent {
         if selectedTab == 0 {
             ToolbarItemGroup(placement: .primaryAction) {
-                SearchFiltersButton(filterState: $filterState)
+                SearchFiltersButton(filterState: $vm.filterState)
                 SearchSortButton(
-                    sortOption: $sortOption,
+                    sortOption: $vm.sortOption,
                     isPremium: accountStore.currentAccount?.isPremium == 1,
                     contentType: .illust
                 )
             }
         } else if selectedTab == 1 {
             ToolbarItemGroup(placement: .primaryAction) {
-                SearchFiltersButton(filterState: $filterState)
+                SearchFiltersButton(filterState: $vm.filterState)
                 SearchSortButton(
-                    sortOption: $novelSortOption,
+                    sortOption: $vm.novelSortOption,
                     isPremium: accountStore.currentAccount?.isPremium == 1,
                     contentType: .novel
                 )
@@ -628,34 +406,34 @@ struct SearchResultView: View {
             .animation(.easeInOut(duration: 0.25), value: store.isLoading)
             .navigationTitle(word)
             .toolbar { searchToolbar }
-            .onChange(of: sortOption) { _, _ in
+            .onChange(of: vm.sortOption) { _, _ in
                 guard selectedTab == 0 else { return }
                 Task {
-                    await performIllustSearch()
+                    await vm.performIllustSearch()
                 }
             }
-            .onChange(of: novelSortOption) { _, _ in
+            .onChange(of: vm.novelSortOption) { _, _ in
                 guard selectedTab == 1 else { return }
                 Task {
-                    await performNovelSearch()
+                    await vm.performNovelSearch()
                 }
             }
-            .onChange(of: filterState) { _, _ in
+            .onChange(of: vm.filterState) { _, _ in
                 Task {
-                    await performIllustSearch()
+                    await vm.performIllustSearch()
                 }
             }
             .onChange(of: store.illustResults) { _, _ in
-                recalculateShouldBlurFlags()
+                vm.recalculateShouldBlurFlags()
             }
             .onAppear {
-                recalculateShouldBlurFlags()
+                vm.recalculateShouldBlurFlags()
             }
             .onChange(of: selectedTab) { _, newValue in
                 Logger.search.debug("selectedTab changed to \(newValue)")
                 if newValue == 1 {
                     Task {
-                        await performNovelSearch()
+                        await vm.performNovelSearch()
                     }
                 }
             }
@@ -666,7 +444,7 @@ struct SearchResultView: View {
                 Logger.search.debug("task started: word='\(word)', viewId=\(viewId)")
                 if store.illustResults.isEmpty && store.novelResults.isEmpty && store.userResults.isEmpty {
                     Logger.search.debug("performing search")
-                    await performIllustSearch()
+                    await vm.performIllustSearch()
                 } else {
                     Logger.search.debug("skipping search - results already exist")
                 }
@@ -675,7 +453,7 @@ struct SearchResultView: View {
                 store.cancelBackgroundTasks()
                 Logger.search.debug("disappeared: word='\(word)', viewId=\(viewId)")
             }
-            .onFilterSettingsChange(from: settingStore, perform: recalculateShouldBlurFlags)
+            .onFilterSettingsChange(from: settingStore, perform: vm.recalculateShouldBlurFlags)
         }
     }
 }
