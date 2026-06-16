@@ -88,8 +88,8 @@ struct FollowingListView: View {
         }
         .responsiveUserGridColumnCount(columnCount: $columnCount)
         .onReceive(NotificationCenter.default.publisher(for: .refreshCurrentPage)) { _ in
-            isRefreshing = true
-            Task {
+            Task { @MainActor in
+                isRefreshing = true
                 await store.refreshFollowing(userId: userId, restrict: restrictString)
                 isRefreshing = false
             }

@@ -79,8 +79,8 @@ struct RecommendedUsersListView: View {
         }
         .responsiveUserGridColumnCount(columnCount: $columnCount)
         .onReceive(NotificationCenter.default.publisher(for: .refreshCurrentPage)) { _ in
-            isRefreshing = true
-            Task {
+            Task { @MainActor in
+                isRefreshing = true
                 await store.refreshUsers()
                 isRefreshing = false
             }
