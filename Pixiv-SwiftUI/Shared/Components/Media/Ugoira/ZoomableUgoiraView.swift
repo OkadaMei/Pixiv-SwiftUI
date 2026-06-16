@@ -354,6 +354,10 @@ extension ZoomableUgoiraView {
                 return
             }
 
+            guard currentFrameIndex < parent.frameDelays.count else {
+                lastFrameTime = timestamp
+                return
+            }
             let frameDuration = parent.frameDelays[currentFrameIndex]
             let deltaTime = timestamp - lastFrameTime
             accumulatedTime += deltaTime

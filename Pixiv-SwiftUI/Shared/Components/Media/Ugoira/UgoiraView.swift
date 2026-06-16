@@ -152,6 +152,10 @@ struct UgoiraView: View {
             return
         }
 
+        guard currentFrameIndex < frameDelays.count else {
+            lastFrameTime = timestamp
+            return
+        }
         let frameDuration = frameDelays[currentFrameIndex]
         let deltaTime = timestamp - lastFrameTime
         accumulatedTime += deltaTime
@@ -168,6 +172,7 @@ struct UgoiraView: View {
     }
     #else
     private func updateFrameWithTimer() {
+        guard currentFrameIndex < frameDelays.count else { return }
         let frameDuration = frameDelays[currentFrameIndex]
         accumulatedTime += 1.0/60.0
 
