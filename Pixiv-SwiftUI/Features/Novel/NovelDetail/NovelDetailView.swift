@@ -14,23 +14,18 @@ extension Notification.Name {
 
 struct NovelDetailView: View {
     let novel: Novel
-    @State private var novelData: Novel
+    @State private var vm: NovelDetailViewModel
     @Environment(UserSettingStore.self) var userSettingStore
     @Environment(AccountStore.self) var accountStore
     @Environment(ToastPresenter.self) var toast
     @Environment(\.colorScheme) private var colorScheme
 
-    @State private var isBookmarked: Bool
-    @State private var isFollowed: Bool?
-    @State private var totalComments: Int?
     @State private var navigateToUserId: String?
     @State private var navigateToIllustId: Int?
     @State private var navigateToNovelId: Int?
     @State private var navigateToReaderId: Int?
     @State private var showAuthView = false
     @State private var showDeleteConfirmation = false
-    @State private var isDeleting = false
-    @State private var isExporting = false
     @State private var isBlockTriggered: Bool = false
 
     #if os(iOS)
@@ -48,18 +43,7 @@ struct NovelDetailView: View {
 
     init(novel: Novel) {
         self.novel = novel
-        self._novelData = State(initialValue: novel)
-        self._isBookmarked = State(initialValue: novel.isBookmarked)
-        self._isFollowed = State(initialValue: novel.user.isFollowed)
-        self._totalComments = State(initialValue: novel.totalComments)
-    }
-
-    private var isLoggedIn: Bool {
-        accountStore.isLoggedIn
-    }
-
-    private var isOwnNovel: Bool {
-        novel.user.id.stringValue == accountStore.currentUserId
+        _vm = State(initialValue: NovelDetailViewModel(novel: novel))
     }
 
     var body: some View {
@@ -82,7 +66,7 @@ struct NovelDetailView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         NovelDetailCoverSection(
-                            novel: novelData,
+                            novel: vm.novelData,
                             coverAspectRatio: coverAspectRatio > 0 ? coverAspectRatio : nil,
                             onCoverSizeChange: { size in
                                 guard size.width > 0, size.height > 0 else { return }
@@ -92,7 +76,7 @@ struct NovelDetailView: View {
                                 }
                             },
                             onStartReading: {
-                                navigateToReaderId = novelData.id
+                                navigateToReaderId = vm.novelData.id
                             }
                         )
                             .frame(maxWidth: .infinity)
@@ -136,13 +120,13 @@ struct NovelDetailView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         NovelDetailInfoSection(
-                            novel: novelData,
+                            novel: vm.novelData,
                             userSettingStore: userSettingStore,
                             accountStore: accountStore,
                             colorScheme: colorScheme,
-                            isBookmarked: $isBookmarked,
-                            isFollowed: $isFollowed,
-                            totalComments: $totalComments,
+                            isBookmarked: $vm.isBookmarked,
+                            isFollowed: $vm.isFollowed,
+                            totalComments: $vm.totalComments,
                             navigateToUserId: $navigateToUserId,
                             isCommentsPanelPresented: .constant(false)
                         )
@@ -152,7 +136,7 @@ struct NovelDetailView: View {
                             .padding(.horizontal)
 
                         NovelCommentsPanelInlineView(
-                            novel: novelData,
+                            novel: vm.novelData,
                             onUserTapped: { userId in
                                 navigateToUserId = userId
                             },
@@ -170,9 +154,9 @@ struct NovelDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     NovelDetailCoverSection(
-                        novel: novelData,
+                        novel: vm.novelData,
                         onStartReading: {
-                            navigateToReaderId = novelData.id
+                            navigateToReaderId = vm.novelData.id
                         }
                     )
                         .frame(maxWidth: .infinity)
@@ -180,13 +164,13 @@ struct NovelDetailView: View {
                         .padding(.horizontal)
 
                     NovelDetailInfoSection(
-                        novel: novelData,
+                        novel: vm.novelData,
                         userSettingStore: userSettingStore,
                         accountStore: accountStore,
                         colorScheme: colorScheme,
-                        isBookmarked: $isBookmarked,
-                        isFollowed: $isFollowed,
-                        totalComments: $totalComments,
+                        isBookmarked: $vm.isBookmarked,
+                        isFollowed: $vm.isFollowed,
+                        totalComments: $vm.totalComments,
                         navigateToUserId: $navigateToUserId,
                         isCommentsPanelPresented: $showComments
                     )
@@ -216,29 +200,27 @@ struct NovelDetailView: View {
                     Divider()
 
                     Menu {
-                        Button(action: { exportNovel(format: .txt) }) {
+                        Button(action: { vm.exportNovel(format: .txt) }) {
                             Label(String(localized: "导出为 TXT"), systemImage: "doc.text")
                         }
-                        Button(action: { exportNovel(format: .epub) }) {
+                        Button(action: { vm.exportNovel(format: .epub) }) {
                             Label(String(localized: "导出为 EPUB"), systemImage: "book.closed")
                         }
                     } label: {
                         Label(String(localized: "导出"), systemImage: "square.and.arrow.down")
                     }
 
-                    if isLoggedIn {
+                    if vm.isLoggedIn {
                         Divider()
 
                         Button(action: {
-                            if isBookmarked {
-                                toggleBookmark(forceUnbookmark: true)
-                            } else {
-                                toggleBookmark(isPrivate: userSettingStore.userSetting.defaultPrivateLike)
-                            }
+                            if vm.isBookmarked {
+                                    vm.toggleBookmark(forceUnbookmark: true)                            } else {
+                                    vm.toggleBookmark(isPrivate: userSettingStore.userSetting.defaultPrivateLike)                            }
                         }) {
                             Label(
-                                isBookmarked ? String(localized: "取消收藏") : String(localized: "收藏"),
-                                systemImage: isBookmarked ? "heart.fill" : "heart"
+                                vm.isBookmarked ? String(localized: "取消收藏") : String(localized: "收藏"),
+                                systemImage: vm.isBookmarked ? "heart.fill" : "heart"
                             )
                         }
 
@@ -259,7 +241,7 @@ struct NovelDetailView: View {
                         }
                         .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
 
-                        if isOwnNovel {
+                        if vm.isOwnNovel {
                             Divider()
 
                             Button(role: .destructive, action: {
@@ -279,17 +261,17 @@ struct NovelDetailView: View {
             Button(String(localized: "取消"), role: .cancel) { }
             Button(String(localized: "删除"), role: .destructive) {
                 Task {
-                    await deleteNovel()
+                    await vm.deleteNovel()
                 }
             }
-            .disabled(isDeleting)
+            .disabled(vm.isDeleting)
         } message: {
             Text(String(localized: "删除后将无法恢复，确定要删除这个作品吗？"))
         }
         #if os(iOS)
         .sheet(isPresented: $showComments) {
             NovelCommentsPanelView(
-                novel: novelData,
+                novel: vm.novelData,
                 isPresented: $showComments,
                 onUserTapped: { userId in
                     showComments = false
@@ -312,9 +294,11 @@ struct NovelDetailView: View {
         }
         #endif
         .onAppear {
-            fetchUserDetailIfNeeded()
-            fetchTotalCommentsIfNeeded()
-            recordGlance()
+            vm.showToast = { toast.show($0) }
+            vm.onDismiss = { dismiss() }
+            vm.fetchUserDetailIfNeeded()
+            vm.fetchTotalCommentsIfNeeded()
+            vm.recordGlance()
         }
         .navigationDestination(item: $navigateToUserId) { userId in
             UserDetailView(userId: userId)
@@ -368,56 +352,6 @@ struct NovelDetailView: View {
         }
     }
 
-    private func toggleBookmark(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
-        guard isLoggedIn else {
-            toast.show(String(localized: "请先登录"), duration: 2.0)
-            return
-        }
-
-        let wasBookmarked = isBookmarked
-        let novelId = novel.id
-
-        if forceUnbookmark && wasBookmarked {
-            isBookmarked = false
-            novelData.isBookmarked = false
-            novelData.totalBookmarks -= 1
-        } else if wasBookmarked {
-            novelData.isBookmarked = true
-        } else {
-            isBookmarked = true
-            novelData.isBookmarked = true
-            novelData.totalBookmarks += 1
-        }
-
-        Task {
-            do {
-                if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
-                } else if wasBookmarked {
-                    try await PixivAPI.shared.novelAPI.unbookmarkNovel(novelId: novelId)
-                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
-                } else {
-                    try await PixivAPI.shared.novelAPI.bookmarkNovel(novelId: novelId, restrict: isPrivate ? "private" : "public")
-                }
-            } catch {
-                await MainActor.run {
-                    if forceUnbookmark && wasBookmarked {
-                        isBookmarked = true
-                        novelData.isBookmarked = true
-                        novelData.totalBookmarks += 1
-                    } else if wasBookmarked {
-                        isBookmarked = true
-                        novelData.isBookmarked = true
-                    } else {
-                        isBookmarked = false
-                        novelData.isBookmarked = false
-                        novelData.totalBookmarks -= 1
-                    }
-                }
-            }
-        }
-    }
-
     private func copyToClipboard(_ text: String) {
         #if canImport(UIKit)
         UIPasteboard.general.string = text
@@ -429,71 +363,9 @@ struct NovelDetailView: View {
         toast.show(String(localized: "已复制"))
     }
 
-    private func fetchUserDetailIfNeeded() {
-        guard isFollowed == nil else { return }
-
-        Task {
-            do {
-                let detail = try await PixivAPI.shared.userAPI.getUserDetail(userId: novel.user.id.stringValue)
-                await MainActor.run {
-                    self.isFollowed = detail.user.isFollowed
-                }
-            } catch {
-                Logger.novel.error("Failed to fetch user detail: \(error)")
-            }
-        }
-    }
-
-    private func fetchTotalCommentsIfNeeded() {
-        Task {
-            do {
-                let comments = try await PixivAPI.shared.novelAPI.getNovelComments(novelId: novel.id)
-                await MainActor.run {
-                    self.totalComments = comments.comments.count
-                }
-            } catch {
-                Logger.novel.error("Failed to fetch comments: \(error)")
-            }
-        }
-    }
-
-    private func recordGlance() {
-        let store = NovelStore()
-        try? store.recordGlance(novel.id, novel: novelData)
-    }
-
-    private func exportNovel(format: NovelExportFormat, customSaveURL: URL? = nil) {
-        guard !isExporting else { return }
-        isExporting = true
-
-        Task {
-            do {
-                let content = try await PixivAPI.shared.novelAPI.getNovelContent(novelId: novel.id)
-                await DownloadStore.shared.addNovelTask(
-                    novelId: novel.id,
-                    title: novel.title,
-                    authorName: novel.user.name,
-                    coverURL: novel.imageUrls.medium,
-                    content: content,
-                    format: format,
-                    customSaveURL: customSaveURL
-                )
-                await MainActor.run {
-                    toast.show(String(localized: "已添加到下载队列"))
-                    isExporting = false
-                }
-            } catch {
-                Logger.novel.error("导出小说失败: \(error)")
-                await MainActor.run {
-                    isExporting = false
-                }
-            }
-        }
-    }
-
     #if os(macOS)
     private func showSavePanelForNovel(format: NovelExportFormat) {
-        guard !isExporting else { return }
+        guard !vm.isExporting else { return }
 
         Task {
             let panel = NSSavePanel()
@@ -505,9 +377,7 @@ struct NovelDetailView: View {
                     panel.allowedContentTypes = [epubType]
                 }
             }
-            let safeTitle = novel.title.replacingOccurrences(of: "/", with: "_")
-                .replacingOccurrences(of: ":", with: "_")
-            panel.nameFieldStringValue = "\(novel.user.name)_\(safeTitle).\(format.fileExtension)"
+            panel.nameFieldStringValue = vm.exportFilename(format: format)
             panel.title = String(localized: "导出小说")
 
             let result = await withCheckedContinuation { continuation in
@@ -517,29 +387,10 @@ struct NovelDetailView: View {
             }
 
             guard result == .OK, let url = panel.url else { return }
-            exportNovel(format: format, customSaveURL: url)
+            vm.exportNovel(format: format, customSaveURL: url)
         }
     }
     #endif
-
-    private func deleteNovel() async {
-        guard !isDeleting else { return }
-        isDeleting = true
-        defer { isDeleting = false }
-
-        do {
-            try await PixivAPI.shared.novelAPI.deleteNovel(novelId: novel.id)
-
-            await MainActor.run {
-                toast.show(String(localized: "作品已删除"))
-                dismiss()
-            }
-        } catch {
-            await MainActor.run {
-                toast.show(String(localized: "删除失败"))
-            }
-        }
-    }
 }
 
 #Preview {

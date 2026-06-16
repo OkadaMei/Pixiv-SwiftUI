@@ -16,47 +16,21 @@ struct IllustDetailView: View {
     @Environment(ToastPresenter.self) var toast
     @Environment(\.colorScheme) private var colorScheme
     let illust: Illusts
+    @State private var vm: IllustDetailViewModel
     @State private var illustStore = IllustStore()
     @State private var currentPage = 0
     @State private var isCommentsPanelPresented = false
     @State private var isFullscreen = false
-    @State private var isFollowLoading = false
-    @State private var relatedIllusts: [Illusts] = []
-    @State private var isLoadingRelated = false
-    @State private var isFetchingMoreRelated = false
-    @State private var relatedNextUrl: String?
-    @State private var hasMoreRelated = true
-    @State private var relatedIllustError: String?
     @State private var navigateToIllust: Illusts?
     @State private var showRelatedIllustDetail = false
     #if os(macOS)
     @State private var currentImageAspectRatio: CGFloat = 0
     @AppStorage("macos_illust_detail_left_width") private var leftColumnWidth: Double = 0
     #endif
-    @State private var isFollowed: Bool = false
-    @State private var isBookmarked: Bool = false
-    @State private var isBlockTriggered: Bool = false
-    @State private var totalComments: Int?
     @State private var navigateToUserId: String?
     @State private var navigateToIllustId: Int?
     @State private var navigateToNovelId: Int?
-    @State private var shouldLoadRelated: Bool = false
     @State private var showAuthView = false
-    @State private var showDeleteConfirmation = false
-    @State private var isDeleting = false
-    @State private var detailFetched = false
-    @State private var ugoiraStore: UgoiraStore?
-
-    private var screenWidth: CGFloat {
-        #if os(iOS)
-        return UIScreen.main.bounds.width
-        #elseif os(macOS)
-        return NSScreen.main?.frame.width ?? 0
-        #else
-        return 0
-        #endif
-    }
-    @State private var isSaving = false
     @State private var pendingSaveURL: URL?
     @State private var navigateToDownloadTasks = false
     @Namespace private var animation
@@ -87,68 +61,19 @@ struct IllustDetailView: View {
         return 0.1
     }
 
-    private let cache: CacheStorageProtocol = CacheManager.shared
-    private let commentsExpiration: CacheExpiration = .minutes(10)
+    private var screenWidth: CGFloat {
+        #if os(iOS)
+        return UIScreen.main.bounds.width
+        #elseif os(macOS)
+        return NSScreen.main?.frame.width ?? 0
+        #else
+        return 0
+        #endif
+    }
 
     init(illust: Illusts) {
         self.illust = illust
-        _isFollowed = State(initialValue: illust.user.isFollowed ?? false)
-        _isBookmarked = State(initialValue: illust.isBookmarked)
-        _totalComments = State(initialValue: illust.totalComments)
-    }
-
-    private var isMultiPage: Bool {
-        illust.pageCount > 1 || !illust.metaPages.isEmpty
-    }
-
-    private var isUgoira: Bool {
-        illust.type == "ugoira"
-    }
-
-    private var isManga: Bool {
-        illust.type == "manga"
-    }
-
-    private var isLoggedIn: Bool {
-        accountStore.isLoggedIn
-    }
-
-    private var isOwnIllust: Bool {
-        illust.user.id.stringValue == accountStore.currentUserId
-    }
-
-    private var detailImageQuality: Int {
-        isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
-    }
-
-    private var zoomImageURLs: [String] {
-        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.zoomQuality
-        if !illust.metaPages.isEmpty {
-            return illust.metaPages.indices.compactMap { index in
-                ImageURLHelper.getPageImageURL(from: illust, page: index, quality: quality)
-            }
-        }
-        return [ImageURLHelper.getImageURL(from: illust, quality: quality)]
-    }
-
-    private var zoomImageAspectRatios: [CGFloat] {
-        // 由于 MetaPages 中通常不包含单独的宽高信息（通常所有页宽高一致或需单独获取）
-        // 这里暂时使用原图的比例作为所有页的初始比例
-        if !illust.metaPages.isEmpty {
-            return Array(repeating: illust.safeAspectRatio, count: illust.metaPages.count)
-        }
-        return [illust.safeAspectRatio]
-    }
-
-    /// Detail-quality image URLs for each page (used as fallback in fullscreen viewer)
-    private var detailImageURLs: [String] {
-        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
-        if !illust.metaPages.isEmpty {
-            return illust.metaPages.indices.compactMap { index in
-                ImageURLHelper.getPageImageURL(from: illust, page: index, quality: quality)
-            }
-        }
-        return [ImageURLHelper.getImageURL(from: illust, quality: quality)]
+        _vm = State(initialValue: IllustDetailViewModel(illust: illust))
     }
 
     var body: some View {
@@ -181,18 +106,18 @@ struct IllustDetailView: View {
                                 minContainerHeight: proxy.size.height * 0.6,
                                 currentAspectRatio: $currentImageAspectRatio,
                                 disableAspectRatioAnimation: true,
-                                ugoiraStore: ugoiraStore
+                                ugoiraStore: vm.ugoiraStore
                             )
 
                             IllustDetailRelatedSection(
                                 illustId: illust.id,
-                                isLoggedIn: isLoggedIn,
-                                relatedIllusts: $relatedIllusts,
-                                isLoadingRelated: $isLoadingRelated,
-                                isFetchingMoreRelated: $isFetchingMoreRelated,
-                                relatedNextUrl: $relatedNextUrl,
-                                hasMoreRelated: $hasMoreRelated,
-                                relatedIllustError: $relatedIllustError,
+                                isLoggedIn: vm.isLoggedIn,
+                                relatedIllusts: $vm.relatedIllusts,
+                                isLoadingRelated: $vm.isLoadingRelated,
+                                isFetchingMoreRelated: $vm.isFetchingMoreRelated,
+                                relatedNextUrl: $vm.relatedNextUrl,
+                                hasMoreRelated: $vm.hasMoreRelated,
+                                relatedIllustError: $vm.relatedIllustError,
                                 width: currentLeftWidth
                             )
                             .padding(.trailing, 16)
@@ -241,10 +166,10 @@ struct IllustDetailView: View {
                                 userSettingStore: userSettingStore,
                                 accountStore: accountStore,
                                 colorScheme: colorScheme,
-                                isFollowed: $isFollowed,
-                                isBookmarked: $isBookmarked,
-                                totalComments: $totalComments,
-                                isBlockTriggered: $isBlockTriggered,
+                                isFollowed: $vm.isFollowed,
+                                isBookmarked: $vm.isBookmarked,
+                                totalComments: $vm.totalComments,
+                                isBlockTriggered: $vm.isBlockTriggered,
                                 isCommentsPanelPresented: $isCommentsPanelPresented,
                                 navigateToUserId: $navigateToUserId
                             )
@@ -275,7 +200,7 @@ struct IllustDetailView: View {
                             isFullscreen: $isFullscreen,
                             animation: animation,
                             currentPage: $currentPage,
-                            ugoiraStore: ugoiraStore
+                            ugoiraStore: vm.ugoiraStore
                         )
                         .frame(maxWidth: proxy.size.width)
 
@@ -284,10 +209,10 @@ struct IllustDetailView: View {
                             userSettingStore: userSettingStore,
                             accountStore: accountStore,
                             colorScheme: colorScheme,
-                            isFollowed: $isFollowed,
-                            isBookmarked: $isBookmarked,
-                            totalComments: $totalComments,
-                            isBlockTriggered: $isBlockTriggered,
+                            isFollowed: $vm.isFollowed,
+                            isBookmarked: $vm.isBookmarked,
+                            totalComments: $vm.totalComments,
+                            isBlockTriggered: $vm.isBlockTriggered,
                             isCommentsPanelPresented: $isCommentsPanelPresented,
                             navigateToUserId: $navigateToUserId
                         )
@@ -296,13 +221,13 @@ struct IllustDetailView: View {
 
                         IllustDetailRelatedSection(
                             illustId: illust.id,
-                            isLoggedIn: isLoggedIn,
-                            relatedIllusts: $relatedIllusts,
-                            isLoadingRelated: $isLoadingRelated,
-                            isFetchingMoreRelated: $isFetchingMoreRelated,
-                            relatedNextUrl: $relatedNextUrl,
-                            hasMoreRelated: $hasMoreRelated,
-                            relatedIllustError: $relatedIllustError,
+                            isLoggedIn: vm.isLoggedIn,
+                            relatedIllusts: $vm.relatedIllusts,
+                            isLoadingRelated: $vm.isLoadingRelated,
+                            isFetchingMoreRelated: $vm.isFetchingMoreRelated,
+                            relatedNextUrl: $vm.relatedNextUrl,
+                            hasMoreRelated: $vm.hasMoreRelated,
+                            relatedIllustError: $vm.relatedIllustError,
                             width: proxy.size.width
                         )
                         .padding(.trailing, 16)
@@ -340,17 +265,17 @@ struct IllustDetailView: View {
                             }
                         }
 
-                        if isLoggedIn {
+                        if vm.isLoggedIn {
                             Button(action: {
-                                if isBookmarked {
-                                    bookmarkIllust(forceUnbookmark: true)
+                                if vm.isBookmarked {
+                                    vm.bookmarkIllust(forceUnbookmark: true)
                                 } else {
-                                    bookmarkIllust(isPrivate: userSettingStore.userSetting.defaultPrivateLike)
+                                    vm.bookmarkIllust(isPrivate: userSettingStore.userSetting.defaultPrivateLike)
                                 }
                             }) {
                                 Label(
-                                    isBookmarked ? String(localized: "取消收藏") : String(localized: "收藏"),
-                                    systemImage: isBookmarked ? (illust.bookmarkRestrict == "private" ? "heart.slash.fill" : "heart.fill") : "heart"
+                                    vm.isBookmarked ? String(localized: "取消收藏") : String(localized: "收藏"),
+                                    systemImage: vm.isBookmarked ? (illust.bookmarkRestrict == "private" ? "heart.slash.fill" : "heart.fill") : "heart"
                                 )
                             }
 
@@ -359,7 +284,7 @@ struct IllustDetailView: View {
                             #if os(iOS)
                             Button(action: {
                                 Task {
-                                    await saveIllust()
+                                    await vm.saveIllust()
                                 }
                             }) {
                                 Label(String(localized: "保存到相册"), systemImage: "photo.on.rectangle")
@@ -377,7 +302,7 @@ struct IllustDetailView: View {
                             if userSettingStore.userSetting.illustDetailSaveSkipLongPress {
                                 Button(action: {
                                     Task {
-                                        await saveIllust()
+                                        await vm.saveIllust()
                                     }
                                 }) {
                                     Label(String(localized: "快速保存"), systemImage: "bolt.fill")
@@ -387,7 +312,7 @@ struct IllustDetailView: View {
                             Divider()
 
                             Button(role: .destructive, action: {
-                                isBlockTriggered = true
+                                vm.isBlockTriggered = true
                                 try? userSettingStore.addBlockedIllustWithInfo(
                                     illust.id,
                                     title: illust.title,
@@ -400,10 +325,10 @@ struct IllustDetailView: View {
                             }) {
                                 Label(String(localized: "屏蔽此作品"), systemImage: "eye.slash")
                             }
-                            .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
+                            .sensoryFeedback(.impact(weight: .medium), trigger: vm.isBlockTriggered)
 
                             Button(role: .destructive, action: {
-                                isBlockTriggered = true
+                                vm.isBlockTriggered = true
                                 try? userSettingStore.addBlockedUserWithInfo(
                                     illust.user.id.stringValue,
                                     name: illust.user.name,
@@ -415,13 +340,13 @@ struct IllustDetailView: View {
                             }) {
                                 Label(String(localized: "屏蔽此作者"), systemImage: "person.slash")
                             }
-                            .sensoryFeedback(.impact(weight: .medium), trigger: isBlockTriggered)
+                            .sensoryFeedback(.impact(weight: .medium), trigger: vm.isBlockTriggered)
 
-                            if isOwnIllust {
+                            if vm.isOwnIllust {
                                 Divider()
 
                                 Button(role: .destructive, action: {
-                                    showDeleteConfirmation = true
+                                    vm.showDeleteConfirmation = true
                                 }) {
                                     Label(String(localized: "删除作品"), systemImage: "trash")
                                 }
@@ -434,16 +359,17 @@ struct IllustDetailView: View {
                 }
             }
             .onAppear {
-                fetchDetailIfNeeded()
+                vm.showToast = { toast.show($0) }
+                vm.fetchDetailIfNeeded()
                 Task {
                     try? illustStore.recordGlance(illust.id, illust: illust)
                 }
-                if isUgoira && ugoiraStore == nil {
-                    ugoiraStore = UgoiraStore(illustId: illust.id, expiration: .hours(1))
+                if vm.isUgoira && vm.ugoiraStore == nil {
+                    vm.ugoiraStore = UgoiraStore(illustId: illust.id, expiration: .hours(1))
                 }
             }
             .task {
-                await ugoiraStore?.loadIfNeeded()
+                await vm.ugoiraStore?.loadIfNeeded()
             }
             .onPreferenceChange(ImageFramePreferenceKey.self) { frame in
                 if frame != .zero {
@@ -514,109 +440,6 @@ struct IllustDetailView: View {
         })
     }
 
-    private func preloadAllImages() {
-        guard isMultiPage else { return }
-
-        Task {
-            await withTaskGroup(of: Void.self) { group in
-                let urls: [String]
-                if !illust.metaPages.isEmpty {
-                    urls = illust.metaPages.indices.compactMap { index in
-                        ImageURLHelper.getPageImageURL(from: illust, page: index, quality: detailImageQuality)
-                    }
-                } else {
-                    urls = [ImageURLHelper.getImageURL(from: illust, quality: detailImageQuality)]
-                }
-
-                for urlString in urls {
-                    group.addTask {
-                        await self.preloadImage(urlString: urlString)
-                    }
-                }
-            }
-        }
-    }
-
-    private func preloadImage(urlString: String) async {
-        guard let url = URL(string: urlString) else { return }
-
-        let source: Source
-        if shouldUseDirectConnection(url: url) {
-            source = .directNetwork(url)
-        } else {
-            source = .network(url)
-        }
-
-        let options: KingfisherOptionsInfo = [
-            .requestModifier(PixivImageLoader.shared),
-            .cacheOriginalImage
-        ]
-
-        _ = try? await KingfisherManager.shared.retrieveImage(with: source, options: options)
-    }
-
-    private func shouldUseDirectConnection(url: URL) -> Bool {
-        guard let host = url.host else { return false }
-        return NetworkModeStore.shared.useDirectConnection &&
-               (host.contains("i.pximg.net") || host.contains("img-master.pixiv.net"))
-    }
-
-    private func bookmarkIllust(isPrivate: Bool = false, forceUnbookmark: Bool = false) {
-        guard isLoggedIn else {
-            toast.show(String(localized: "请先登录"), duration: 2.0)
-            return
-        }
-
-        let wasBookmarked = isBookmarked
-        let illustId = illust.id
-
-        if forceUnbookmark && wasBookmarked {
-            isBookmarked = false
-            illust.isBookmarked = false
-            illust.totalBookmarks -= 1
-            illust.bookmarkRestrict = nil
-        } else if wasBookmarked {
-            illust.bookmarkRestrict = isPrivate ? "private" : "public"
-        } else {
-            isBookmarked = true
-            illust.isBookmarked = true
-            illust.totalBookmarks += 1
-            illust.bookmarkRestrict = isPrivate ? "private" : "public"
-        }
-
-        Task {
-            do {
-                if forceUnbookmark && wasBookmarked {
-                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
-                    await syncBookmarkCacheRemoval(illustId: illustId)
-                } else if wasBookmarked {
-                    try await PixivAPI.shared.bookmarkAPI.deleteBookmark(illustId: illustId)
-                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
-                    await syncBookmarkCacheUpdate(restrict: isPrivate ? "private" : "public")
-                } else {
-                    try await PixivAPI.shared.bookmarkAPI.addBookmark(illustId: illustId, isPrivate: isPrivate)
-                    await syncBookmarkCacheAdd(restrict: isPrivate ? "private" : "public")
-                }
-            } catch {
-                await MainActor.run {
-                    if forceUnbookmark && wasBookmarked {
-                        isBookmarked = true
-                        illust.isBookmarked = true
-                        illust.totalBookmarks += 1
-                        illust.bookmarkRestrict = isPrivate ? "private" : "public"
-                    } else if wasBookmarked {
-                        illust.bookmarkRestrict = isPrivate ? "public" : "private"
-                    } else {
-                        isBookmarked = false
-                        illust.isBookmarked = false
-                        illust.totalBookmarks -= 1
-                        illust.bookmarkRestrict = nil
-                    }
-                }
-            }
-        }
-    }
-
     private func copyToClipboard(_ text: String) {
         #if canImport(UIKit)
         UIPasteboard.general.string = text
@@ -628,29 +451,9 @@ struct IllustDetailView: View {
         toast.show(String(localized: "已复制"))
     }
 
-    private func saveIllust() async {
-        guard !isSaving else { return }
-        isSaving = true
-        defer { isSaving = false }
-
-        if isUgoira {
-            await saveUgoira()
-        } else {
-            let quality = userSettingStore.userSetting.downloadQuality
-            await DownloadStore.shared.addTask(illust, quality: quality)
-        }
-        toast.show(String(localized: "已添加到下载队列"))
-    }
-
-    private func saveUgoira() async {
-        Logger.illust.debug("开始保存动图: \(illust.id)")
-        await DownloadStore.shared.addUgoiraTask(illust)
-    }
-
     #if os(macOS)
     private func showSavePanel() async {
-        if !isUgoira && illust.pageCount > 1 {
-            // 多图插画：由于沙盒限制，需要选择文件夹而不是具体文件
+        if vm.isMultiPageSave() {
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
@@ -666,29 +469,18 @@ struct IllustDetailView: View {
             }
 
             guard result == .OK, let url = panel.url else { return }
-            await performSave(to: url)
+            await vm.performSave(to: url)
         } else {
-            // 单图或动图：使用 NSSavePanel 选择具体文件名
             let panel = NSSavePanel()
-            let safeTitle = ImageSaver.sanitizeFilename(illust.title)
-            let safeAuthor = ImageSaver.sanitizeFilename(illust.user.name)
 
-            if isUgoira {
+            if vm.isUgoira {
                 panel.allowedContentTypes = [.gif]
-                panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).gif"
+                panel.nameFieldStringValue = vm.saveFilename(quality: 0)
                 panel.title = "保存动图"
             } else {
                 let quality = userSettingStore.userSetting.downloadQuality
-                let firstUrl = ImageURLHelper.getImageURL(from: illust, quality: quality)
-                let ext = (firstUrl as NSString).pathExtension.lowercased()
-
-                if ext == "png" {
-                    panel.allowedContentTypes = [.png, .jpeg]
-                    panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).png"
-                } else {
-                    panel.allowedContentTypes = [.jpeg, .png]
-                    panel.nameFieldStringValue = "\(safeAuthor)_\(safeTitle).jpg"
-                }
+                panel.allowedContentTypes = vm.saveAllowedTypes(quality: quality)
+                panel.nameFieldStringValue = vm.saveFilename(quality: quality)
                 panel.title = "保存插画"
             }
 
@@ -699,126 +491,16 @@ struct IllustDetailView: View {
             }
 
             guard result == .OK, let url = panel.url else { return }
-            await performSave(to: url)
+            await vm.performSave(to: url)
         }
-    }
-
-    private func performSave(to url: URL) async {
-        guard !isSaving else { return }
-        isSaving = true
-        defer { isSaving = false }
-
-        if isUgoira {
-            await DownloadStore.shared.addUgoiraTask(illust, customSaveURL: url)
-        } else {
-            let quality = userSettingStore.userSetting.downloadQuality
-            await DownloadStore.shared.addTask(illust, quality: quality, customSaveURL: url)
-        }
-        toast.show(String(localized: "已添加到下载队列"))
     }
     #endif
-
-    /// 从 API 获取完整详情，更新 illust 的 metaPages/metaSinglePage 等数据
-    /// Pixiv 列表接口返回的数据可能不完整（如 caption 为空、metaPages 缺少 original URL），
-    /// 需要像 Pixez 一样始终调用 /v1/illust/detail 获取完整数据
-    private func fetchDetailIfNeeded() {
-        guard !detailFetched else { return }
-        detailFetched = true
-
-        // 先从缓存取 totalComments
-        let cacheKey = CacheManager.illustDetailKey(illustId: illust.id)
-        if let cached: Illusts = cache.get(forKey: cacheKey), let comments = cached.totalComments, comments > 0 {
-            totalComments = comments
-        }
-
-        // 先用当前数据预加载
-        preloadAllImages()
-
-        Task {
-            do {
-                let detail = try await PixivAPI.shared.illustAPI.getIllustDetail(illustId: illust.id)
-                await MainActor.run {
-                    if let comments = detail.totalComments {
-                        self.totalComments = comments
-                    }
-                    // 用详情接口的完整数据更新 illust
-                    if !detail.metaPages.isEmpty {
-                        illust.metaPages = detail.metaPages
-                    }
-                    if let singlePage = detail.metaSinglePage {
-                        illust.metaSinglePage = singlePage
-                    }
-                    if !detail.imageUrls.large.isEmpty {
-                        illust.imageUrls = detail.imageUrls
-                    }
-                    if illust.caption.isEmpty, !detail.caption.isEmpty {
-                        illust.caption = detail.caption
-                    }
-
-                    // 数据更新后重新预加载正确质量的图片
-                    preloadAllImages()
-                }
-            } catch {
-                Logger.illust.debug("[fetchDetail] FAILED: \(error)")
-            }
-        }
-    }
-
-    private func deleteIllust() async {
-        guard !isDeleting else { return }
-        isDeleting = true
-        defer { isDeleting = false }
-
-        do {
-            let type = isManga ? "manga" : "illust"
-            try await PixivAPI.shared.illustAPI.deleteIllust(illustId: illust.id, type: type)
-
-            await MainActor.run {
-                toast.show(String(localized: "作品已删除"))
-                dismiss()
-            }
-        } catch {
-            await MainActor.run {
-                toast.show(String(localized: "删除失败"))
-            }
-        }
-    }
-
-    // MARK: - Bookmark Cache Sync
-
-    private func syncBookmarkCacheAdd(restrict: String) async {
-        guard UserSettingStore.shared.userSetting.bookmarkCacheEnabled else { return }
-        await MainActor.run {
-            BookmarkCacheStore.shared.addOrUpdateCache(
-                illust: illust,
-                ownerId: AccountStore.shared.currentUserId,
-                bookmarkRestrict: restrict
-            )
-        }
-
-        if UserSettingStore.shared.userSetting.bookmarkAutoPreload {
-            let settings = UserSettingStore.shared.userSetting
-            let quality = BookmarkCacheQuality(rawValue: settings.bookmarkCacheQuality) ?? .large
-            let allPages = settings.bookmarkCacheAllPages
-            let urls = illust.getImageURLs(quality: quality, allPages: allPages)
-            try? await BookmarkCacheService.shared.preloadImages(urls: urls)
-            await MainActor.run {
-                BookmarkCacheStore.shared.updatePreloadStatus(
-                    illustId: illust.id,
-                    ownerId: AccountStore.shared.currentUserId,
-                    preloaded: true,
-                    quality: quality,
-                    allPages: allPages
-                )
-            }
-        }
-    }
 
     // MARK: - Fullscreen Transition Helpers
 
     /// Detail-quality image URL for the current illust/page (used for entering ghost image).
     private var enteringTransitionImageURL: String {
-        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
+        let quality = vm.isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.pictureQuality
         if !illust.metaPages.isEmpty, currentPage < illust.metaPages.count {
             return ImageURLHelper.getPageImageURL(from: illust, page: currentPage, quality: quality) ?? ""
         }
@@ -828,7 +510,7 @@ struct IllustDetailView: View {
     /// Zoom-quality image URL for the current illust/page (used for exiting ghost image,
     /// since FullscreenImageView has already cached it).
     private var exitingTransitionImageURL: String {
-        let quality = isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.zoomQuality
+        let quality = vm.isManga ? userSettingStore.userSetting.mangaQuality : userSettingStore.userSetting.zoomQuality
         if !illust.metaPages.isEmpty, currentPage < illust.metaPages.count {
             return ImageURLHelper.getPageImageURL(from: illust, page: currentPage, quality: quality) ?? ""
         }
@@ -888,8 +570,8 @@ struct IllustDetailView: View {
 
         // Preload the zoom-quality images for FullscreenImageView and the exit transition.
         // 注意：这是进入全屏后的后台预加载，不需要优先任何页面。
-        for zoomURL in zoomImageURLs {
-            Task { await preloadImage(urlString: zoomURL) }
+        for zoomURL in vm.zoomImageURLs {
+            Task { await vm.preloadImage(urlString: zoomURL) }
         }
 
         // Animate the ghost image and switch to .fullscreen when the spring settles.
@@ -1015,14 +697,14 @@ struct IllustDetailView: View {
             // 幽灵图（zIndex 2）的纯黑背景会完全遮盖它，用户不会看到。
             if transitionPhase.isEnteringOrFullscreen {
                 FullscreenImageView(
-                    imageURLs: zoomImageURLs,
-                    fallbackImageURLs: detailImageURLs,
-                    aspectRatios: zoomImageAspectRatios,
+                    imageURLs: vm.zoomImageURLs,
+                    fallbackImageURLs: vm.detailImageURLs,
+                    aspectRatios: vm.zoomImageAspectRatios,
                     initialPage: $currentPage,
                     isPresented: $isFullscreen,
                     exitDragProgress: $exitDragProgress,
                     animation: animation,
-                    ugoiraStore: isUgoira ? ugoiraStore : nil
+                    ugoiraStore: vm.isUgoira ? vm.ugoiraStore : nil
                 )
                 .zIndex(1)
             }        }
@@ -1103,26 +785,5 @@ struct IllustDetailView: View {
             }
         }
         .ignoresSafeArea()
-    }
-
-    private func syncBookmarkCacheUpdate(restrict: String) async {
-        guard UserSettingStore.shared.userSetting.bookmarkCacheEnabled else { return }
-        await MainActor.run {
-            BookmarkCacheStore.shared.addOrUpdateCache(
-                illust: illust,
-                ownerId: AccountStore.shared.currentUserId,
-                bookmarkRestrict: restrict
-            )
-        }
-    }
-
-    private func syncBookmarkCacheRemoval(illustId: Int) async {
-        guard UserSettingStore.shared.userSetting.bookmarkCacheEnabled else { return }
-        await MainActor.run {
-            BookmarkCacheStore.shared.removeCache(
-                illustId: illustId,
-                ownerId: AccountStore.shared.currentUserId
-            )
-        }
     }
 }
