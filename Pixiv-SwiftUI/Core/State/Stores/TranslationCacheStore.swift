@@ -3,10 +3,10 @@ import SwiftData
 import CryptoKit
 import os.log
 
+@MainActor
 final class TranslationCacheStore {
     static let shared = TranslationCacheStore()
 
-    private let context: ModelContext
     private let backgroundContext: ModelContext
     private let backgroundQueue = DispatchQueue(label: "com.pixiv.translationcache", qos: .utility)
     private let maxCacheCount = 100_000
@@ -15,7 +15,6 @@ final class TranslationCacheStore {
 
     private init() {
         let container = DataContainer.shared
-        self.context = container.mainContext
         self.backgroundContext = container.createBackgroundContext()
     }
 
